@@ -1,0 +1,200 @@
+# DESeqTools.R
+
+# DESeq -- differential expression analysis of digital gene expression data
+
+#  	Simon Anders, Wolfgang Huber
+
+
+DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(groupSet)[1], geneColumn="GENE_ID", 
+			intensityColumn="READS_M", keepIntergenics=FALSE, 
+			minimumRPKM=1, missingGenes="fill", extraColumn=NULL,
+			average.FUN=sqrtmean, wt.folds=1, wt.pvalues=1, fitType="local", ...) {
+
+	# turn the set of transcript files into one matrix
+	if ( is.null(m)) {
+		m <- expressionFileSetToMatrix( fnames=fnames, fids=fids, geneColumn=geneColumn,
+				intensityColumn=intensityColumn, missingGenes=missingGenes,
+				keepIntergenics=keepIntergenics)
+		if ( ! is.null( extraColumn)) {
+			mExtra <- expressionFileSetToMatrix( fnames=fnames, fids=fids, geneColumn=geneColumn,
+					intensityColumn=extraColumn, missingGenes=missingGenes,
+					keepIntergenics=keepIntergenics)
+		}
+	}
+
+	# drop non-genes...
+	if ( ! keepIntergenics) {
+		drops <- grep( "(ng)", rownames(m), fixed=T)
+		if ( length(drops) > 0) {
+			m <- m[ -drops, ]
+			if ( ! is.null( extraColumn)) mExtra <- mExtra[ -drops, ]
+		}
+		nonGenes <- subset( getCurrentGeneMap(), REAL_G == FALSE)$GENE_ID
+		drops <- which( rownames(m) %in% nonGenes)
+		if ( length(drops) > 0) {
+			m <- m[ -drops, ]
+			if ( ! is.null( extraColumn)) mExtra <- mExtra[ -drops, ]
+		}
+	}
+
+	# DESeq breaks if every gene has at least one zero count!!
+	# try to catch and prevent...
+	smallV <- apply( m, MARGIN=1, min)
+
+	if ( sum( smallV == 0) > nrow(m)*0.9) {
+		cat( "\nCatch and compensate for 'Every gene contains at least one zero' DESeq bug...")
+		# find who is not zero
+		bigV <- apply( m, MARGIN=1, max)
+		twoPlus <- which( bigV > 1)
+		avgCnt <- mean( bigV[twoPlus])
+		rowTweak <- which( bigV >= avgCnt)
+		for( j in rowTweak) {
+			# these are the biggest intensity rows, change the zeros to one
+			# this should best preserve the biggest differences in expression...
+			whoZ <- (m[ j, ] == 0)
+			m[ j, whoZ] <- 1
+		}
+		cat( "\nApplied a 1 to ", length(rowTweak), " rows with minimum read count of ", avgCnt)
+	}
+
+	# there are now 2 versions of DESeq -- see which we have
+	current <- installed.packages()
+	packages <- current[ ,"Package"]
+	hasDESeq1 <- hasDESeq2 <- FALSE
+	if ( "DESeq2" %in% packages) hasDESeq2 <- TRUE
+	if ( "DESeq" %in% packages) hasDESeq1 <- TRUE
+
+	# and see which is more appropriate -- the newer DEseq2 is terrible when no replicates
+	# make this call based on the 'target' vs non-target group counts, not just on the groupIDs passed in
+	mode <- ""
+	grpLabel <- rep( 'NonTarget', times=length(groupSet))
+	grpLabel[ groupSet == targetGroup] <- targetGroup
+	grpCounts <- table( grpLabel)
+	nSolos <- sum( grpCounts == 1)
+	if ( hasDESeq1 && all( grpCounts == 1)) mode <- "DESeq"
+	if ( hasDESeq1 && nSolos > 0) mode <- "DESeq"
+	if ( hasDESeq2 && mode == "") mode <- "DESeq2"
+	if ( hasDESeq1 && mode == "") mode <- "DESeq"
+	if ( mode == "") stop( "No version of DESeq installed!")
+	if ( mode == "DESeq2") {
+		cat( "\nUsing newer 'DESeq2'\n")
+	} else {
+		cat( "\nUsing older 'DESeq'\n")
+	}
+	require( mode, character.only=TRUE)
+
+	if ( mode == "DESeq") {
+		# the column flags for DESeq are to end up as 1,2, where 1 is the one we want...
+		mine <- 1
+		other <- 2
+		cl <- rep( other, times=length(groupSet))
+		cl[ groupSet == targetGroup] <- mine
+		myGrpNames <- rep( targetGroup, times=length(groupSet))
+		myGrpNames[ cl == other] <- notTargetGroup <- paste( "Not", targetGroup, sep=" ")
+		if ( ! is.null( extraColumn)) {
+			clExtra <- cl
+		}
+	
+		# the dispersion has to be estimated differently if there aren't replicates
+		specialDispersion <- FALSE
+		if ( any( table(cl) < 2)) specialDispersion <- TRUE
+	
+		mUse <- matrix( as.integer(m), nrow=nrow(m), ncol=ncol(m))
+		colnames(mUse) <- colnames(m)
+		rownames(mUse) <- rownames(m)
+	
+		NG <- nrow( m)
+	
+		# call DESeq,  it's a multi step process
+		ans <- newCountDataSet( countData=mUse, conditions=cl)
+		ans <- estimateSizeFactors( ans)
+		if (specialDispersion) {
+			ans <- estimateDispersions( ans, method="blind", sharingMode="fit-only", fitType=fitType)
+		} else {
+			ans <- estimateDispersions( ans, fitType=fitType)
+		}
+		deseqOut <- nbinomTest( ans, other, mine)
+	
+		# DESeq throws away rows that were all zero, and may do divide by zero
+		gnames <- rownames(mUse)
+		deseqGenes <- deseqOut[ ,1]
+		gPtr <- match( gnames, deseqGenes, nomatch=0)
+		gprod <- gene2ProductAllSpecies( gnames)
+		if ( any( gprod == "")) {
+			tmp <- read.delim( fnames[1], as.is=T)
+			gnams <- tmp[[ geneColumn]]
+			gpros <- tmp[[ grep( "product", tolower(colnames(tmp)))]]
+			needs <- which( gprod == "")
+			where <- match( gnames[needs], gnams, nomatch=0)
+			gprod[ needs[ where > 0]] <- gpros[ where]
+		}
+	
+		v1 <- v2 <- foldOut <- rep.int( 0, length(gnames))
+		v1[ gPtr > 0] <- deseqOut$baseMeanA[ gPtr]
+		v2[ gPtr > 0] <- deseqOut$baseMeanB[ gPtr]
+		foldOut <- log2( (v2+minimumRPKM) / (v1+minimumRPKM))
+		pvalOut <- rep.int( 1, length(gnames))
+		pvalOut[ gPtr > 0] <- deseqOut$pval[ gPtr]
+		pvalOut[ is.na( pvalOut)] <- 1
+	
+		out <- data.frame( gnames, gprod, foldOut, pvalOut, v2, v1,
+				stringsAsFactors=F)
+		colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", 
+				targetGroup, notTargetGroup)
+
+	}  # old DESeq package
+	
+	if ( mode == "DESeq2") {
+		# the column flags for DESeq2 are to end up as 1,2, where 2 is the one we want...
+		mine <- 2
+		other <- 1
+		cl <- rep( other, times=length(groupSet))
+		cl[ groupSet == targetGroup] <- mine
+		myGrpNames <- rep( targetGroup, times=length(groupSet))
+		myGrpNames[ cl == other] <- notTargetGroup <- paste( "Not", targetGroup, sep=" ")
+		if ( ! is.null( extraColumn)) {
+			clExtra <- cl
+		}
+		colData <- data.frame( "group"=as.character(cl), "groupName"=myGrpNames)
+	
+		# counts as integers
+		mUse <- matrix( as.integer(m), nrow=nrow(m), ncol=ncol(m))
+		colnames(mUse) <- colnames(m)
+		rownames(mUse) <- rownames(m)
+
+		dds <- DESeqDataSetFromMatrix( countData=mUse, colData=colData, design= ~ group)
+		ddsAns <- DESeq( dds, quiet=TRUE, fitType=fitType)
+		res <- results( ddsAns, independentFiltering=FALSE, cooksCutoff=FALSE)
+		resDF <- as.data.frame( res)
+
+		# extract what we want
+		gnames <- rownames(resDF)
+		gprod <- gene2ProductAllSpecies( gnames)
+		foldOut <- resDF$log2FoldChange
+		pvalOut <- resDF$pvalue
+
+		# calc the average per group, using the normalized count data
+		mNorm <- counts( ddsAns, normalized=TRUE)
+		v2 <- apply( mNorm[ , which( cl == mine), drop=FALSE], MARGIN=1, FUN=average.FUN)
+		v1 <- apply( mNorm[ , which( cl == other), drop=FALSE], MARGIN=1, FUN=average.FUN)
+
+		out <- data.frame( gnames, gprod, foldOut, pvalOut, v2, v1,
+				stringsAsFactors=F)
+		colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", 
+				targetGroup, notTargetGroup)
+	}
+
+	if ( ! is.null( extraColumn)) {
+		avgExtra1 <- apply( mExtra[ , which( cl == mine)], MARGIN=1, FUN=average.FUN)
+		avgExtra2 <- apply( mExtra[ , which( cl == other)], MARGIN=1, FUN=average.FUN)
+		out$AVG_EXTRA1 <- avgExtra1
+		out$AVG_EXTRA2 <- avgExtra2
+	}
+	# final order by both fold and P-value
+	ord <- diffExpressRankOrder( out$LOG2FOLD, out$PVALUE, wt.folds, wt.pvalues)
+	out <- out[ ord, ]
+	rownames(out) <- 1:nrow(out)
+
+	return( out)
+}
+

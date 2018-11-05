@@ -1,0 +1,10 @@
+Package: DuffyTools
+Type: Package
+Title: Duffy Lab Utility Tools
+Version: 1.7.0
+Date: 2018-11-02
+Author: Bob Morrison <bob.morrison@sbri.org>
+Maintainer: Bob Morrison <bob.morrison@sbri.org>
+Description: Useful tools and genome annotations for processing Plasmodium and mammalian host genomic data sets
+Depends: R (>= 2.4.0)
+License: GPL (>= 2)
