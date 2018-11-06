@@ -120,7 +120,7 @@ function(files) {
 }
 
 
-`file.cleanSpecialCharactersFromFileName` <- function( fnames, max.length=256) {
+`file.cleanSpecialCharactersFromFileName` <- function( fnames, max.length=150) {
 
 	# take out any characters that may break any OS file system....
 	fnew <- fnames
