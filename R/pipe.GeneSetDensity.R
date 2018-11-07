@@ -9,7 +9,7 @@
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 5 else 2, 
 				mode=c("combined", "separate"), cutPvalue=0.05, cutRankShift=NULL, makePlots=TRUE,
 				doFDR=TRUE, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
-				cutFold=0.1, cutFDR=0.05, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
+				cutFold=0.1, cutFDR=0.05, NgeneSets=500, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
 				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, verbose=T)
 {
 
@@ -56,7 +56,8 @@
 				colorset=mycolors, optionsFile=optionsFile, results.path=results.path, 
 				folderName=folderName, toolName=toolName, geneMapColumn=geneMapColumn, 
 				descriptor=bigSetOfDescriptors[i], minGenesPerSet=minGenesPerSet,
-				cutPvalue=cutPvalue, cutRankShift=cutRankShift, doFDR=doFDR, cutFold=cutFold, cutFDR=cutFDR,
+				cutPvalue=cutPvalue, cutRankShift=cutRankShift, doFDR=doFDR, 
+				cutFold=cutFold, cutFDR=cutFDR, NgeneSets=NgeneSets,
 				trimGenesToGeneMap=trimGenesToGeneMap, makeGeneTables=makeGeneTables,
 				makePlots=makePlots, addCellTypes=addCellTypes, addLifeCycle=addLifeCycle,
 				PLOT.FUN=PLOT.FUN)
@@ -77,7 +78,8 @@
 				geneSets=defaultGeneSets(speciesID), descriptor="CombinedGeneSets", 
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 5 else 2, 
 				geneMapColumn=if (speciesID %in% MAMMAL_SPECIES) "NAME" else "GENE_ID", 
-				mode=c("combined", "separate"), cutPvalue=0.05, cutFold=0.1, cutFDR=0.05, cutRankShift=NULL,
+				mode=c("combined", "separate"), cutPvalue=0.05, 
+				cutFold=0.1, cutFDR=0.05, NgeneSets=500, cutRankShift=NULL,
 				doFDR=TRUE, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
 				makePlots=TRUE, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
 				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, verbose=T)
@@ -111,7 +113,8 @@
 				colorset=mycolors, optionsFile=optionsFile, results.path=results.path, 
 				folderName=folderName, toolName=NULL, geneMapColumn=geneMapColumn,
 				descriptor=bigSetOfDescriptors[i], minGenesPerSet=minGenesPerSet,
-				cutPvalue=cutPvalue, cutFold=cutFold, cutFDR=cutFDR, cutRankShift=cutRankShift, doFDR=doFDR,
+				cutPvalue=cutPvalue, cutFold=cutFold, cutFDR=cutFDR, cutRankShift=cutRankShift, 
+				doFDR=doFDR, NgeneSets=NgeneSets,
 				trimGenesToGeneMap=trimGenesToGeneMap, makeGeneTables=makeGeneTables,
 				makePlots=makePlots, addCellTypes=addCellTypes, addLifeCycle=addLifeCycle,
 				PLOT.FUN=PLOT.FUN)
@@ -132,7 +135,7 @@
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 5 else 2, 
 				geneMapColumn=if (speciesID %in% MAMMAL_SPECIES) "NAME" else "GENE_ID", 
 				mode=c("combined", "separate"), cutPvalue=0.05, cutFold=0.1, cutFDR=0.05, cutRankShift=NULL, 
-				doFDR=TRUE, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
+				doFDR=TRUE, NgeneSets=500, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
 				makePlots=TRUE, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
 				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, verbose=T)
 {
@@ -181,7 +184,8 @@
 				colorset=mycolors, optionsFile="", results.path=results.path, 
 				folderName="", toolName=NULL, geneMapColumn=geneMapColumn, 
 				descriptor=bigSetOfDescriptors[i], minGenesPerSet=minGenesPerSet,
-				cutPvalue=cutPvalue, cutFold=cutFold, cutFDR=cutFDR, cutRankShift=cutRankShift, doFDR=doFDR,
+				cutPvalue=cutPvalue, cutFold=cutFold, cutFDR=cutFDR, cutRankShift=cutRankShift, 
+				doFDR=doFDR, NgeneSets=NgeneSets,
 				trimGenesToGeneMap=trimGenesToGeneMap, makeGeneTables=makeGeneTables,
 				makePlots=makePlots, addCellTypes=addCellTypes, addLifeCycle=addLifeCycle,
 				PLOT.FUN=PLOT.FUN)

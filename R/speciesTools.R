@@ -68,7 +68,7 @@ function() {
 
 
 # find the species that owns this seqID
-`getSpeciesFromSeqID` <- function( seqID=NULL) {
+`getSpeciesFromSeqID` <- function( seqID=NULL, verbose=TRUE) {
 
 	if ( is.null( seqID)) stop( "getSpeciesFromSeqID:  required 'seqID' argument is missing")
 
@@ -87,7 +87,7 @@ function() {
 		hits <- base::match( seqID, smap$SEQ_ID, nomatch=0)
 		out[ hits > 0] <- speciesSet[ i]
 	}
-	if ( any( is.na( out))) {
+	if ( any( is.na( out)) && verbose) {
 		cat( paste( "getSpeciesFromSeqID:  no species contains SEQ_ID: ", 
 			paste( unique.default( seqID[ is.na(out)]), collapse=" | ")))
 	}

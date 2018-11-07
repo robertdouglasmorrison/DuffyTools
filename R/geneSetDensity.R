@@ -12,7 +12,7 @@
 					makePlots=TRUE, PLOT.FUN=NULL, makeGeneTables=TRUE, 
 					addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
 					addLifeCycle=(speciesID %in% PARASITE_SPECIES), 
-					doFDR=TRUE) {
+					doFDR=TRUE, NgeneSets=500) {
 
 	setCurrentSpecies( speciesID)
 	geneMap <- getCurrentGeneMap()
@@ -274,7 +274,7 @@
 			f <- file.path( GS_path, f)
 			mytitle <- paste( descriptor, ": &nbsp; Gene sets Up-Regulated in group: &nbsp; ", 
 						thisSample, " &nbsp; vs &nbsp; ", otherGroup, sep="") 
-			table2html( smlForHTML, fileout=f, title=mytitle,
+			table2html( smlForHTML, fileout=f, title=mytitle, maxRows=NgeneSets,
 				linkColumnNames=c( descriptor, "Genes Per Group"), 
 				linkPaths=rep( localPlotPath, times=2), linkExtensions=c( ".png", ".html"))
 
@@ -330,7 +330,7 @@
 			f <- file.path( GS_path, f)
 			mytitle <- paste( descriptor, ": &nbsp; Gene sets Down-Regulated in group: &nbsp; ", 
 						thisSample, " &nbsp; vs &nbsp; ", otherGroup, sep="") 
-			table2html( smlForHTML, fileout=f, title=mytitle,
+			table2html( smlForHTML, fileout=f, title=mytitle, maxRows=NgeneSets,
 				linkColumnNames=c( descriptor, "Genes Per Group"), 
 				linkPaths=rep( localPlotPath, times=2), linkExtensions=c( ".png", ".html"))
 

@@ -63,7 +63,7 @@
 	if ( doGeneSets || (!hasDensity && doMissing)) {
 		pipe.GeneSetDensity( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
-				groupColumn=groupColumn, colorColumn=colorColumn, doFDR=F)
+				groupColumn=groupColumn, colorColumn=colorColumn, doFDR=F, NgeneSets=NgeneSets)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
 		densityFolder <- grep( "/CombinedGeneSets", subFolders, value=T)[1]
