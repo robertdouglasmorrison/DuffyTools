@@ -544,8 +544,8 @@ clipFastqFile <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 				# they have to be full length with no N's or non-AA calls
 				# 'full length is a bit too restrictive...  we lose many peptides
 				# at the true stop codon of the protein...  Relax a bit.
-				#lenFullAA <- floor( NCHAR(dna)/3) - 1
-				lenFullAA <- floor( NCHAR(dna)/3 * 0.9)
+				# keep any where the STOP was in the last 25% of the peptide
+				lenFullAA <- floor( NCHAR(dna)/3 * 0.75)
 				AAs <- DNAtoAA( dna)
 				good <- SETDIFF( WHICH( NCHAR(AAs) >= lenFullAA), grep( "?", AAs, fixed=T))
 				if ( (ngood <- length(good)) > 0) {
@@ -640,16 +640,19 @@ clipFastqFile <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 		    }
 		}
 		N <- length(bigp)
+		if ( ! N) next
 
 		# the mapping from DNA to AA may have generated duplicates
-		cat( "  dups..")
-		tapply( 1:N,  factor( bigp), FUN=function(x) {
-				if ( length(x) < 2) return()
-				totalCnt <- sum( bigc[x])
-				bigc[ x[1]] <<- totalCnt
-				bigc[ x[2:length(x)]] <<- 0
-				return()
-			}, simplify=FALSE)
+		if ( N > 1) {
+			cat( "  dups..")
+			tapply( 1:N,  factor( bigp), FUN=function(x) {
+					if ( length(x) < 2) return()
+					totalCnt <- sum( bigc[x])
+					bigc[ x[1]] <<- totalCnt
+					bigc[ x[2:length(x)]] <<- 0
+					return()
+				}, simplify=FALSE)
+		}
 		keep <- which( bigc > 0)
 		ansDF <- data.frame( "Peptide"=bigp[keep], "Count"=bigc[keep], stringsAsFactors=F)
 		nout <- nrow(ansDF)
@@ -663,8 +666,9 @@ clipFastqFile <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 				nout <- nrow(ansDF)
 			}
 		}
-		ntotal <- ntotal + nout
+		if ( ! nout) next
 
+		ntotal <- ntotal + nout
 		cat( "  Peptides: ", prettyNum( as.integer( ntotal)), "  ", as.percent( ntotal, big.value=nUtotal*100, 
 				percentSign=FALSE), "per Read")
 
