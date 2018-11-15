@@ -14,19 +14,19 @@ validateSeqMap <- function( mydf, speciesID) {
 	anyBad <- FALSE
 	if ( ! all( neededColumns %in% colnames( mydf))) stop( paste( "seqMap is missing required columns: ", neededColumns))
 	if ( length( whoBad <- which( duplicated( mydf$SEQ_ID)))) {
-		cat( "\nseqMap has non-unique SEQ_ID entries:\n")
-		print( mydf[whoBad, ])
+		cat( "\nseqMap has ", length(whoBad), " non-unique SEQ_ID entries:\n")
+		print( head( mydf[whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( any( is.na( as.integer( mydf$LENGTH)))) stop( "seqMap has non-integer LENGTH entries")
 	if ( length( whoBad <- which( mydf$LENGTH < 2))) {
-		cat( "\nseqMap has invalid LENGTH entries:\n")
-		print( mydf[whoBad,])
+		cat( "\nseqMap has ", length(whoBad), " invalid LENGTH entries:\n")
+		print( head( mydf[whoBad,]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( base::substr( mydf$SEQ_ID, 1, base::nchar(speciesID)) != speciesID))) {
-		cat( "\nseqMap has SEQ_IDs that do not begin with 'speciesID':\n")
-		print( mydf[whoBad,])
+		cat( "\nseqMap has ", length(whoBad), " SEQ_IDs that do not begin with 'speciesID':\n")
+		print( head( mydf[whoBad,]))
 		anyBad <- TRUE
 	}
 	if (anyBad) stop( "Fix SeqMap issues before maps can be validated..")
@@ -41,8 +41,8 @@ validateGeneMap <- function( mydf, seqMap, checkOverlaps=FALSE) {
 	if ( ! all( neededColumns %in% colnames( mydf))) 
 		stop( paste( "geneMap is missing required columns: ", neededColumns))
 	if ( length( whoBad <- which( duplicated( mydf$GENE_ID)))) {
-		cat( "geneMap has non-unique GENE_ID entries:\n")
-		print( mydf[ whoBad, ])
+		cat( "geneMap has ", length(whoBad), " non-unique GENE_ID entries:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( ! all( unique.default( mydf$SEQ_ID) %in% seqMap$SEQ_ID)) stop( "some geneMap SEQ_ID entries not in seqMap")
@@ -50,24 +50,24 @@ validateGeneMap <- function( mydf, seqMap, checkOverlaps=FALSE) {
 	if ( any( is.na( as.integer( mydf$POSITION)))) stop( "geneMap has non-integer POSITION entries")
 	if ( any( is.na( as.integer( mydf$END)))) stop( "geneMap has non-integer END entries")
 	if ( length( whoBad <- which( mydf$POSTION < 1))) {
-		cat( "geneMap has POSITION entries less than 1:\n")
-		print( mydf[ whoBad, ])
+		cat( "geneMap has ", length(whoBad), " POSITION entries less than 1:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$END < 2))) {
-		cat( "geneMap has END entries less than 2:\n")
-		print( mydf[ whoBad, ])
+		cat( "geneMap has ", length(whoBad), " END entries less than 2:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	lastBase <- getSeqLength( mydf$SEQ_ID, seqMap)
 	if ( length( whoBad <- which( mydf$POSITION > lastBase))) {
-		cat( "geneMap has POSITION entries past SEQ_ID's length:\n")
-		print( mydf[ whoBad, ])
+		cat( "geneMap has ", length(whoBad), " POSITION entries past SEQ_ID's length:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$END > lastBase))) {
-		cat( "geneMap has END entries past SEQ_ID's length:\n")
-		print( mydf[ whoBad, ])
+		cat( "geneMap has ", length(whoBad), " END entries past SEQ_ID's length:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if (anyBad) stop( "Fix GeneMap issues before maps can be validated..")
@@ -144,34 +144,34 @@ validateExonMap <- function( mydf, seqMap, geneMap, checkOverlaps=FALSE) {
 	if ( any( is.na( as.integer( mydf$POSITION)))) stop( "exonMap has non-integer POSITION entries")
 	if ( any( is.na( as.integer( mydf$END)))) stop( "exonMap has non-integer END entries")
 	if ( length( whoBad <- which( mydf$POSTION < 1))) {
-		cat( "exonMap has POSITION entries less than 1:\n")
-		print( mydf[ whoBad, ])
+		cat( "exonMap has ", length(whoBad), " POSITION entries less than 1:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$END < 2))) {
-		cat( "exonMap has END entries less than 2:\n")
-		print( mydf[ whoBad, ])
+		cat( "exonMap has ", length(whoBad), " END entries less than 2:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	geneBases <- getGeneLimits( mydf$GENE_ID, geneMap)
 	if ( length( whoBad <- which( mydf$POSITION < geneBases$POSITION))) {
-		cat( "exonMap has POSITION entries before GENE_ID's start:\n")
-		print( mydf[ whoBad, ])
+		cat( "exonMap has ", length(whoBad), " POSITION entries before GENE_ID's start:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$POSITION > geneBases$END))) {
-		cat( "exonMap has POSITION entries past GENE_ID's end:\n")
-		print( mydf[ whoBad, ])
+		cat( "exonMap has ", length(whoBad), " POSITION entries past GENE_ID's end:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$END < geneBases$POSITION))) {
-		cat( "exonMap has END entries before GENE_ID's start:\n")
-		print( mydf[ whoBad, ])
+		cat( "exonMap has ", length(whoBad), " END entries before GENE_ID's start:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$END > geneBases$END))) {
-		cat( "exonMap has END entries past GENE_ID's end:\n")
-		print( mydf[ whoBad, ])
+		cat( "exonMap has ", length(whoBad), " END entries past GENE_ID's end:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if (anyBad) stop( "Fix ExonMap issues before maps can be validated..")
@@ -191,34 +191,34 @@ validateCdsMap <- function( mydf, seqMap, geneMap, checkOverlaps=FALSE) {
 	if ( any( is.na( as.integer( mydf$POSITION)))) stop( "cdsMap has non-integer POSITION entries")
 	if ( any( is.na( as.integer( mydf$END)))) stop( "cdsMap has non-integer END entries")
 	if ( length( whoBad <- which( mydf$POSTION < 1))) {
-		cat( "cdsMap has POSITION entries less than 1:\n")
-		print( mydf[ whoBad, ])
+		cat( "cdsMap has ", length(whoBad), " POSITION entries less than 1:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$END < 2))) {
-		cat( "cdsMap has END entries less than 2:\n")
-		print( mydf[ whoBad, ])
+		cat( "cdsMap has ", length(whoBad), " END entries less than 2:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	geneBases <- getGeneLimits( mydf$GENE_ID, geneMap)
 	if ( length( whoBad <- which( mydf$POSITION < geneBases$POSITION))) {
-		cat( "cdsMap has POSITION entries before GENE_ID's start:\n")
-		print( mydf[ whoBad, ])
+		cat( "cdsMap has ", length(whoBad), " POSITION entries before GENE_ID's start:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$POSITION > geneBases$END))) {
-		cat( "cdsMap has POSITION entries past GENE_ID's end:\n")
-		print( mydf[ whoBad, ])
+		cat( "cdsMap has ", length(whoBad), " POSITION entries past GENE_ID's end:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$END < geneBases$POSITION))) {
-		cat( "cdsMap has END entries before GENE_ID's start:\n")
-		print( mydf[ whoBad, ])
+		cat( "cdsMap has ", length(whoBad), " END entries before GENE_ID's start:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if ( length( whoBad <- which( mydf$END > geneBases$END))) {
-		cat( "cdsMap has END entries past GENE_ID's end:\n")
-		print( mydf[ whoBad, ])
+		cat( "cdsMap has ", length(whoBad), " END entries past GENE_ID's end:\n")
+		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
 	if (anyBad) stop( "Fix CdsMap issues before maps can be validated..")
