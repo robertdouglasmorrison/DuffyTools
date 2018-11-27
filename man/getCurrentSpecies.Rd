@@ -34,5 +34,6 @@ For 'getSpeciesText', a text string description of that species annotation detai
 }
 
 \seealso{
-  \code{\link{setCurrentSpecies}}, to change the current species. 
+  \code{\link{setCurrentSpecies}} {to change the current species.}
+  \code{\link{getAllTargets}} {to see the full list of all targets and species currently defined.}
 }

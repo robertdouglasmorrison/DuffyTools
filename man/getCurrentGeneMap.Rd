@@ -29,6 +29,6 @@ underlying MapSet.
 }
 
 \seealso{
-  \code{\link{getCurrentSpecies}}, to get the SpeciesID of the current species.
-  \code{\link{setCurrentSpecies}}, to change to a different species.
+  \code{\link{getCurrentSpecies}} {to get the SpeciesID of the current species.}
+  \code{\link{setCurrentSpecies}} {to change to a different species.}
 }
