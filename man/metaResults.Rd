@@ -9,14 +9,15 @@ Combine DE results from several DuffyTools into a meta ranking
 of most up-regulated genes.
 }
 \usage{
-metaResults(targetGroup, results.path = "results", speciesID = "Pf3D7", 
+metaResults(targetGroup, results.path = "results", speciesID = getCurrentSpecies(),
 	geneColumn = "GENE_ID", subfolderName = "Group", 
 	tools = c("RoundRobin", "RankProduct", "SAM", "EdgeR", "DESeq"), 
 	altGeneMapLabel = NULL,
 	rank.average.FUN = sqrtmean, value.average.FUN = mean, 
 	keepIntergenics = FALSE, 
 	topFolders = NULL, other.DE.files = NULL,
-	missingGenes=c("drop","fill","na"), nSimulations=0)
+	missingGenes=c("drop","fill","na"), nFDRsimulations=0,
+	direction = c("UP","DOWN"))
 
 metaResultsToHTML( m, fileout, title = "", maxRows = 100,
 		linkColumnNames = NULL, ...)
@@ -64,7 +65,7 @@ in the meta rankings.
   \item{missingGenes}{
 how to deal with genes not in all files.  See \code{\link{metaRanks}}.
 }
-  \item{nSimulations}{
+  \item{nFDRsimulations}{
 how many random simulations to perform for estimating the false discovery rate (FDR).
 }
   \item{m}{

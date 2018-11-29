@@ -1,19 +1,21 @@
-\name{geneSetAnalysis}
-\alias{geneSetAnalysis}
+\name{geneSetDensity}
+\alias{geneSetDensity}
 \title{
-Pathway and Gene Module Analysis
+Pathway and Gene Set Analysis using Density Curves
 }
 \description{
-Look for differentially expressed (DE) Pathways and Gene Modules from differential
+Look for differentially expressed (DE) Pathways and Gene Sets from differential
 gene expression results.
 }
 \usage{
-geneSetAnalysis(deList, geneSets, speciesID = "Pf3D7", colorset = c(2:(length(deList) + 1)), 
+geneSetDensity(deList, geneSets, speciesID = getCurrentSpecies(), colorset = c(2:(length(deList) + 1)), 
 	optionsFile = "Options.txt", results.path = NULL, folderName = "", 
 	toolName = c("MetaResults", "RoundRobin", "RankProduct", "SAM", "DESeq", "EdgeR"), 
-	descriptor = "GeneSet", minGenesPerSet = 2, 
-	geneMapColumn = if (speciesID %in% c("Hs_grc", "MacMu", "Mmu_grc")) "NAME" else "GENE_ID", 
-	cutPvalue = 0.01, makePlots = TRUE, makeGeneSets = TRUE)
+	descriptor = "GeneSet", minGenesPerSet = 2, trimGenesToGeneMap = TRUE,
+	geneMapColumn = if (speciesID %in% MAMMAL_SPECIES) "NAME" else "GENE_ID", 
+	cutPvalue = 0.05, cutRankShift = NULL, cutFold = 0.1, cutFDR = 0.05,
+	makePlots = TRUE, PLOT.FUN = NULL, makeGeneTables = TRUE,
+	doFDR = TRUE, NgeneSets = 500)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -45,6 +47,9 @@ a character string for naming the final folder of created analyses.
   \item{minGenesPerSet}{
 the minimum number of genes that a GeneSet can contain.  Very low count sets are ignored.
 }
+  \item{trimGenesToGeneMap}{
+logical, removes extra gene terms from any gene set references that are not in the current gene map.
+}
   \item{geneMapColumn}{
 the name of the column in the current species' GeneMap that contains the GeneIDs found in the
 GeneSets.  Some species use full notation GeneIDs and others uses simpler gene symbols.
@@ -52,10 +57,26 @@ GeneSets.  Some species use full notation GeneIDs and others uses simpler gene s
   \item{cutPvalue}{
 maximum P-value to include a GeneSet in the final results.  Lowering the P-value will produce less results.
 }
+  \item{cutRankShift}{
+minimum rank shift to include a GeneSet in the final results.  Raising the ranks shift will produce less results.
+}
+  \item{cutFold}{
+minimum fold change to include a GeneSet in the final results.  Raising the fold change will produce less results.
+}
+  \item{cutFDR}{
+maximum FDR to include a GeneSet in the final results.  Lowering the FDR will produce less results. Only
+used when \code{doFDR=TRUE}.
+}
+  \item{doFDR}{
+logical, should a False Discovery Rate be calculated, and added to all results.  Rather slow.
+}
   \item{makePlots}{
 logical, should plot images for each GeneSet be created
 }
-  \item{makeGeneSets}{
+  \item{PLOT.FUN}{
+optional function to be called for making gene set plots.  Must take one argument that is a vector of gene IDs.
+}
+  \item{makeGeneTables}{
 logical, should small HTML files of gene-to-GeneSet membership tables be created
 }
 }

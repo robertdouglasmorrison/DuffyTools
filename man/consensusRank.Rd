@@ -11,7 +11,7 @@ or differential expression (DE) files
 consensusRank(  fileSet, fids = basename(fileSet), 
 		colorSet = 2:(length(fileSet) + 1), 
 		geneColumn = "GENE_ID", 
-		valueColumn = "LOG_2_FOLD", speciesID = "Pf3D7", 
+		valueColumn = "LOG_2_FOLD", speciesID = getCurrentSpecies(),
 		keepNonGenes = FALSE, weights = 1, altGeneMap = NULL, 
 		annotationColumns = "PRODUCT", label = "", cex = 1, useLog = FALSE)
 }
