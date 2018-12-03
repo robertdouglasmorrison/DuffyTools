@@ -7,10 +7,9 @@ Gene Pathway Enrichment
 Find the pathways enriched for in a set of genes.
 }
 \usage{
-geneSetEnrichment(genes, geneSets = c("GO.BiologicalProcess", "GO.MolecularFunction", 
-		"GO.CellularComponent", "KEGG.Pathways", "MetabolicPathways", "GeneProduct"), 
+geneSetEnrichment(genes, geneSets = defaultGeneSets(), 
 		upOnly = TRUE, minEnrich = 2, maxPvalue = 0.05, wt.enrich = 1, wt.pvalue = 2,
-		geneUniverse = NULL, reportGenes = FALSE)
+		geneUniverse = NULL, reportGenes = FALSE, dropPathNameLinks = FALSE, verbose = TRUE)
 }
 \arguments{
   \item{genes}{
@@ -18,13 +17,15 @@ a vector of genes (GeneIDs for most parasite species,  Gene Symbols for most mam
 that represent the genes of interest, perhaps from differential expression analysis.
 }
   \item{geneSets}{
-the named pathway definitions as a character vector, or a list of vectors of genes.
+a named pathway definitions object as a character vector, or a list of vectors of genes.
+Default is all pathway sets defined for the current species.
 }
   \item{upOnly}{
 logical, report only over-enriched pathways or both up and down.
 }
   \item{minEnrich}{
-minimum enrichment to report.  Higher value reports less pathways.
+minimum enrichment to report.  Higher value reports less pathways. A value of 1.0 means not 
+enriched at all.
 }
   \item{maxPvalue}{
 maximum P-value to report.  Lower value reports less pathways.
@@ -41,6 +42,9 @@ the current species.  Useful when only a subset of genes are eligble.
 }
   \item{reportGenes}{
 logical, report just the pathway information, or also return a second data frame of genes.
+}
+  \item{dropPathNameLinks}{
+logical, keep any hyperlinks present in the pathway name, or remove them.
 }
 }
 \details{
@@ -61,7 +65,7 @@ The pathway data frame:
   \item{P_value }{the likelihood of getting that many given genes in a pathway of that size}
   \item{N_Total }{total number of genes (given the geneUniverse) in that pathway}
   \item{Pct_Total }{percentage of all genes that are in that pathway}
-  \item{N_Given }{number of given genes that were found in that pathway}
+  \item{N_Given }{number of given genes in \code{genes} that were found in that pathway}
   \item{Pct_Given }{percentage of given genes that were found in that pathway}
 }
 \author{
@@ -75,7 +79,7 @@ The pathway data frame:
 \seealso{
  \code{\link{pipe.GeneSetEnrichment}}, for a higher level wrapper for evaluating 
  enrichment of multiple differential expression results.
- \code{\link{pipe.GeneSetAnalysis}}, for differential expression of pathways.
+ \code{\link{pipe.GeneSetDensity}} and \code{\link{pipe.MetaGeneSets}}, for differential expression of pathways.
 }
 \examples{
   setCurrentSpecies( "Hs_grc")

@@ -1,5 +1,6 @@
 \name{geneSetDensity}
 \alias{geneSetDensity}
+\alias{geneSetAnalysis}
 \title{
 Pathway and Gene Set Analysis using Density Curves
 }
