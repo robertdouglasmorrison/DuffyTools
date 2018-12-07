@@ -202,3 +202,4 @@ makeInfoContentTable <- function( speciesID=getCurrentSpecies()) {
 	}
 	return()
 }
+

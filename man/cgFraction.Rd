@@ -20,3 +20,4 @@ a vector of character strings representing nucleic DNA sequences
 \examples{
 cgFraction( "ACGTACGTAAGGCCT")
 }
+

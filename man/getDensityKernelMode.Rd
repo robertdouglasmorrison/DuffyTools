@@ -31,3 +31,4 @@ Uses the 'epanechnikov' kernel.  See \code{\link{density}}.
 \examples{
   getDensityKernelMode( rnorm( 100, mean=10, sd=2))
 }
+
