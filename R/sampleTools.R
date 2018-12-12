@@ -1,6 +1,6 @@
 # sampleTools.R -- utilities that manipulate "SampleID" terms
 
-`checkSampleNames` <- function( sids) {
+`checkSampleName` <- function( sids) {
 
 	sids <- as.character( sids)
 

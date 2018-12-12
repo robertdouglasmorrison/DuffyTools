@@ -29,7 +29,7 @@
 
 	# consume the result
 	ans <- NULL
-	if ( outfmt == "clustal") ans <- readALNfile( outFile, verbose=verbose)
+	if ( outfmt == "clustal") ans <- readALN( outFile, verbose=verbose)
 
 	return( ans)
 }

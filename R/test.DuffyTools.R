@@ -7,8 +7,8 @@
 	cat( "\nPassed utility tests.")
 
 	# simple, 'low-level', routines
-	test.readFastqFile()
-	test.writeFastqFile()
+	test.readFastq()
+	test.writeFastq()
 	cat( "\nPassed FASTQ file tests.")
 
 	# higher level processing tests
@@ -30,7 +30,7 @@
 `remove.testFile` <- function( filename) { file.remove( filename) }
 
 
-`build.testFastqFile` <- function() {
+`build.testFastq` <- function() {
 
 	filename <- "DuffyTools.test.fastq"
 	got <- data( "testFastq.txt", package="DuffyTools")

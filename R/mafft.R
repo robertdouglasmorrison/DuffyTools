@@ -43,7 +43,7 @@
 	# consume the result
 	ans <- NULL
 	if ( outfmt == "clustal") {
-		ans <- readALNfile( outFile, verbose=verbose)
+		ans <- readALN( outFile, verbose=verbose)
 	} else {
 		ans <- loadFasta( outFile)
 	}

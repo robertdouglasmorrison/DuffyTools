@@ -1,7 +1,7 @@
 # readALNfile.R -- read up the result consensus alignment filr from Clustalw2 
 
 
-readALNfile <- function( file, verbose=TRUE) {
+readALN <- function( file, verbose=TRUE) {
 
 	txt <- readLines( file)
 	start <- 2

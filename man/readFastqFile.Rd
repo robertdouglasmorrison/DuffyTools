@@ -1,6 +1,6 @@
 \name{readFastqFile}
-\alias{readFastqFile}
-\alias{writeFastqFile}
+\alias{readFastq}
+\alias{writeFastq}
 \title{
 Read and write FASTQ Files
 }
@@ -8,8 +8,8 @@ Read and write FASTQ Files
 Read a FASTQ file into a data frame, or write a data frame to a FASTQ file.
 }
 \usage{
-readFastqFile(filein, maxReads = NULL, verbose = TRUE)
-writeFastqFile(x, fileout, compress = FALSE, verbose = TRUE)
+readFastq(filein, maxReads = NULL, verbose = TRUE)
+writeFastq(x, fileout, compress = FALSE, verbose = TRUE)
 }
 \arguments{
   \item{filein}{
@@ -29,12 +29,12 @@ logical, explicitly compress the created file and adjust filename accordingly.
 }
 }
 \value{
-For \code{readFastqFile}, a data frame, with 3 columns:
+For \code{readFastq}, a data frame, with 3 columns:
   \item{READ_ID }{the ReadID for each short read}
   \item{READ_SEQ }{the nucleotide sequence of each short read}
   \item{SCORE }{the cryptic ASCII Phred score string for each short read}
 
-For \code{writeFastqFile}, the name of the created file.
+For \code{writeFastq}, the name of the created file.
 }
 \note{
 FASTQ data can get quite large.  This routine can easily exceed available memory for

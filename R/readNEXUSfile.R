@@ -1,6 +1,6 @@
 # readNEXUS.R
 
-readNEXUSfile <- function( file="3D7_DBL1domains.nxs") {
+readNEXUS <- function( file="3D7_DBL1domains.nxs") {
 
 	txt <- readLines( file)
 	start <- which( "matrix" == txt)[1]

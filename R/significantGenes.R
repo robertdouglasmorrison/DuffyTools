@@ -19,6 +19,11 @@
 	if (shortNames) genes <- shortGeneName( genes, keep=1)
 	fold <- as.numeric( tbl[[ foldColumn]])
 	pval <- as.numeric( tbl[[ pvalueColumn]])
+	if ( "PRODUCT" %in% colnames(tbl)) {
+		prods <- as.character( tbl[[ grep( "PRODUCT", colnames(tbl))[1] ]])
+	} else {
+		prods <- NULL
+	}
 
 	# allow the removal of non genes, etc.
 	drops <- vector()
@@ -39,8 +44,13 @@
 	genes <- genes[ keep]
 	fold <- fold[ keep]
 	pval <- pval[ keep]
+	if ( is.null( prods)) {
+		prods <- gene2Product( genes)
+	} else {
+		prods <- prods[ keep]
+	}
 
-	out <- data.frame( "GENE_ID"=genes, "PRODUCT"=gene2Product(genes), "LOG2FOLD"=fold, 
+	out <- data.frame( "GENE_ID"=genes, "PRODUCT"=prods, "LOG2FOLD"=fold, 
 				"PVALUE"=pval, stringsAsFactors=F)
 
 	if ( nrow(out)) rownames(out) <- 1:nrow(out)

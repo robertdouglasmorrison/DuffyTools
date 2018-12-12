@@ -22,6 +22,12 @@
 }
 
 
+`readFasta` <- function( file="file.fasta", verbose=TRUE, short.desc=TRUE) {
+
+	return( loadFasta( file, verbose=verbose, short.desc=short.desc))
+}
+
+
 `as.Fasta.data.frame` <- function( fasta) {
 
 	return( data.frame( "desc"=fasta$desc, "seq"=fasta$seq, stringsAsFactors=FALSE))

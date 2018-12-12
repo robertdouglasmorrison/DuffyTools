@@ -149,48 +149,70 @@ geneSetEnrichment <- function( genes, geneSets=defaultGeneSets(),
 	}
 
 					
-	whichGenesEnriched <- function( genes, pathTable, enrichDF, wt.fold=1, wt.pvalue=1) {
+	whichGenesEnriched <- function( genes, pathTable, enrichDF, wt.fold=1, wt.pvalue=1,
+					mode=c('vector','data.frame')) {
 
+		mode <- match.arg( mode)
 		foundGenes <- foundPaths <- foundEnrich <- foundPvals <- vector()
 		foundNgiven <- foundNtotal <- vector()
 		nout <- 0
 
-		if ( ! nrow(enrichDF)) return( data.frame())
 				
-		cat( "\nGathering genes in enriched pathways..\n")
-		for (k in 1:nrow(enrichDF)) {
-			myPath <- enrichDF$PathName[k]
-			sml <- subset( pathTable, PathwayID == myPath)
-			myGenes <- intersect( genes, sml$GeneID)
-			N <- length(myGenes)
-			if ( N) {
-				now <- (nout+1) : (nout+N)
-				foundGenes[now] <- myGenes
-				foundPaths[now] <- myPath
-				foundEnrich[now] <- enrichDF$Enrichment[k]
-				foundPvals[now] <- enrichDF$P_value[k]
-				foundNgiven[now] <- enrichDF$N_Given[k]
-				foundNtotal[now] <- enrichDF$N_Total[k]
-				nout <- max( now)
+		if ( mode == "data.frame") {
+			if ( ! nrow(enrichDF)) return( data.frame())
+			cat( "\nGathering genes in enriched pathways..\n")
+			for (k in 1:nrow(enrichDF)) {
+				myPath <- enrichDF$PathName[k]
+				sml <- subset( pathTable, PathwayID == myPath)
+				myGenes <- intersect( genes, sml$GeneID)
+				N <- length(myGenes)
+				if ( N) {
+					now <- (nout+1) : (nout+N)
+					foundGenes[now] <- myGenes
+					foundPaths[now] <- myPath
+					foundEnrich[now] <- enrichDF$Enrichment[k]
+					foundPvals[now] <- enrichDF$P_value[k]
+					foundNgiven[now] <- enrichDF$N_Given[k]
+					foundNtotal[now] <- enrichDF$N_Total[k]
+					nout <- max( now)
+				}
+				if ( k %% 10 == 0) cat( "\r", k, sub( "<a.+","",myPath), nout)
 			}
-			cat( "\r", k, sub( "<a.+","",myPath), nout)
+			
+			out <- data.frame( "GeneID"=foundGenes, "Product"=gene2Product(foundGenes),
+					"PathName"=foundPaths, 
+					"N_Given"=foundNgiven, "N_Total"=foundNtotal,
+					"Enrichment"=foundEnrich, "P_value"=foundPvals, 
+					stringsAsFactors=FALSE)
+			#ord <- order( out$GeneID, -out$Enrichment, out$PathName)
+			#ord <- diffExpressRankOrder( out$Enrichment, out$P_value, wt.fold=wt.enrich, 
+			#			wt.pvalue=wt.pvalue, notDE.value=1.0)
+			#out <- out[ ord, ]
+			if ( nrow(out)) rownames(out) <- 1:nrow(out)
+
+			# don't keep the hyperlinks
+			out$PathName <- trimGeneSetNameLink( out$PathName)
+
+			return( out)
+		} else {
+			if ( ! nrow(enrichDF)) return( vector())
+			cat( "\nGathering genes in enriched pathways..\n")
+			for (k in 1:nrow(enrichDF)) {
+				myPath <- enrichDF$PathName[k]
+				sml <- subset( pathTable, PathwayID == myPath)
+				myGenes <- intersect( genes, sml$GeneID)
+				N <- length(myGenes)
+				now <- (nout+1)
+				if ( N) {
+					foundGenes[now] <- paste( sort( myGenes), collapse=", ")
+				} else {
+					foundGenes[now] <- ""
+				}
+				nout <- now
+				if ( k %% 10 == 0) cat( "\r", k, sub( "<a.+","",myPath), nout)
+			}
+			return( foundGenes)
 		}
-		
-		out <- data.frame( "GeneID"=foundGenes, "Product"=gene2Product(foundGenes),
-				"PathName"=foundPaths, 
-				"N_Given"=foundNgiven, "N_Total"=foundNtotal,
-				"Enrichment"=foundEnrich, "P_value"=foundPvals, 
-				stringsAsFactors=FALSE)
-		#ord <- order( out$GeneID, -out$Enrichment, out$PathName)
-		#ord <- diffExpressRankOrder( out$Enrichment, out$P_value, wt.fold=wt.enrich, 
-		#			wt.pvalue=wt.pvalue, notDE.value=1.0)
-		#out <- out[ ord, ]
-		if ( nrow(out)) rownames(out) <- 1:nrow(out)
-
-		# don't keep the hyperlinks
-		out$PathName <- trimGeneSetNameLink( out$PathName)
-
-		return( out)
 	}
 
 	
@@ -203,20 +225,41 @@ geneSetEnrichment <- function( genes, geneSets=defaultGeneSets(),
 					minEnrich=minEnrich, maxPvalue=maxPvalue,
 					wt.fold=wt.enrich, wt.pvalue=wt.pvalue)
 	
-	if (dropPathNameLinks) {
-		enrichDF$PathName <- trimGeneSetNameLink( enrichDF$PathName)
-	}
-
 	# with the enrichment result in hand, see what genes are the ones that hit
-	if ( reportGenes) {
-		enrichGenes <- whichGenesEnriched( genes, setData$PathwayTable, enrichDF, 
-					wt.fold=wt.enrich, wt.pvalue=wt.pvalue)
-		out <- list( "pathways"=enrichDF, "genes"=enrichGenes)
-	} else {
-		out <- enrichDF
+	if ( is.logical(reportGenes) && reportGenes == FALSE) {
+		if (dropPathNameLinks) {
+			enrichDF$PathName <- trimGeneSetNameLink( enrichDF$PathName)
+		}
+		return( enrichDF)
 	}
+	if ( is.logical(reportGenes) && reportGenes == TRUE) {
+		enrichGenes <- whichGenesEnriched( genes, setData$PathwayTable, enrichDF, 
+					wt.fold=wt.enrich, wt.pvalue=wt.pvalue, mode='data.frame')
+		if (dropPathNameLinks) {
+			enrichDF$PathName <- trimGeneSetNameLink( enrichDF$PathName)
+			enrichGenes$PathName <- trimGeneSetNameLink( enrichGenes$PathName)
+		}
+		out <- list( "pathways"=enrichDF, "genes"=enrichGenes)
+		return( out)
+	}
+	if ( is.character(reportGenes)) {
+		enrichGenes <- whichGenesEnriched( genes, setData$PathwayTable, enrichDF, 
+					wt.fold=wt.enrich, wt.pvalue=wt.pvalue, mode=reportGenes)
+		if ( is.data.frame( enrichGenes)) {
+			if (dropPathNameLinks) {
+				enrichDF$PathName <- trimGeneSetNameLink( enrichDF$PathName)
+				enrichGenes$PathName <- trimGeneSetNameLink( enrichGenes$PathName)
+			}
+			out <- list( "pathways"=enrichDF, "genes"=enrichGenes)
+			return( out)
+		}
 
-	return( out)
+		if (dropPathNameLinks) {
+			enrichDF$PathName <- trimGeneSetNameLink( enrichDF$PathName)
+		}
+		out <- data.frame( enrichDF, "GeneList"=enrichGenes, stringsAsFactors=F)
+		return( out)
+	}
 }
 
 

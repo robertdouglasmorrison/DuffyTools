@@ -1,5 +1,5 @@
 \name{clipFastqFile}
-\alias{clipFastqFile}
+\alias{clipFastq}
 \title{
 Clip Bases from FASTQ reads
 }
@@ -7,7 +7,7 @@ Clip Bases from FASTQ reads
 Clip (trim) bases from the 5' and/or 3' ends of reads in a FASTQ file
 }
 \usage{
-clipFastqFile(filein, fileout, clip5prime = 0, clip3prime = 0)
+clipFastq(filein, fileout, clip5prime = 0, clip3prime = 0)
 }
 \arguments{
   \item{filein}{

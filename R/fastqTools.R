@@ -1,12 +1,12 @@
 # fastqTools.R
 
 
-`readFastqFile` <- function( filein, maxReads=NULL, verbose=TRUE) {
+`readFastq` <- function( filein, maxReads=NULL, verbose=TRUE) {
 
 	fileToUse <- allowCompressedFileName( filein)
 
 	if ( ! file.readable( fileToUse)) {
-		warning( paste( "readFastqFile:  unable to read FASTQ file", fileToUse))
+		warning( paste( "readFastq:  unable to read FASTQ file", fileToUse))
 		return( data.frame())
 	}
 
@@ -29,14 +29,14 @@
 		idLines <- grep( "^@", fastqText)
 		scoreMarks <- grep( "^\\+", fastqText)
 		if ( length( idLines) < 1 || length(scoreMarks) < 1 ) {
-			warning( paste( "readFastqFile:  not a FASTQ format file: ", fileToUse))
+			warning( paste( "readFastq:  not a FASTQ format file: ", fileToUse))
 			return( data.frame())
 		}
 
 		idLines <- base::sort( intersect( idLines, seq( 1, length(fastqText), by=4)))
 		scoreMarks <- base::sort( intersect( scoreMarks, seq( 3, length(fastqText), by=4)))
 		if ( (length( idLines) != length(scoreMarks)) || any( idLines >= scoreMarks)) {
-			warning( paste( "readFastqFile:  bad FASTQ file: ", fileToUse, 
+			warning( paste( "readFastq:  bad FASTQ file: ", fileToUse, 
 					"\tMismatched readIDs and/or quality scores..."))
 			return( data.frame())
 		}
@@ -54,7 +54,7 @@
 	close( conIn)
 	
 	if ( any( base::nchar( readSeqs) != base::nchar( scores))) 
-			warning( "readFastqFile:  some Read & Score lengths disagree")
+			warning( "readFastq:  some Read & Score lengths disagree")
 
 	out <- data.frame( readIDs, readSeqs, scores, stringsAsFactors=FALSE)
 	colnames( out) <- FASTQ_COLUMNS
@@ -69,10 +69,10 @@
 }
 
 
-`test.readFastqFile` <- function() {
+`test.readFastq` <- function() {
 
-	tmpFile <- build.testFastqFile()
-	zz <- readFastqFile( tmpFile, verbose=FALSE)
+	tmpFile <- build.testFastq()
+	zz <- readFastq( tmpFile, verbose=FALSE)
 	checkEquals( dim(zz), c(1000,3))
 	checkEquals( colnames(zz), FASTQ_COLUMNS)
 	remove.testFile( tmpFile)
@@ -81,10 +81,10 @@
 
 # efficient writing of .fastq to a file
 
-`writeFastqFile` <- function( x, fileout, compress=FALSE, verbose=TRUE) {
+`writeFastq` <- function( x, fileout, compress=FALSE, verbose=TRUE) {
 
 	if ( ! all( colnames( x) == FASTQ_COLUMNS)) {
-		warning( paste( "writeFastqFile:  unexpected column names: ", colnames(x)))
+		warning( paste( "writeFastq:  unexpected column names: ", colnames(x)))
 		warning( "No file written...")
 		return( NULL)
 	}
@@ -112,12 +112,12 @@
 }
 
 
-`test.writeFastqFile` <- function() {
+`test.writeFastq` <- function() {
 
-	tmpFile <- build.testFastqFile()
-	zz <- readFastqFile( tmpFile, verbose=FALSE)
-	tmpFile2 <- writeFastqFile( zz, fileout="DuffyTools.test2.fastq", verbose=FALSE)
-	zz2 <- readFastqFile( tmpFile2, verbose=FALSE)
+	tmpFile <- build.testFastq()
+	zz <- readFastq( tmpFile, verbose=FALSE)
+	tmpFile2 <- writeFastq( zz, fileout="DuffyTools.test2.fastq", verbose=FALSE)
+	zz2 <- readFastq( tmpFile2, verbose=FALSE)
 	checkEquals( zz, zz2)
 	remove.testFile( tmpFile)
 	remove.testFile( tmpFile2)
@@ -408,7 +408,7 @@
 
 
 
-clipFastqFile <- function( filein, fileout, clip5prime=0, clip3prime=0) {
+clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 
 	# clip bases off an existing fastq file
 
