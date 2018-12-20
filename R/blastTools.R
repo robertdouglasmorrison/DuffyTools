@@ -4,7 +4,7 @@
 `callBlast` <- function( fastafile, outfile="blastOut.txt", program="blastn", db="nt", 
 			path=Sys.getenv("BLASTINDEX_PATH"), task="", 
 			wordsize=8, evalue=1, threads=4, outfmt=6, 
-			filter="no", maxhits=5, blastArgs="") {
+			filter="no", maxhits=5, blastArgs="", verbose=T) {
 
 	# validate the arguments
 	useprogram <- Sys.which( program)
@@ -40,53 +40,53 @@
 	#cmdline <- paste( cmdline, " -max_hsps", maxhits, " -num_alignments", maxhits)
 
 	# call BLAST
-	cat( "\nCalling BLAST: \nCommand line:  ", cmdline, "\n")
+	if (verbose) cat( "\nCalling BLAST: \nCommand line:  ", cmdline, "\n")
 	system( cmdline)
-	cat( "\nDone.\nWrote file: ", outfile, "\n")
+	if (verbose) cat( "\nDone.\nWrote file: ", outfile, "\n")
 	return()
 }
 
 
 `callBlastp` <- function( fastafile, outfile="blastOut.txt", program="blastp", db="NR/nr",
 			path=Sys.getenv( "BLASTINDEX_PATH"), task="", wordsize=3, evalue=1,
-			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="") {
+			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="", verbose=T) {
 
 	callBlast( fastafile, outfile=outfile, program=program, db=db, path=path, task=task, 
 			wordsize=wordsize, evalue=evalue, threads=threads, outfmt=outfmt, 
-			filter=filter, maxhits=maxhits, blastArgs)
+			filter=filter, maxhits=maxhits, blastArgs, verbose=verbose)
 	return()
 }
 
 
 `callBlastn` <- function( fastafile, outfile="blastOut.txt", program="blastn", db="NT/nt",
 			path=Sys.getenv( "BLASTINDEX_PATH"), task="", wordsize=8, evalue=1,
-			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="") {
+			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="", verbose=T) {
 
 	callBlast( fastafile, outfile=outfile, program=program, db=db, path=path, task=task, 
 			wordsize=wordsize, evalue=evalue, threads=threads, outfmt=outfmt, 
-			filter=filter, maxhits=maxhits, blastArgs)
+			filter=filter, maxhits=maxhits, blastArgs, verbose=verbose)
 	return()
 }
 
 
 `callBlastx` <- function( fastafile, outfile="blastOut.txt", program="blastx", db="NR/nr",
 			path=Sys.getenv( "BLASTINDEX_PATH"), task="", wordsize=3, evalue=1,
-			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="") {
+			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="", verbose=T) {
 
 	callBlast( fastafile, outfile=outfile, program=program, db=db, path=path, task=task, 
 			wordsize=wordsize, evalue=evalue, threads=threads, outfmt=outfmt, 
-			filter=filter, maxhits=maxhits, blastArgs)
+			filter=filter, maxhits=maxhits, blastArgs, verbose=verbose)
 	return()
 }
 
 
 `callTBlastn` <- function( fastafile, outfile="blastOut.txt", program="tblastn", db="NT/nt",
 			path=Sys.getenv( "BLASTINDEX_PATH"), task="", wordsize=3, evalue=1,
-			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="") {
+			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="", verbose=T) {
 
 	callBlast( fastafile, outfile=outfile, program=program, db=db, path=path, task=task, 
 			wordsize=wordsize, evalue=evalue, threads=threads, outfmt=outfmt, 
-			filter=filter, maxhits=maxhits, blastArgs)
+			filter=filter, maxhits=maxhits, blastArgs, verbose=verbose)
 	return()
 }
 
