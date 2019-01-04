@@ -115,6 +115,12 @@ geneSetEnrichment <- function( genes, geneSets=defaultGeneSets(),
 			}
 			if (verbose && i %% 10 == 0) cat( "\r", i, sub( "<a.+","",both[i]), enrich[i], pvals[i])
 		}
+
+		# clean the values a bit
+		enrich <- round( enrich, digits=3)
+		Mpct <- round( Mpct, digits=2)
+		Gpct <- round( Gpct, digits=2)
+
 		out <- data.frame( both, enrich, pvals, Mcnt, Mpct, Gcnt, Gpct, stringsAsFactors=FALSE)
 		colnames( out) <- c( "PathName", "Enrichment", "P_value", "N_Total", "Pct_Total", "N_Given", "Pct_Given")
 	
@@ -135,6 +141,18 @@ geneSetEnrichment <- function( genes, geneSets=defaultGeneSets(),
 		out <- out[ ord, ]
 		rownames( out) <- 1:nrow( out)
 	
+		# put on extra info columns
+		signif <- rep.int( "", nrow(out))
+		enrich <- out$Enrichment
+		pvals <- out$P_value
+		signif[ pvals < 0.1] <- "."
+		signif[ pvals < 0.05] <- "*"
+		signif[ pvals < 0.01] <- "**"
+		signif[ pvals < 0.001] <- "***"
+		out$OverUnder <- ifelse( enrich >= 1, "Over", "Under")
+		out$OverUnder[ enrich >= 0.99 & enrich <= 1.01] <- ""
+		out$Signif <- signif
+	
 		testValue <- out$Enrichment
 		testP <- out$P_value
 
@@ -148,7 +166,7 @@ geneSetEnrichment <- function( genes, geneSets=defaultGeneSets(),
 		return( out)
 	}
 
-					
+
 	whichGenesEnriched <- function( genes, pathTable, enrichDF, wt.fold=1, wt.pvalue=1,
 					mode=c('vector','data.frame')) {
 

@@ -24,10 +24,10 @@
 
 			if ( tieBreakMode == "sample") {
 				# longest wins
-				nc <- nchar( peps)
-				peps <- peps[ nc == max(nc)]
-				if ( length(peps) > 1) peps <- sample( peps, size=1)
-				return( peps[1])
+				nc <- nchar( pepFrags)
+				pepFrags <- pepFrags[ nc == max(nc)]
+				if ( length(pepFrags) > 1) pepFrags <- sample( pepFrags, size=1)
+				return( pepFrags[1])
 			}
 
 			# other modes will consider the 'longer' subset

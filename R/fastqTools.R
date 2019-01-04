@@ -545,7 +545,9 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 				# 'full length is a bit too restrictive...  we lose many peptides
 				# at the true stop codon of the protein...  Relax a bit.
 				# keep any where the STOP was in the last 25% of the peptide
+				# and a hard minimum length
 				lenFullAA <- floor( NCHAR(dna)/3 * 0.75)
+				if (lenFullAA < 5) lenFullAA <- 5
 				AAs <- DNAtoAA( dna)
 				good <- SETDIFF( WHICH( NCHAR(AAs) >= lenFullAA), grep( "?", AAs, fixed=T))
 				if ( (ngood <- length(good)) > 0) {

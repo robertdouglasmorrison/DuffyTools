@@ -179,6 +179,7 @@
 	out <- data.frame( both, enrich, pvals, Acnt, Apct, Gcnt, Gpct, stringsAsFactors=FALSE)
 	colnames( out) <- c( "CellType", "Enrichment", "P_Value", "N_Total", "Pct_Total", "N_Given", "Pct_Given")
 	out$OverUnder <- ifelse( enrich >= 1, "Over", "Under")
+	out$OverUnder[ enrich >= 0.99 & enrich <= 1.01] <- ""
 	out$Signif <- signif
 	
 	# having a gene count of zero forces a zero enrichment, which is hard to rank
