@@ -66,6 +66,8 @@ quickFileLineCountRecord <- function( f, sampleID="", lineCount, readCount=lineC
 	for (f in files) {
 
 	# save this line count for later
+	# but if the underlying file does not exist, let's skip silently
+	if ( ! file.exists( f)) next
 	fInfo <- file.info( f)
 	fInfo$lineCount <- lineCount
 	fInfo$readCount <- readCount
