@@ -95,14 +95,14 @@
 			"LateRing"=c(7,14), "EarlyTroph"=c(8,15), "LateTroph"=c(9,16), 
 			"EarlySchiz"=c(10,17), "LateSchiz"=c(11,18), "EarlyGameto"=c( 24:26), 
 			"LateGameto"=c( 27:29)), unitVectorMode=unitVectorMode,
-			min.spread=min.spread, normalize=normalize,
+			min.spread=min.spread, preNormalize=preNormalize, postNormalize=postNormalize,
 			doRMA=doRMA, verbose=verbose)
 		ans2 <- buildLifeCycleVectorSpace( file=NULL, tbl=tbl, geneColumn="Gene",
 			dimensions=list( "Sporozoite"=5, "Merozoite"=c(12,19), "EarlyRing"=c(6,13), 
 			"LateRing"=c(7,14), "EarlyTroph"=c(8,15), "LateTroph"=c(9,16), 
 			"EarlySchiz"=c(10,17), "LateSchiz"=c(11,18), "EarlyGameto"=c( 24:26), 
 			"LateGameto"=c( 27:29)), unitVectorMode="none",
-			min.spread=NULL, normalize=normalize,
+			min.spread=NULL, preNormalize=preNormalize, postNormalize=postNormalize,
 			doRMA=doRMA, verbose=FALSE)
 	}
 
@@ -111,12 +111,14 @@
 		ans <- buildLifeCycleVectorSpace( file=NULL, tbl=tbl, geneColumn="Gene",
 			dimensions=list( "EarlyRing"=1:6, "MidRing"=7:12, "LateRing"=13:18,
 			"EarlyTroph"=19:25, "LateTroph"=26:31, "EarlySchiz"=32:39, "LateSchiz"=40:48), 
-			unitVectorMode=unitVectorMode, min.spread=min.spread, normalize=normalize,
+			unitVectorMode=unitVectorMode, min.spread=min.spread, 
+			preNormalize=preNormalize, postNormalize=postNormalize,
 			doRMA=doRMA, verbose=verbose)
 		ans2 <- buildLifeCycleVectorSpace( file=NULL, tbl=tbl, geneColumn="Gene",
 			dimensions=list( "EarlyRing"=1:6, "MidRing"=7:12, "LateRing"=13:18,
 			"EarlyTroph"=19:25, "LateTroph"=26:31, "EarlySchiz"=32:39, "LateSchiz"=40:48), 
-			unitVectorMode="none", min.spread=NULL, normalize=normalize,
+			unitVectorMode="none", min.spread=NULL, 
+			preNormalize=preNormalize, postNormalize=postNormalize,
 			doRMA=doRMA, verbose=FALSE)
 	}
 
@@ -137,11 +139,13 @@
 
 		ans <- buildLifeCycleVectorSpace( file=custom.file, tbl=NULL, geneColumn="Gene",
 			dimensions=dimensions,
-			unitVectorMode=unitVectorMode, min.spread=min.spread, normalize=normalize,
+			unitVectorMode=unitVectorMode, min.spread=min.spread, 
+			preNormalize=preNormalize, postNormalize=postNormalize,
 			doRMA=doRMA, verbose=verbose)
 		ans2 <- buildLifeCycleVectorSpace( file=custom.file, tbl=NULL, geneColumn="Gene",
 			dimensions=dimensions,
-			unitVectorMode="none", min.spread=min.spread, normalize=normalize,
+			unitVectorMode="none", min.spread=min.spread, 
+			preNormalize=preNormalize, postNormalize=postNormalize,
 			doRMA=doRMA, verbose=verbose)
 	}
 

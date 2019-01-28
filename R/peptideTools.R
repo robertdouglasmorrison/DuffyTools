@@ -604,7 +604,7 @@ peptideTableSet <- function( gSet, len=15, overlap=c(7:9)) {
 
 	for( i in 1:length(overlap)) {
 		thislap <- overlap[i]
-		out <- peptideChopper( gSet, len, thislap, FALSE)
+		out <- peptideChopper( gSet, len, thislap, remove.duplicates=FALSE)
 		# we want the counts only
 		cnts[ ,i] <- out$peptideCounts
 	}
@@ -621,7 +621,7 @@ peptideViewer <- function( gene, AAoffset=0, len=15, overlap=9, overlayDF=NULL, 
 	# draw where the peptides land...
 	# protein <- extractProteinSequenceFromWeb( gene, verbose=FALSE)
 	protein <- gene2Protein( gene)
-	out <- peptideChopper( gene, len=len, lap=lap, force=TRUE)
+	out <- peptideChopper( gene, len=len, overlap=lap, remove.duplicates=TRUE)
 	ans <- out$peptideSets
 
 	if (asPNG) {
