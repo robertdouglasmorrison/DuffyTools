@@ -712,7 +712,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 			cat( "\nFile not found: ", file)
 			return( "Error")
 		}
-		con <<- gzfile( file, open="rt")
+		con <<- openCompressedFile( file, open="r")
 		filename <<- file
 		return( file)
 	}
@@ -747,7 +747,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 	initialize <- function( file) {
 
 		cat( "\nInitializing FASTQ writer for: ", file)
-		con <<- gzfile( file, open="wt")
+		con <<- gzfile( file, open="w")
 		filename <<- file
 		return( file)
 	}

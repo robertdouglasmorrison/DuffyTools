@@ -177,10 +177,12 @@ function(files) {
 
 	# watch for the standard compression suffixes
 	if ( regexpr( "\\.gz$", filename) > 0) {
-		return( gzfile( filename, open=open))
+		if ( ! grepl( "b", open)) open <- paste( open, "b", sep="")
+		return( gzcon( file( filename, open=open)))
 	}
 
 	if ( regexpr( "\\.bz2$", filename) > 0) {
+		if ( ! grepl( "b", open)) open <- paste( open, "b", sep="")
 		return( bzfile( filename, open=open))
 	}
 
