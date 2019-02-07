@@ -8,6 +8,10 @@
 		cat( "\nRequired 'mafftProgram' argument missing or empty...")
 		return(NULL)
 	}
+	if ( ! file.exists( mafftProgram)) {
+		cat( "\nMAFFT executable not found.  Tried: ", mafftProgram)
+		return(NULL)
+	}
 
 	mode <- match.arg( mode)
 	outfmt <- match.arg( outfmt)
