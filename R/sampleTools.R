@@ -1,6 +1,6 @@
 # sampleTools.R -- utilities that manipulate "SampleID" terms
 
-`checkSampleName` <- function( sids) {
+`checkSampleNames` <- function( sids) {
 
 	sids <- as.character( sids)
 
@@ -9,7 +9,7 @@
 	bad <- which( R.sids != sids)
 	if ( length(bad)) {
 		cat( "\n\nSampleID name error:  ", sids[bad], "\n")
-		stop( "'Sample' names must be valid R symbol names.  No blanks, math symbols, etc.")
+		stop( "'SampleID' names must be valid R symbol names.  No blanks, math symbols, leading digits, etc.")
 	}
 
 	# they get used in file & folder names
@@ -17,7 +17,7 @@
 	bad <- which( file.sids != sids)
 	if ( length(bad)) {
 		cat( "\n\nSampleID name error:  ", sids[bad], "\n")
-		stop( "'Sample' names must be valid file names.  No blanks, math symbols, etc.")
+		stop( "'SampleID' names must be valid file names.  No blanks, math symbols, etc.")
 	}
 
 	return( sids)
