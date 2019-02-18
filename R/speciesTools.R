@@ -116,6 +116,12 @@ function() {
 }
 
 
+`addSpeciesToHtmlTitle` <- function( title) {
+
+	return( paste( getCurrentSpecies(), ":", " &nbsp; ", title))
+}
+
+
 `test.speciesTools` <- function() {
 
 	setCurrentSpecies( speciesID="Hs_grc")

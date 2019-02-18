@@ -233,7 +233,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 		htmlfile <- sub( "csv$", "html", outfile)
 		htmltitle <- paste( "QuSage:  '", descriptor, "'  Pathways UP in: &nbsp; ", group1, 
 					" &nbsp; vs &nbsp; ", otherGrpString, sep="")
-		table2html( html1, htmlfile, title=htmltitle, linkColumnNames=NULL)
+		table2html( html1, htmlfile, title=addSpeciesToHtmlTable(htmltitle), linkColumnNames=NULL)
 	}
 	html2 <- subset( out, LOG2FOLD <= -0.1 & PVALUE <= 0.05)[ , 1:nKeep]
 	if ( makeDownHTML && nrow(html2)) {
@@ -243,7 +243,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 		htmlfile <- sub( "UP", "DOWN", htmlfile)
 		htmltitle <- paste( "QuSage:  '", descriptor, "'  Pathways DOWN in: &nbsp; ", group1, 
 					" &nbsp; vs &nbsp; ", otherGrpString, sep="")
-		table2html( html2, htmlfile, title=htmltitle, linkColumnNames=NULL)
+		table2html( html2, htmlfile, title=addSpeciesToHtmlTable(htmltitle), linkColumnNames=NULL)
 	}
 
 	# we can also make an enrichment table of cell types

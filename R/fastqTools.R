@@ -919,7 +919,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 
 	# if a second file was given, (the 'No Hits'), use it as a read only source of possible second mates
 	if ( ! is.null( secondFile)) {
-		if ( fin$initialize(secondFile) != secondFile) break
+	    if ( fin$initialize(secondFile) == secondFile) {
 		cat("\n")
 		repeat {
 			item <- fin$read( n=10000)
@@ -970,6 +970,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 			}
 		}
 		fin$finalize()
+	    }
 	}
 
 	# all done now

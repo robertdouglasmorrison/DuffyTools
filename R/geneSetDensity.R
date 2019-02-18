@@ -205,11 +205,11 @@
 		if ( length(k)) outForHTML <- outForHTML[ , -k]
 	}
 	if (makeGeneTables) {
-		table2html( outForHTML, fileout=sub( "txt$", "html", fileout), title=descriptor, 
+		table2html( outForHTML, fileout=sub( "txt$", "html", fileout), title=addSpeciesToHtmlTitle(descriptor), 
 			linkColumnNames=c( descriptor, "Genes Per Group"), 
 			linkPaths=rep( localPlotPath, times=2), linkExtensions=c( ".png", ".html"))
 	} else {
-		table2html( outForHTML, fileout=sub( "txt$", "html", fileout), title=descriptor, 
+		table2html( outForHTML, fileout=sub( "txt$", "html", fileout), title=addSpeciesToHtmlTitle(descriptor), 
 			linkColumnNames=descriptor, linkPaths=localPlotPath, linkExtensions=".png")
 	}
 
@@ -274,7 +274,7 @@
 			f <- file.path( GS_path, f)
 			mytitle <- paste( descriptor, ": &nbsp; Gene sets Up-Regulated in group: &nbsp; ", 
 						thisSample, " &nbsp; vs &nbsp; ", otherGroup, sep="") 
-			table2html( smlForHTML, fileout=f, title=mytitle, maxRows=NgeneSets,
+			table2html( smlForHTML, fileout=f, title=addSpeciesToHtmlTitle(mytitle), maxRows=NgeneSets,
 				linkColumnNames=c( descriptor, "Genes Per Group"), 
 				linkPaths=rep( localPlotPath, times=2), linkExtensions=c( ".png", ".html"))
 
@@ -330,7 +330,7 @@
 			f <- file.path( GS_path, f)
 			mytitle <- paste( descriptor, ": &nbsp; Gene sets Down-Regulated in group: &nbsp; ", 
 						thisSample, " &nbsp; vs &nbsp; ", otherGroup, sep="") 
-			table2html( smlForHTML, fileout=f, title=mytitle, maxRows=NgeneSets,
+			table2html( smlForHTML, fileout=f, title=addSpeciesToHtmlTitle(mytitle), maxRows=NgeneSets,
 				linkColumnNames=c( descriptor, "Genes Per Group"), 
 				linkPaths=rep( localPlotPath, times=2), linkExtensions=c( ".png", ".html"))
 
@@ -385,7 +385,7 @@
 		}
 		gmap <- cbind( gmap, extra)
 		f <- file.path( globalPlotPath, paste( "GeneSet_", j, ".html", sep=""))
-		table2html( gmap, fileout=f, title=cleanGeneSetName( names( geneSets)[j]), 
+		table2html( gmap, fileout=f, title=addSpeciesToHtmlTitle(cleanGeneSetName( names( geneSets)[j])), 
 				linkColumnNames=c( geneMapColumn, "GroupsPerGene"),
 				linkPaths=c( "../../pngPlots", "."),
 				linkExtension=c(".png",".html"))
