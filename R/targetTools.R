@@ -194,6 +194,8 @@
 	addTarget( "PvSal1", "PvSal1", "Pv")
 	addTarget( "HsPv", "Hs_grc,PvSal1", "Hs,Pv")
 	addTarget( "PvHsMmu", "PvSal1,Hs_grc,Mmu_grc", "Pv,Hs,Mmus")
+	addTarget( "PvP01", "PvP01", "PvP01")
+	addTarget( "HsPvP01", "Hs_grc,PvP01", "Hs,PvP01")
 
 	addTarget( "PchAS", "PchAS", "Pch")
 	addTarget( "PchMmu", "PchAS,Mmu_grc", "Pch,Mmus")
