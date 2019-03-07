@@ -502,19 +502,32 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 
 
 
-`bam2fastq` <- function( bamfile, outfile=sub( ".bam$", "", bamfile), paired.end=TRUE, clobber=TRUE) {
+`bam2fastq` <- function( bamfile, outfile=sub( ".bam$", "", bamfile), verbose=TRUE) {
 
 
-	cat( "\nConverting BAM file: ", bamfile)
-	cat( "\nCreating FASTQ(s):   ", outfile, "\n")
-	cmdline <- paste( "bam2fastq.pl ", " --filter '-F 0x000'   --prefix ", outfile, "  ", bamfile)
-	if ( clobber) {
-		cmdline <- paste( "bam2fastq.pl ", " --filter '-F 0x000'  --yes   --prefix ", outfile, "  ", bamfile)
-	}
+	if (verbose) cat( "\nConverting BAM file: ", bamfile)
+	if (verbose) cat( "\nCreating FASTQ(s):   ", outfile, "\n")
 
-	system( cmdline)
+	#cmdline <- paste( "bam2fastq.pl ", " --filter '-F 0x000'   --prefix ", outfile, "  ", bamfile)
 
-	cat( "  Done.\n")
+	# now using samtools fastq utility...
+	samtools <- Sys.which( "samtools")
+	if ( samtools == "") stop( "Executable not found on search path:  'samtools'")
+
+	# the input must be sorted on read name field
+	cmdLine1 <- paste( samtools, " sort -n ", bamfile)
+
+	# then we can convert, with or without compression
+	compressFlag <- if (grepl( "\\.gz$", outfile)) " -c 6 " else ""
+	cmdLine2 <- paste( samtools, " fastq -n ", compressFlag, " -0 ", outfile, " - ")
+
+	# make a pipe
+	trapStdErr <- if (verbose) "" else " 2>/dev/null"
+	cmdLine <- paste( cmdLine1, "|", cmdLine2, trapStdErr)
+	if (verbose) cat( "Command Line: ", cmdLine, "\n")
+	system( cmdLine)
+
+	if (verbose) cat( "  Done.\n")
 	return( )
 }
 
