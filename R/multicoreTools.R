@@ -120,6 +120,7 @@
 		ans <- mclapply( listOfSets, FUN=FUN, ..., 
 				mc.cores=min( length(listOfSets), nCores),
 				mc.preschedule=FALSE, mc.allow.recursive=FALSE)
+		MCLAPPLY_DEBUG <<- ans
 
 		out <- vector( mode="list", length=Nin)
 		out[ ptr > 0] <- ans[ ptr]
@@ -143,6 +144,7 @@
 		ans <- mclapply( x, FUN=FUN, ..., 
 				mc.cores=min( length(x), nCores), mc.preschedule=preschedule,
 				mc.allow.recursive=FALSE)
+		MCLAPPLY_DEBUG <<- ans
 		return( ans)
 	} else {
 		return( lapply( x, FUN, ...))
@@ -179,6 +181,7 @@
 		ans <- mclapply( listOfDFs, FUN=FUN, ..., 
 				mc.cores=min( length(listOfDFs), nCores),
 				mc.preschedule=FALSE, mc.allow.recursive=FALSE)
+		MCLAPPLY_DEBUG <<- ans
 
 		out <- vector( mode="list", length=Nin)
 		out[ ptr > 0] <- ans[ ptr]

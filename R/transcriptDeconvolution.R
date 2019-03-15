@@ -76,10 +76,14 @@
 			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "Dev=", fitAns$AvgDeviation)
 			return( fitAns)
 		})
+
+	avgDev <- vector( length=NS)
 	for ( i in 1:NS) {
-		fitAns <- mcAns[[i]]
+		# catch case of a single element affect lapply
+		fitAns <- if ( NS == 1) mcAns else mcAns[[i]]
 		if ( is.null(fitAns)) next
 		ans[ , i] <- fitAns$BestFit
+		avgDev[i] <- fitAns$AvgDeviation
 	}
 	cat( "  Done.\n")
 
@@ -89,7 +93,7 @@
 
 	if (plot) plotTranscriptProportions(pcts)
 
-	return( pcts)
+	return( list( "BestFit"=pcts, "AvgDeviation"=avgDev))
 }
 
 
@@ -127,10 +131,14 @@
 			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "Dev=", fitAns$AvgDeviation)
 			return( fitAns)
 		})
+
+	avgDev <- vector( length=NS)
 	for ( i in 1:NS) {
-		fitAns <- mcAns[[i]]
+		# catch case of a single element affect lapply
+		fitAns <- if ( NS == 1) mcAns else mcAns[[i]]
 		if ( is.null(fitAns)) next
 		ans[ , i] <- fitAns$BestFit
+		avgDev[i] <- fitAns$AvgDeviation
 	}
 	cat( "  Done.\n")
 
@@ -140,7 +148,7 @@
 
 	if (plot) plotTranscriptProportions(pcts)
 
-	return( pcts)
+	return( list( "BestFit"=pcts, "AvgDeviation"=avgDev))
 }
 
 
@@ -183,10 +191,14 @@
 			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "Dev=", fitAns$AvgDeviation)
 			return( fitAns)
 		})
+
+	avgDev <- vector( length=NS)
 	for ( i in 1:NS) {
-		fitAns <- mcAns[[i]]
+		# catch case of a single element affect lapply
+		fitAns <- if ( NS == 1) mcAns else mcAns[[i]]
 		if ( is.null(fitAns)) next
 		ans[ , i] <- fitAns$BestFit
+		avgDev[i] <- fitAns$AvgDeviation
 	}
 	cat( "  Done.\n")
 
@@ -196,7 +208,7 @@
 
 	if (plot) plotTranscriptProportions(pcts)
 
-	return( pcts)
+	return( list( "BestFit"=pcts, "AvgDeviation"=avgDev))
 }
 
 
