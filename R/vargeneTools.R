@@ -73,8 +73,15 @@
 		to <- from + width( subject( domAns2)) - 1
 		thisLen <- to - from + 1
 		thisSubSeq <- substr( aaSeqNow, from, to)
+		#cat( "\nDebug Init: ", from, to, thisSubSeq)
 
 		# small chance of hitting mask residues on the flanks
+		# with a very small chance of spanning into a second non-masked area too
+		leftPatt <- "^[^X]{1,9}XXXXXXXXXX"
+		if ( grepl( leftPatt, thisSubSeq)) substr( thisSubSeq, 1, 10) <- "XXXXXXXXXX"
+		rightPatt <- "XXXXXXXXXX[^x]{1,9}$"
+		if ( grepl( rightPatt, thisSubSeq)) substr( thisSubSeq, thisLen-9, thisLen) <- "XXXXXXXXXX"
+
 		if ( substr( thisSubSeq, 1,1) == "X") {
 			maskL <- sub( "(^X+)(.+)", "\\1", thisSubSeq)
 			nMaskL <- nchar( maskL)
@@ -88,7 +95,13 @@
 			to <- to - nMaskR
 		}
 		thisLen <- to - from + 1
+		if ( thisLen < 10) break
 		thisSubSeq <- substr( aaSeqNow, from, to)
+		#cat( "\nDebug Final: ", from, to, thisSubSeq)
+
+		# if there still any 'XXX' in our hit, than what we grabbed completely spans a
+		# domain we already masked out.   Call this an impossible outcome and quit
+		if (grepl( "XXXXXX", thisSubSeq)) break
 
 		# build the new small record and add it to the growing set
 		smlDF <- myVar2csa[ best, ]
@@ -187,6 +200,11 @@
 		thisSubSeq <- substr( aaSeqNow, from, to)
 
 		# small chance of hitting mask residues on the flanks
+		# with a very small chance of spanning into a second non-masked area too
+		leftPatt <- "^[^X]{1,9}XXXXXXXXXX"
+		if ( grepl( leftPatt, thisSubSeq)) substr( thisSubSeq, 1, 10) <- "XXXXXXXXXX"
+		rightPatt <- "XXXXXXXXXX[^x]{1,9}$"
+		if ( grepl( rightPatt, thisSubSeq)) substr( thisSubSeq, thisLen-9, thisLen) <- "XXXXXXXXXX"
 		if ( substr( thisSubSeq, 1,1) == "X") {
 			maskL <- sub( "(^X+)(.+)", "\\1", thisSubSeq)
 			nMaskL <- nchar( maskL)
@@ -200,7 +218,12 @@
 			to <- to - nMaskR
 		}
 		thisLen <- to - from + 1
+		if ( thisLen < 10) break
 		thisSubSeq <- substr( aaSeqNow, from, to)
+
+		# if there still any 'XXX' in our hit, than what we grabbed completely spans a
+		# domain we already masked out.   Call this an impossible outcome and quit
+		if (grepl( "XXXXXX", thisSubSeq)) break
 
 		# build the new small record and add it to the growing set
 		smlDF <- myVsa[ best, ]
@@ -214,18 +237,10 @@
 		drops <- match( c( "GENE_ID", "STRAIN"), colnames(smlDF), nomatch=0)
 		drops <- setdiff( drops, 0)
 		if ( length( drops)) smlDF <- smlDF[ , -drops, drop=F]
-		#cat( "\nDebug: ", dim(smlDF), colnames(smlDF))
 		ord <- c( 1, 9, 10, 2, 3, 12, 4:8, 11)
 		smlDF <- smlDF[ ,ord]
 		# join this to the rest
 		domDF <- rbind( domDF, smlDF)
-
-		# remove that domain from the set of all domains
-		# not removing any from VSA
-		#thisDOMID <- smlDF$DOMAIN_ID
-		#myVsa <- myVsa[ -which( myVsa$DOMAIN_ID == thisDOMID), ]
-		#if ( ! nrow( myVsa)) break
-		#refLens <- nchar( myVar2csa$REF_SEQ)
 
 		# mask out that region so it can't get used again, and go find the next best
 		maskStr <- paste( rep.int("X",thisLen),collapse="")

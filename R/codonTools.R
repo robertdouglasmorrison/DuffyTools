@@ -61,6 +61,16 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 	
 	aa <- toupper( aa)
 	aaV <- strsplit( aa, split="")
+
+	# test to provide a clean error
+	allDefinedAA <- unique.default( substr( names(codonFreq), 1,1))
+	allGivenAA <- unique.default( unlist( aaV))
+	missing <- setdiff( allGivenAA, allDefinedAA)
+	if ( length( missing)) {
+		cat( "\n\nError:  given some undefined AA characters: ", missing)
+		stop( "Unable to convert AA to Codon Optimized DNA.")
+	}
+
 	for ( j in 1:length(aa)) {
 		thisAAvec <- aaV[[j]]
 		aaPattern <- PASTE( "^",thisAAvec, sep="")
