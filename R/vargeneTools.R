@@ -10,6 +10,17 @@
 }
 
 
+`getVar2csaDomainMap` <- function( strain=NULL) {
+
+	data( "var2csaDomainConstructs", envir=environment())
+	myVar2csa <- var2csa
+	if ( ! is.null( strain)) {
+		myVar2csa <- subset( myVar2csa, STRAIN == strain)
+	}
+	return(myVar2csa)
+}
+
+
 `getVargeneDomains` <- function( genes) {
 
 	# see if any of our domain sets cover this gene

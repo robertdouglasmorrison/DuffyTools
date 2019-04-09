@@ -10,7 +10,7 @@
 				mode=c("combined", "separate"), cutPvalue=0.05, cutRankShift=NULL, makePlots=TRUE,
 				doFDR=TRUE, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
 				cutFold=0.1, cutFDR=0.05, NgeneSets=500, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
-				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, verbose=T)
+				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, verbose=T, ...)
 {
 
 	toolName <- match.arg( toolName)

@@ -4,10 +4,9 @@
 				optionsFile="Options.txt", results.path=NULL,  folderName="", 
 				toolName=c( "MetaResults", "RoundRobin", "RankProduct", "SAM", "EdgeR", "DESeq"), 
 				geneColumn=if(speciesID %in% MAMMAL_SPECIES) "GENE_NAME" else "GENE_ID", 
-				groupColumn="Group", 
-				geneSets=defaultGeneSets(speciesID),
+				groupColumn="Group", geneSets=defaultGeneSets(speciesID),
 				descriptor="Enrichment", maxPvalue=0.05, wt.enrich=1, wt.pvalue=2,
-				verbose=TRUE) {
+				verbose=TRUE, ...) {
 
 	toolName <- match.arg( toolName)
 
