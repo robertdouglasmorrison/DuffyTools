@@ -134,6 +134,13 @@ rankProductDiffExpress <- function( fnames, fids, groupSet, targetGroup=groupSet
 		gProds[ needs[ where > 0]] <- gpros[ where]
 	}
 
+	# round to sensible digits of resolution
+	myFC <- round( myFC, digits=4)
+	avgRank <- round( avgRank, digits=2)
+	avgRankDown <- round( avgRankDown, digits=2)
+	avgInten1 <- round( avgInten1, digits=4)
+	avgInten2 <- round( avgInten2, digits=4)
+
 	out <- data.frame( "GENE_ID"=allGenes, "PRODUCT"=gProds, "LOG2FOLD"=myFC,
 			"RP_VALUE"=myRPup, "AVG_RANK"=avgRank, 
 			"RP_VALUE_DOWN"=myRPdown, "AVG_RANK_DOWN"=avgRankDown, 

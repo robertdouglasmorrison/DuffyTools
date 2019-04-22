@@ -160,3 +160,34 @@ readALN <- function( file, verbose=TRUE) {
 		writeFasta( as.Fasta( ids, strs), outfile, line.width=line.width)
 	}
 }
+
+
+`ALNtoFasta` <- function( f, outfile=sub( "aln$", "fasta", f), gap.character="-", line.width=100, reorder=NULL) {
+
+	# convert a .ALN Clustal or MAFFT MSA alignment result back to FASTA with the spacing intact
+	aln <- readALN( f, verbose=F)
+
+	ch <- aln$alignment
+	desc <- rownames(ch)
+
+	strs <- apply( ch, MARGIN=1, paste, collapse="")
+
+	if ( gap.character != "-") strs <- gsub( "-", gap.character, strs, fixed=T)
+
+	if ( ! is.null( reorder)) {
+		# put the ones with the least gaps at the top
+		if ( reorder == "N_Gaps") {
+			nGaps <- apply( ch, MARGIN=1, function(x) sum( x == "-"))
+			ord <- order( nGaps)
+			strs <- strs[ord]
+			desc <- desc[ord]
+		} else {
+			cat( "\nUnsupported 'Reorder' option: ", reorder)
+			cat( "\nChoices are:  'N_Gaps' ")
+			stop()
+		}
+	}
+
+	# ready to write out
+	writeFasta( as.Fasta( desc, strs), outfile, line.width=line.width)
+}

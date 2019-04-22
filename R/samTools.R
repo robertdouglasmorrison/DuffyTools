@@ -152,8 +152,12 @@ SAM.DiffExpress <- function( fnames, fids, m=NULL,
 		gprod[ needs[ where > 0]] <- gpros[ where]
 	}
 
-	out <- data.frame( gnames, gprod, myfold, pval, qval, distActual, avgM, 
-			stringsAsFactors=F)
+	# round to sensible digits of resolution
+	myfold <- round( myfold, digits=4)
+	distActual <- round( distActual, digits=4)
+	avgM <- round( avgM, digits=2)
+
+	out <- data.frame( gnames, gprod, myfold, pval, qval, distActual, avgM, stringsAsFactors=F)
 	colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", 
 			"Q_VALUE", "DISTANCE", colnames(avgM))
 

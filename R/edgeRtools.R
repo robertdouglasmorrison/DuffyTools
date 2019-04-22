@@ -77,6 +77,10 @@ EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 	et <- exactTest( ans, pair=2:1, dispersion=dispersion)
 	edgeRout <- topTags( et, n=NG)$table
 
+	# get what e want/need out
+	fout <- edgeRout[ , 1]
+	pout <- edgeRout[ , 3]
+	qout <- edgeRout[ , 4]
 	gnames <- rownames( edgeRout)
 	where <- match( gnames, rownames(m), nomatch=0)
 	mTmp <- m[ where, ]
@@ -95,10 +99,12 @@ EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		gprod[ needs[ where > 0]] <- gpros[ where]
 	}
 
-	out <- data.frame( gnames, gprod, edgeRout[ , c(1,3,4)], avgM, 
-			stringsAsFactors=F)
-	colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", 
-			"FDR", colnames(avgM))
+	# round to sensible digits of resolution
+	fout <- round( fout, digits=4)
+	avgM <- round( avgM, digits=2)
+
+	out <- data.frame( gnames, gprod, fout, pout, qout, avgM, stringsAsFactors=F)
+	colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", "FDR", colnames(avgM))
 
 	if ( ! is.null( extraColumn)) {
 		avgExtra1 <- apply( mExtra[ , which( cl == 1)], MARGIN=1, FUN=average.FUN)

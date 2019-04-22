@@ -48,12 +48,13 @@
 		gcyte5Ptrs <- match( c("Su.GcyteV","AO_Gcyte","SauerGcyte_Female","SauerGcyte_Male1",
 					"SauerGcyte_Male2","Gcyte1","Gcyte2"), colnames(lifeCycleData))
 		ookinePtrs <- match( c("Su.Ookinete3D7","Su.Ookinete7G8"), colnames(lifeCycleData))
-		oocystPtrs <- match( c("Oocyst1","Oocyst2"), colnames(lifeCycleData))
+		#oocystPtrs <- match( c("Oocyst1","Oocyst2"), colnames(lifeCycleData))
 		oospzPtrs <- match( c("ooSPZ.NF54"), colnames(lifeCycleData))
 		#allPtrs <- c( sgspzPtrs, lsd3Ptrs, merozPtrs, eringPtrs, lringPtrs, etrophPtrs, ltrophPtrs,
 		#		schizPtrs, gcyte2Ptrs, gcyte5Ptrs, ookinePtrs, oospzPtrs)
 		allPtrs <- c( sgspzPtrs, lsd3Ptrs, merozPtrs, eringPtrs, lringPtrs, etrophPtrs, ltrophPtrs,
-				schizPtrs, gcyte5Ptrs, ookinePtrs, oocystPtrs, oospzPtrs)
+				#schizPtrs, gcyte5Ptrs, ookinePtrs, oocystPtrs, oospzPtrs)
+				schizPtrs, gcyte5Ptrs, ookinePtrs, oospzPtrs)
 		if ( any ( is.na( allPtrs))) {
 			bad <- which( is.na( allPtrs))
 			cat( "\nBad/missing Life Cycle Stage column name: ", bad)
@@ -69,7 +70,8 @@
 			dimensions=list( "SalivarySPZ"=sgspzPtrs, "LiverDay3"=lsd3Ptrs, "Merozoite"=merozPtrs,
 			"EarlyRing"=eringPtrs, "LateRing"=lringPtrs, "EarlyTroph"=etrophPtrs, "LateTroph"=ltrophPtrs, 
 			"Schizont"=schizPtrs, "Gametocyte"=gcyte5Ptrs, "Ookinete"=ookinePtrs, 
-			"Oocyst"=oocystPtrs, "OocystSPZ"=oospzPtrs), 
+			#"Oocyst"=oocystPtrs, "OocystSPZ"=oospzPtrs), 
+			"OocystSPZ"=oospzPtrs), 
 			unitVectorMode=unitVectorMode, min.spread=min.spread, preNormalize=preNormalize, postNormalize=postNormalize,
 			doRMA=FALSE, stageMode=stageMode, verbose=verbose)
 		ans2 <- buildLifeCycleVectorSpace( file=NULL, tbl=lifeCycleData, geneColumn="Gene",
@@ -80,7 +82,8 @@
 			dimensions=list( "SalivarySPZ"=sgspzPtrs, "LiverDay3"=lsd3Ptrs, "Merozoite"=merozPtrs,
 			"EarlyRing"=eringPtrs, "LateRing"=lringPtrs, "EarlyTroph"=etrophPtrs, "LateTroph"=ltrophPtrs, 
 			"Schizont"=schizPtrs, "Gametocyte"=gcyte5Ptrs, "Ookinete"=ookinePtrs, 
-			"Oocyst"=oocystPtrs, "OocystSPZ"=oospzPtrs), 
+			#"Oocyst"=oocystPtrs, "OocystSPZ"=oospzPtrs), 
+			"OocystSPZ"=oospzPtrs), 
 			unitVectorMode="none", min.spread=NULL, preNormalize=preNormalize, postNormalize=postNormalize,
 			doRMA=FALSE, stageMode=stageMode, verbose=FALSE)
 	}

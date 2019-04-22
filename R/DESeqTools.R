@@ -137,6 +137,11 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		pvalOut[ gPtr > 0] <- deseqOut$pval[ gPtr]
 		pvalOut[ is.na( pvalOut)] <- 1
 	
+		# round to sensible digits of resolution
+		foldOut <- round( foldOut, digits=4)
+		v1 <- round( v1, digits=4)
+		v2 <- round( v2, digits=4)
+
 		out <- data.frame( gnames, gprod, foldOut, pvalOut, v2, v1,
 				stringsAsFactors=F)
 		colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", 
@@ -177,6 +182,11 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		mNorm <- counts( ddsAns, normalized=TRUE)
 		v2 <- apply( mNorm[ , which( cl == mine), drop=FALSE], MARGIN=1, FUN=average.FUN)
 		v1 <- apply( mNorm[ , which( cl == other), drop=FALSE], MARGIN=1, FUN=average.FUN)
+
+		# round to sensible digits of resolution
+		foldOut <- round( foldOut, digits=4)
+		v1 <- round( v1, digits=2)
+		v2 <- round( v2, digits=2)
 
 		out <- data.frame( gnames, gprod, foldOut, pvalOut, v2, v1,
 				stringsAsFactors=F)

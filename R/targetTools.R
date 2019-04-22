@@ -245,6 +245,9 @@
 
 	addTarget( "Drerio", "Drerio", "Dr")
 
+	addTarget( "KSHV", "KSHV", "KSHV")
+	addTarget( "HsKSHV", "Hs_grc,KSHV", "Hs,KSHV")
+
 	setCurrentTarget( "HsPf")
 	cat( "  Done.\n")
 	return()

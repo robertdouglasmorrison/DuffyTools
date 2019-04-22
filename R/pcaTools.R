@@ -1,6 +1,6 @@
 # pcaTools.R -- make a PCA plots from various data
 
-fileSet.PCAplot <- function( files, fids, geneColumn = "GENE_ID", 
+`fileSet.PCAplot` <- function( files, fids, geneColumn = "GENE_ID", 
 				intensityColumn = "RPKM_M", sep = "\\t", useLog = FALSE, 
 				d1=1, d2=2, main="", col=rainbow( length(fids), end=0.8), 
 				pt.cex=2, pch=21, label.cex=0.9, na.mode=c("drop","zero"), verbose=FALSE, 
@@ -20,7 +20,7 @@ fileSet.PCAplot <- function( files, fids, geneColumn = "GENE_ID",
 }
 
 
-matrix.PCAplot <- function( m, main="", col=rainbow( ncol(m), end=0.8), d1=1, d2=2,
+`matrix.PCAplot` <- function( m, main="", col=rainbow( ncol(m), end=0.8), d1=1, d2=2,
 				pt.cex=2, pch=21, label.cex=0.9, na.mode=c("drop","zero"), 
 				plotOrder=1:ncol(m), ...) {
 
@@ -71,3 +71,35 @@ matrix.PCAplot <- function( m, main="", col=rainbow( ncol(m), end=0.8), d1=1, d2
 	return( out)
 }
 
+
+`matrix.PCAplot.family` <- function( m, filename="PCA", main="", col=rainbow( ncol(m), end=0.8), 
+					FUN=png, nPC=3, ...) {
+
+	# make a set of PCA plots, not just one
+	fileroot <- filename
+	if (FUN == png) {
+		fileroot <- sub( "\\.png$", "", fileroot)
+		suffix <- ".png"
+		xsz <- ysz <- 800
+	} else if (FUN == pdf) {
+		fileroot <- sub( "\\.pdf$", "", fileroot)
+		suffix <- ".pdf"
+		xsz <- ysz <- 8
+	} else {
+		stop( "Only PNG and PDF plots supported for PCA plot families..")
+	}
+
+	if (nPC < 2) nPC <- 2
+	if (nPC > ncol(m)) nPC <- ncol(m)
+	for ( i in 1:(nPC-1)) {
+	for ( j in (i+1):nPC) {
+		# first to the screen
+		matrix.PCAplot( m, main=main, col=col, d1=i, d2=j, ...)
+		# then to the file
+		fnow <- paste( fileroot, ".PC", i, ".v.PC", j, suffix, sep="") 
+		FUN( filename=fnow, width=xsz, height=ysz, bg='white')
+		matrix.PCAplot( m, main=main, col=col, d1=i, d2=j, ...)
+		dev.off()
+	}}
+	return()
+}
