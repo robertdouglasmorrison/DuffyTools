@@ -241,7 +241,8 @@
 	addTarget( "PF.VSA.JOS", "Pf3D7,VSA,JOS", "Pf,VSA,JOS")
 	addTarget( "VSA.JOS", "VSA,JOS", "VSA,JOS")
 
-	addTarget( "GrammDol", "GrammDol", "GrammDol")
+	#addTarget( "GrammDol", "GrammDol", "GrammDol")
+	addTarget( "Gsurd", "Gsurd", "Gsurd")
 
 	addTarget( "Drerio", "Drerio", "Dr")
 

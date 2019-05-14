@@ -171,7 +171,8 @@
 
 
 `findVsaDomains` <- function( aaSeq, minScorePerAA=1, maskVSAgenes=NULL, plot.Y=NULL, rect.border=1, rect.fill='goldenrod',
-				rect.halfHeight=1, rect.lwd=1, text.font=2, text.cex=1, text.X.repeat=NULL) {
+				rect.halfHeight=1, rect.lwd=1, text.font=2, text.cex=1, text.X.repeat=NULL,
+				verbose=FALSE) {
 
 	require( Biostrings)
 	data( "VSA.DomainConstructs", envir=environment())
@@ -209,6 +210,7 @@
 		to <- from + width( subject( domAns2)) - 1
 		thisLen <- to - from + 1
 		thisSubSeq <- substr( aaSeqNow, from, to)
+		#cat( "\nDebug Init: ", from, to, thisSubSeq)
 
 		# small chance of hitting mask residues on the flanks
 		# with a very small chance of spanning into a second non-masked area too
@@ -231,6 +233,7 @@
 		thisLen <- to - from + 1
 		if ( thisLen < 10) break
 		thisSubSeq <- substr( aaSeqNow, from, to)
+		#cat( "\nDebug Final: ", from, to, thisSubSeq)
 
 		# if there still any 'XXX' in our hit, than what we grabbed completely spans a
 		# domain we already masked out.   Call this an impossible outcome and quit
@@ -241,7 +244,7 @@
 		smlDF$QUERY_START <- from
 		smlDF$QUERY_STOP <- to
 		smlDF$QUERY_DOMAIN_ID <- paste( smlDF$DOMAIN_ID, " (", smlDF$STRAIN, ":", smlDF$GENE_ID, ")", sep="")
-		smlDF$SCORE_PER_AA <- bestScore
+		smlDF$SCORE_PER_AA <- round( bestScore, digits=3)
 		smlDF$QUERY_SEQ <- thisSubSeq
 		smlDF$EDIT_DIST <- adist( thisSubSeq, myVsa$REF_SEQ[best])[1]
 		# drop unwanted, and reorder?
@@ -252,6 +255,7 @@
 		smlDF <- smlDF[ ,ord]
 		# join this to the rest
 		domDF <- rbind( domDF, smlDF)
+		if (verbose) cat( "  Found", nrow(domDF), smlDF$QUERY_DOMAIN_ID[1], smlDF$SCORE_PER_AA[1])
 
 		# mask out that region so it can't get used again, and go find the next best
 		maskStr <- paste( rep.int("X",thisLen),collapse="")

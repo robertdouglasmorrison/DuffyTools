@@ -34,6 +34,8 @@ duffy.ROC <- function( goodScores, badScores, label="", visualize=TRUE, legend.c
 	best <- which.max( dist)
 	cutAns <- cuts[best]
 	aucAns <- AUC( rocAns)
+	sensAns <- sens[best]
+	specAns <- spec[best]
 
 	if (visualize) {
 		par( mai=c(1,1,0.8,0.4))
@@ -69,12 +71,15 @@ duffy.ROC <- function( goodScores, badScores, label="", visualize=TRUE, legend.c
 			formatType <- "e"
 		}
 		cutAnsText <- formatC( cutAns, format=formatType, digits=ndigShow)
-		aucAnsText <- round( aucAns, digits=4)
+		aucAnsText <- round( aucAns, digits=3)
+		sensAnsText <- round( sensAns, digits=3)
+		specAnsText <- round( specAns, digits=3)
 
-		legend( "bottomright", paste( c( "AUC (Area Under Curve) =", "Optimal Yes/No Cut Point ="),
-				c( aucAnsText, cutAnsText)), bg='white', cex=legend.cex)
+		legend( "bottomright", paste( c( "AUC (Area Under Curve) =", "Optimal Yes/No Cut Point =",
+						"Sensitivity =", "Specificity ="),
+				c( aucAnsText, cutAnsText, sensAnsText, specAnsText), "  "), bg='white', cex=legend.cex)
 	}
 	
-	return( list( "cutpoint"=cutAns, "AUC"=aucAns))
+	return( list( "cutpoint"=cutAns, "AUC"=aucAns, "sensitivity"=sensAns, "specificity"=specAns))
 }
 

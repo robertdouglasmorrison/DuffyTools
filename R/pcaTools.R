@@ -77,11 +77,11 @@
 
 	# make a set of PCA plots, not just one
 	fileroot <- filename
-	if (FUN == png) {
+	if ( identical( FUN, png)) {
 		fileroot <- sub( "\\.png$", "", fileroot)
 		suffix <- ".png"
 		xsz <- ysz <- 800
-	} else if (FUN == pdf) {
+	} else if ( identical( FUN, pdf)) {
 		fileroot <- sub( "\\.pdf$", "", fileroot)
 		suffix <- ".pdf"
 		xsz <- ysz <- 8

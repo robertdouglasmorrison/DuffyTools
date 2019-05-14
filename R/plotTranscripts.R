@@ -220,7 +220,7 @@
 			keepIntergenics=FALSE, label="Plot", plotType=c("Volcano"),
 			pch=21, col=c('blue','red', 'black'), cut.fold=1, cut.pvalue=0.05, shortNames=TRUE,
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.pch=21, 
-			marker.pos=NULL, sep="\t", ...) {
+			marker.pos=NULL, sep="\t", min.intensity=0, intensityColumn="RPKM_1", ...) {
 
 	tmp <- read.delim( file, as.is=T, sep=sep)
 	cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
@@ -252,6 +252,19 @@
 		pval <- pval[ -drops]
 		cat( "\nAfter dropping non-genes: ", length(genes))
 	}
+
+	# allow the removal of very low expression genes
+	if ( min.intensity > 0) {
+		inten <- tmp[[ intensityColumn]]
+		drops <- which( inten < min.intensity)
+		if ( length(drops)) {
+			genes <- genes[ -drops]
+			fold <- fold[ -drops]
+			pval <- pval[ -drops]
+			cat( "\nAfter dropping low intensity: ", length(genes))
+		}
+	}
+
 
 	plotType <- base::match.arg( plotType)
 	if ( plotType == "Volcano") {

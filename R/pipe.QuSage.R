@@ -82,6 +82,16 @@
 		# QuSage chokes on duplicate IDs
 		drops <- which( duplicated( rownames(m)))
 		if ( length(drops)) m <- m[ -drops, ]
+
+		# debugging test,  QuSage crashes on some datasets..  
+		# Authors think perhaps flat 'all zeros / no variance' data might cause that.  
+		# Try to remove that possibility
+		#isZero <- ( m < 0.5)
+		#if ( nZero <- sum(isZero)) {
+			#jitterOffset <- runif( nZero, 0.1, 0.25)
+			#m[isZero] <- m[isZero] + jitterOffset
+			#cat( "\nJittering zero expression to prevent QuSage crash: ", nZero, "zero values")
+		#}
 	
 		# do the log transform with offset
 		if (useLog) {
