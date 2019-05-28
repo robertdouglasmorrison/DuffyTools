@@ -62,7 +62,7 @@
 			plotType=c("Scatter","MA"),
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.pch=1, 
 			marker.pos=NULL, minYmax=NULL, maxYmax=NULL, showAllGenes=FALSE, 
-			sep1="\t", sep2=sep1, sym.asp=TRUE, hideZero=FALSE, ...) {
+			sep1="\t", sep2=sep1, sym.asp=TRUE, hideZero=FALSE, show.cor=TRUE, ...) {
 
 	tmp <- read.delim( file1, as.is=T, sep=sep1)
 	cat( "\nRead file: ", file1, "\nN_Genes: ", nrow(tmp), "\n")
@@ -139,7 +139,8 @@
 			label=label, cex=cex,
 			marker.genes=marker.genes, marker.col=marker.col, marker.cex=marker.cex,
 			marker.labels=marker.labels, marker.pch=marker.pch, marker.pos=marker.pos,
-			minYmax=minYmax, maxYmax=maxYmax, sym.asp=sym.asp, lab1=fid1, lab2=fid2, hideZero=hideZero, ...)
+			minYmax=minYmax, maxYmax=maxYmax, sym.asp=sym.asp, lab1=fid1, lab2=fid2, 
+			hideZero=hideZero, show.cor=show.cor, ...)
 	}
 
 	return( invisible( ans))
@@ -151,7 +152,7 @@
 			units="Log2 Fold", offset=0, keepIntergenics=FALSE, label="Plot", 
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.pch=1, 
 			marker.pos=NULL, minYmax=NULL,maxYmax=NULL,  
-			sep="\t", sym.asp=TRUE, hideZero=FALSE, ...) {
+			sep="\t", sym.asp=TRUE, hideZero=FALSE, show.cor=TRUE, ...) {
 
 	tmp <- read.delim( file1, as.is=T, sep=sep)
 	cat( "\nRead file: ", file1, "\nN_Genes: ", nrow(tmp), "\n")
@@ -210,7 +211,8 @@
 	ans <- makeScatterplot( genes, int1, int2, offset=offset, units1=units, label=label, cex=cex,
 		marker.genes=marker.genes, marker.col=marker.col, marker.cex=marker.cex,
 		marker.labels=marker.labels, marker.pch=marker.pch, marker.pos=marker.pos,
-		minYmax=minYmax, maxYmax=maxYmax, sym.asp=sym.asp, lab1=fid1, lab2=fid2, useLog="", hideZero=hideZero, ...)
+		minYmax=minYmax, maxYmax=maxYmax, sym.asp=sym.asp, lab1=fid1, lab2=fid2, useLog="", 
+		hideZero=hideZero, show.cor=show.cor, ...)
 	
 	return( invisible( ans))
 }
@@ -389,15 +391,14 @@
 	Rspearman <- cor( log10(int2), log10(int1), use="complete", method="spearman")
 	if (show.cor) {
 		cat( "\nPearson's R =", Rpearson, "\nN_Zeros: ", sum(int1 <= offset), sum(int2 <= offset))
-
 		if (useLog == "xy") {
 			try( abline( reg=lsfit( log10(int2), log10(int1)), col=2, lwd=3, untf=F))
 		} else {
 			abline( reg=lsfit( int2, int1), col=2, lwd=3)
 		}
 		legend( 'topleft', paste( "Pearson's R = ", formatC(Rpearson, format='f', digits=2), " "), bg='white')
-		legend( 'bottomright', paste( "N_Genes in common = ", length(genes)), bg='white')
 	}
+	legend( 'bottomright', paste( "N_Genes in common = ", length(genes)), bg='white')
 
 	# label selected genes, assumes the genes 'up in set1' are in the first half...
 	if ( length( marker.genes) > 0) {
