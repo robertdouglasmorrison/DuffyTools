@@ -190,7 +190,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 
 	out <- data.frame( allG, allProds, avgFold, avgPval, avgRank, rankM, 
 			stringsAsFactors=FALSE)
-	colnames(out) <- c( "GENE_ID", "PRODUCT", valueColumn, "AVG_PVALUE", "AVG_RANK", colnames( rankM))
+	colnames(out) <- c( geneColumn, productColumn, valueColumn, "AVG_PVALUE", "AVG_RANK", colnames( rankM))
 
 	# do the final ordering by Average Rank
 	if ( pvalueColumn != "") {
@@ -210,6 +210,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 			for ( i in 1:nfiles) simM[ , i] <- sample( simM[ ,i])
 			randomAvgRank <- c( randomAvgRank, 
 						apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T))
+			if (verbose) cat( ".")
 		}
 		# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
 		randomAvgRank <- sort( randomAvgRank)
@@ -248,12 +249,10 @@ metaRank2html <- function( tbl, fileout="metaRanks.html", title="", maxRows=100,
 
 	# clean up any formatting...
 	tbl[[ valueColumn]] <- formatC( tbl[[ valueColumn]], format="f", digits=3)
-	tbl$AVG_PVALUE <- formatC( tbl$AVG_PVALUE, format="e", digits=3)
-	tbl$AVG_RANK <- formatC( tbl$AVG_RANK, format="f", digits=2)
-	colnames(tbl)[3:5] <- c( gsub( "_", " ", valueColumn), "Avg Pvalue", "Avg Rank")
+	if ("AVG_PVALUE" %in% colnames(tbl)) tbl$AVG_PVALUE <- formatC( tbl$AVG_PVALUE, format="e", digits=3)
+	if ("AVG_RANK" %in% colnames(tbl)) tbl$AVG_RANK <- formatC( tbl$AVG_RANK, format="f", digits=2)
 	NC <- ncol(tbl)
-	if ( NC > 5) colnames(tbl)[6:NC] <- gsub( "_", " ", colnames(tbl)[6:NC], fixed=T)
-	if ( NC > 5) colnames(tbl)[6:NC] <- gsub( ".", " ", colnames(tbl)[6:NC], fixed=T)
+	if ( NC > 3) colnames(tbl)[4:NC] <- gsub( "_", " ", colnames(tbl)[4:NC], fixed=T)
 
 	title <- paste( "Meta Ranks:  &nbsp; ", title)
 	table2html( tbl, fileout=fileout, title=title, maxRows=maxRows, ...)
@@ -411,7 +410,7 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 	avgPval <- apply( pvalM, MARGIN=1, FUN=p.combine)
 	out <- data.frame( allG, allProds, avgFold, avgRank, avgPval, rankM, 
 			stringsAsFactors=FALSE)
-	colnames(out) <- c( geneColumn, "PRODUCT", valueColumn, "AVG_RANK", "AVG_PVALUE", colnames( rankM))
+	colnames(out) <- c( geneColumn, productColumn, valueColumn, "AVG_RANK", "AVG_PVALUE", colnames( rankM))
 
 	# do the final ordering by Average Rank
 	ord <- order( out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])
@@ -427,6 +426,7 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 			for ( i in 1:nDF) simM[ , i] <- sample( simM[ ,i])
 			randomAvgRank <- c( randomAvgRank, 
 						apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T))
+			if (verbose) cat( ".")
 		}
 		# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
 		randomAvgRank <- sort( randomAvgRank)
