@@ -214,6 +214,7 @@
 	}
 
 	# also make smaller pages of each one sample, with only the relavent rows...
+	geneSetsToPlot <- vector()
 	# always start from the main result
 	nColumnPerSample <- nColumnPerSample.html <- 4
 	for ( j in 1:Ngrps) {
@@ -251,6 +252,8 @@
 		keep <- which( sml[,RANKSHIFT] > cutRankShift & sml[,PVALUE] < cutPvalue & sml[,FOLDCHANGE] > cutFold)
 		if ( length( keep) > 0) {
 			smlForHTML <- sml[ keep, ]
+			if ( nrow(smlForHTML) > NgeneSets) smlForHTML <- smlForHTML[ 1:NgeneSets, ]
+			geneSetsToPlot <- c( geneSetsToPlot, smlForHTML[[1]])
 			for( k in grep( "FoldChange", colnames(smlForHTML))) {
 				smlForHTML[[k]] <- formatC( smlForHTML[[k]], format="f", digits=3, flag="+")
 			}
@@ -307,6 +310,8 @@
 		keep <- which( sml[,RANKSHIFT] < (-cutRankShift) & sml[,PVALUE] < cutPvalue & sml[,FOLDCHANGE] < (-cutFold))
 		if ( length( keep) > 0) {
 			smlForHTML <- sml[ keep, ]
+			if ( nrow(smlForHTML) > NgeneSets) smlForHTML <- smlForHTML[ 1:NgeneSets, ]
+			geneSetsToPlot <- c( geneSetsToPlot, smlForHTML[[1]])
 			for( k in grep( "FoldChange", colnames(smlForHTML))) {
 				smlForHTML[[k]] <- formatC( smlForHTML[[k]], format="f", digits=3, flag="+")
 			}
@@ -350,6 +355,8 @@
 			}
 		}
 	}
+	# track just the gene set numbers that show up in HTML files
+	geneSetsToPlot <- sort( unique( sub( ".+_", "", geneSetsToPlot)))
 
 	# make all the little files of genes names and plots for each set
 	if ( makeGeneTables) {
@@ -447,7 +454,8 @@
 	   makeAllDensityPlots( geneSets, groupIDset=groupIDs, speciesID=speciesID, colorset=DE_colors,
 	   		results.path=results.path, folderName=folderName, toolName=toolName,
 	   		pngPath=globalPlotPath, pngName=descriptor, geneMapColumn=geneMapColumn, 
-			whoToPlot=goodSets, deList=deList, yMin=useYmin, PLOT.FUN=PLOT.FUN)
+			whoToPlot=goodSets, deList=deList, yMin=useYmin, PLOT.FUN=PLOT.FUN,
+			subsetInHTML=geneSetsToPlot)
 	}
 
 	# clean up any global storage... 
@@ -758,7 +766,8 @@
 				colorset=c(2:(length(groupIDset)+1)), results.path=results.path, 
 				folderName=folderName, toolName=c("RoundRobin","RankProduct","SAM","MetaResults"),
 				pngPath="densityPlots", pngName="Pathway", geneMapColumn="GENE_ID", 
-				whoToPlot=1:length(allGeneSets), deList=NULL, yMin=0.0005, PLOT.FUN=NULL) {
+				whoToPlot=1:length(allGeneSets), deList=NULL, yMin=0.0005, PLOT.FUN=NULL,
+				subsetInHTML=NULL) {
 
 	pathnames <- names( allGeneSets)
 	ngenes <- sapply( allGeneSets, length)
@@ -778,9 +787,18 @@
 	dev.off()
 
 	# now do all that have genes...
+
+	# we may have a subset of gene set numbers to be drawn.. that happen to be character format
+	if ( ! is.null( subsetInHTML)) {
+		subsetInHTML <- as.integer( subsetInHTML)
+	}
+
 	# for( j in 1:length( pathnames)) {
 	for( j in whoToPlot) {
 		if ( ngenes[j] < 2) next
+
+		# do we skip this one for not being in any HTML file?
+		if ( (! is.null( subsetInHTML)) && ( !(j %in% subsetInHTML))) next
 
 		pngFile <- file.path( pngPath, paste( pngName, "_", j, ".png", sep=""))
 		png( filename=pngFile, width=1000, height=700, bg="white")

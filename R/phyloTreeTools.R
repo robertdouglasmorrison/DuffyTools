@@ -18,17 +18,24 @@
 		names(seqs) <- ids
 		dm <- stringDist( seqs)
 		#dm <- as.matrix( dm)
+	} else {
+		# catch if we were given a full symmetric matrix
+		if ( is.matrix(dm) && (nrow(dm) == ncol(dm))) {
+			dm <- as.dist( dm)
+		}
 	}
 	
+	# catch/cleanup the label colors
 	if ( is.null( col)) {
 		tip.color <- rainbow(length(seqs),end=0.76)
 	} else {
 		tip.color <- col
 	}
+	if ( length(seqs) != length(tip.col)) tip.col <- rep( tip.col, length.out=length(seqs))
 
+	# draw it
 	plot.phylo( as.phylo( hclust( dm)), type=tree.type, lab4ut="a", label.offset=label.offset, 
-			font=tree.font, 
-			tip.color=tip.color, rotate.tree=rotate.tree, ...)
+			font=tree.font, tip.color=tip.color, rotate.tree=rotate.tree, ...)
 	if ( ! is.null( main)) mtext( main, side=3, font=2, cex=1.1)
 
 	return( invisible( dm))
