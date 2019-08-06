@@ -532,7 +532,7 @@ geneSetBestMatch <- function( genes, geneSets=defaultGeneSets(), nBest=5, specie
 
 	out <- data.frame( "BestGeneSet"=outID2, "Jaccard"=round( outJaccard, digits=5), 
 			"Pvalue"=formatC( outPval, format="e", digits=3), 
-			"N_Given"=outN1, "N_InSet"=outN2, "N_Overlap"=outNover, "N_Expect"=round( outExpect,digits=1), 
+			"N_Given"=outN1, "N_InSet"=outN2, "N_Overlap"=outNover, "N_Expect"=round( outExpect,digits=3), 
 			"Enrichment"=round( outEnrich, digits=3), stringsAsFactors=F)
 	#ord <- order( out$Jaccard, decreasing=T)
 	ord <- order( out$Jaccard, -(as.numeric(out$Pvalue)), out$Enrichment, out$N_Overlap, decreasing=T)

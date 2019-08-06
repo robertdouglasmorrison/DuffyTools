@@ -31,7 +31,7 @@
 	} else {
 		tip.color <- col
 	}
-	if ( length(seqs) != length(tip.col)) tip.col <- rep( tip.col, length.out=length(seqs))
+	if ( length(seqs) != length(tip.color)) tip.color <- rep( tip.color, length.out=length(seqs))
 
 	# draw it
 	plot.phylo( as.phylo( hclust( dm)), type=tree.type, lab4ut="a", label.offset=label.offset, 

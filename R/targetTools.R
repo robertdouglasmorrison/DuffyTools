@@ -250,6 +250,7 @@
 	addTarget( "HsKSHV", "Hs_grc,KSHV", "Hs,KSHV")
 
 	addTarget( "CMV", "CMV", "CMV")
+	addTarget( "BCG", "BCG", "BCG")
 
 	setCurrentTarget( "HsPf")
 	cat( "  Done.\n")

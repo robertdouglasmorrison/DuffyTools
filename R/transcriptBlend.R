@@ -79,9 +79,10 @@
 
 # the NLS fit function:  find the optimal blend
 `fit.transcriptBlend` <- function( x, m, geneColumn="GENE_ID", intensityColumn="RPKM_M", useLog=FALSE, 
-				normalize=TRUE, minIntensity=1, arrayFloorIntensity=NULL, 
+				normalize=TRUE, minIntensity=0, arrayFloorIntensity=NULL, 
 				dropLowVarianceGenes=NULL, 
-				algorithm=c("port", "default", "plinear", "LM", "GenSA"), verbose=TRUE) {
+				algorithm=c("port", "default", "plinear", "LM", "GenSA"), 
+				startFractions=NULL, verbose=TRUE) {
 
 	# argument can be a data frame or a file name
 	if ( is.data.frame(x)) {
@@ -197,12 +198,17 @@
 		#mUse <- mPostNorm[ ,2:ncol(mPostNorm)]
 	}
 
-	# starting guess is 1/K
-	startFraction <- 1 / NC
+	# set the controls used by NLS
 	controlList <- nls.control( tol=1e-05, maxiter=300, minFactor=1/1024, warnOnly=T)
 
 	# one call for any number of dimensions
-	starts <- list( "WTi"=rep.int( startFraction, NC))
+	# starting guess is 1/K if we were not given anything explicit
+	if ( is.null( startFractions)) {
+		startFractions <- rep.int( 1/NC, NC)
+	} else {
+		if ( length(startFractions) != NC) stop( "'startFractions' length incompatible with target matrix")
+	}
+	starts <- list( "WTi"=startFractions)
 
 	algorithm <- match.arg( algorithm)
 	if (algorithm == "GenSA") require( GenSA)
@@ -211,19 +217,19 @@
 
 	if ( algorithm == "port") {
 		lowerBound <- rep.int( 0, NC)
-		upperBound <- rep.int( 10, NC)
+		upperBound <- rep.int( 100, NC)
 		fitAns <- try( nls( intenUse ~ transcriptBlend( mUse, WTi), start=starts,
 				control=controlList, algorithm="port", lower=lowerBound, 
 				upper=upperBound))
 	} else if (algorithm == "GenSA") {
-		WTi <- rep.int( startFraction, NC)
+		WTi <- startFractions
 		lowerBound <- rep.int( 0, NC)
-		upperBound <- rep.int( 10, NC)
+		upperBound <- rep.int( 100, NC)
 		fitAns <- try( do.TranscriptBlend.GenSA( intenUse, mUse, WTi, start=starts,
 				lower=lowerBound, upper=upperBound))
 	} else if (algorithm == "LM") {
 		lowerBound <- rep.int( 0, NC)
-		upperBound <- rep.int( 10, NC)
+		upperBound <- rep.int( 100, NC)
 		fitAns <- try( nlsLM( intenUse ~ transcriptBlend( mUse, WTi), start=starts,
 				control=controlList, algorithm="LM"))  #, lower=lowerBound, 
 				# upper=upperBound))
@@ -237,16 +243,29 @@
 		return(NULL)
 	} 
 
+	# the simulated annealling answer is all set, but the others need the summary done explicitly
 	if ( algorithm == "GenSA") { 
 		out <- fitAns
 	} else {
 		fractions <- coef( fitAns)
 		names(fractions) <- colnames(mUse)
 		resids <- residuals(fitAns)
+		fits <- fitted(fitAns)
 		obs <- intenUse
-		names(obs) <- names(resids) <- shortGeneName( genesUse, keep=1)
+		names(obs) <- names(resids) <- names(fits) <- shortGeneName( genesUse, keep=1)
+		rms <- sqrt( mean( resids^2))
+		# let's do a few other stats...
+		cor.ans <- cor.test( obs, fits)
+		r2.pearson <- cor.ans$estimate ^ 2
+		pv <- cor.ans$p.value
+		# also do the more general coefficient of determination
+		meanI <- mean( obs, na.rm=T)
+		SStotal <- sum( (obs - meanI) ^ 2)
+		SSresid <- sum( resids ^ 2)
+		r2.cod <- 1.0 - (SSresid / SStotal)
+
 		out <- list( "BestFit"=fractions, "Observed"=obs, "Residuals"=resids, 
-				"AvgDeviation"=mean( abs( resids)), "fitAnswer"=fitAns)
+				"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
 	}
 
 	return( invisible(out))
@@ -262,17 +281,29 @@
 	genSA.intensity.residual <- function( wts, obs, m) {
 
 		model <- transcriptBlend( m, wts)
-		resid <- abs( obs - model)
-		return( mean( resid, na.rm=T))
+
+		# use mean absolute difference
+		#resid <- abs( obs - model)
+		#return( mean( resid, na.rm=T))
+
+		# switching to RSS
+		resid2 <- (obs - model) ^ 2
+		return( sum( resid2, na.rm=T))
 	}
 
 
 	# set up to call GenSA
 
 	# say 'good enough' if we explain 95% of the intensity
-	stopValue <- mean( inten, na.rm=T) * 0.05
+	stopValue <- mean( inten, na.rm=T) * 0.01
 	control.list <- list( "maxit"=5000, "threshold.stop"=stopValue, "smooth"=FALSE, "max.call"=10000000,
 				"max.time"=60, "trace.mat"=TRUE)
+
+	#make sure the starts are above zero
+	#cat( "\nDebug GenSA: starts: ", wts)
+	#cat( "\nDebug GenSA: lower: ", lower)
+	#cat( "\nDebug GenSA: upper: ", upper)
+	wts[ wts < 0.001] <- 0.001
 
 	ans <- GenSA( par=wts, lower=lower, upper=upper, fn=genSA.intensity.residual, 
 			control=control.list, obs=inten, m=m)
@@ -282,9 +313,19 @@
 	names( fractions) <- colnames(m)
 	model <- transcriptBlend( m, fractions)
 	resids <- inten - model
+	rms <- sqrt( mean( resids^2))
+	# let's do a few other stats...
+	cor.ans <- cor.test( inten, model)
+	r2.pearson <- cor.ans$estimate ^ 2
+	pv <- cor.ans$p.value
+	# also do the more general coefficient of determination
+	meanI <- mean( inten, na.rm=T)
+	SStotal <- sum( (inten - meanI) ^ 2)
+	SSresid <- sum( resids ^ 2)
+	r2.cod <- 1.0 - (SSresid / SStotal)
 
 	out <- list( "BestFit"=fractions, "Observed"=inten, "Residuals"=resids, 
-			"AvgDeviation"=mean( abs( resids)), "fitAns"=ans)
+			"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
 	return( out)
 }
 

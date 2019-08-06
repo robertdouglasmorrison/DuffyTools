@@ -29,8 +29,8 @@ PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pv", "Pb", "Pk", "Pch", "Pco", "
 			"PcoAH", "Pvvv", "Povale", "Pmalar")
 ORIGID_PARASITE_SPECIES <- c( "Pf3D7", "Py17X", "PyYM", "PbANKA")
 ORIGID_PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pb")
-BACTERIA_SPECIES <- c( "MT_H37", "Msmeg_mc2_155", "Styph", "Mchel", "Mabsc")
-BACTERIA_PREFIXES <- c( "MTb", "Msmeg", "Styph", "Mchel", "Mabsc")
+BACTERIA_SPECIES <- c( "MT_H37", "Msmeg_mc2_155", "Styph", "Mchel", "Mabsc", "BCG")
+BACTERIA_PREFIXES <- c( "MTb", "Msmeg", "Styph", "Mchel", "Mabsc", "BCG")
 
 
 # Codon environment

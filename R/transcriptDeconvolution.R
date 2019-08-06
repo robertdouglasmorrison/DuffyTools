@@ -4,7 +4,7 @@
 
 `getTargetMatrix` <- function( speciesID=getCurrentSpecies(), target=NULL) {
 
-	# grap the 'most appropriate' target
+	# grapb the 'most appropriate' target
 	if ( speciesID %in% PARASITE_SPECIES) {
 		targetM <- getLifeCycleMatrix()
 		# the life cycle data is all genes
@@ -33,10 +33,10 @@
 
 `fileSet.TranscriptDeconvolution` <- function( files, fids, targetM=getTargetMatrix(), 
 					geneColumn="GENE_ID", intensityColumn="RPKM_M",
-					sep="\t", useLog=FALSE, normalize=TRUE, minIntensity=1, 
+					sep="\t", useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA"),
-					plot=TRUE) {
+					startFractions=NULL, plot=TRUE) {
 
 	if ( length(files) != length(fids)) {
 		cat( "\nLength mismatch:  'files' and 'fids' must be same length")
@@ -63,28 +63,43 @@
 	if (algorithm == "LM") require( minpack.lm)
 
 	# try to do in multi core
+	myStarts <- NULL
 	mcAns <- multicore.lapply( 1:NS, FUN=function(i) {
 			f <- files[ i]
 			tbl <- read.delim( f, sep=sep, as.is=T)
 			if (i > 1) verbose <<- FALSE
+			# allow suing specific starting percentages
+			# note that previous runs output 0 to 100, but the low level tool wants 0 to 1.0
+			if ( ! is.null( startFractions)) {
+				wh <- which( colnames(startFractions) == fids[i])[1]
+				if ( ! is.na(wh)) {
+					#cat( "  Given start %s..")
+					myStarts <- as.numeric(startFractions[ ,wh]) / 100
+				}
+			}
 			fitAns <- fit.transcriptBlend( tbl, targetM, geneColumn=geneColumn, 
 					intensityColumn=intensityColumn, useLog=useLog, 
 					normalize=normalize, minIntensity=minIntensity, 
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
-					algorithm=algorithm, verbose=verbose)
-			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "Dev=", fitAns$AvgDeviation)
+					algorithm=algorithm, startFractions=myStarts, verbose=verbose)
+			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "RMS.Dev=", round(fitAns$RMS.Deviation,digits=3))
 			return( fitAns)
 		})
 
-	avgDev <- vector( length=NS)
+	rmsDev <- r2cod <- r2p <- pval <- vector( length=NS)
 	for ( i in 1:NS) {
 		# catch case of a single element affect lapply
 		fitAns <- if ( NS == 1) mcAns else mcAns[[i]]
 		if ( is.null(fitAns)) next
 		ans[ , i] <- fitAns$BestFit
-		avgDev[i] <- fitAns$AvgDeviation
+		rmsDev[i] <- fitAns$RMS.Deviation
+		r2cod[i] <- fitAns$R2.CoD
+		r2p[i] <- fitAns$R2.Pearson
+		pval[i] <- fitAns$Pvalue
 	}
+	out2 <- data.frame( "SampleID"=fids, "RMS.Deviation"=rmsDev, "R2.CoD"=r2cod, "R2.Pearson"=r2p,
+				"P.Value"=pval, stringsAsFactors=F)
 	cat( "  Done.\n")
 
 	# standardize the values to 100 %
@@ -93,12 +108,12 @@
 
 	if (plot) plotTranscriptProportions(pcts)
 
-	return( list( "BestFit"=pcts, "AvgDeviation"=avgDev))
+	return( list( "BestFit"=pcts, "Statistics"=out2))
 }
 
 
 `matrix.TranscriptDeconvolution` <- function( m, targetM=getTargetMatrix(), 
-					useLog=FALSE, normalize=TRUE, minIntensity=1, 
+					useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA"),
 					plot=TRUE) {
@@ -128,18 +143,23 @@
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
 					algorithm=algorithm, verbose=verbose)
-			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "Dev=", fitAns$AvgDeviation)
+			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "RMS.Dev=", round(fitAns$RMS.Deviation,digits=3))
 			return( fitAns)
 		})
 
-	avgDev <- vector( length=NS)
+	rmsDev <- r2cod <- r2p <- pval <- vector( length=NS)
 	for ( i in 1:NS) {
 		# catch case of a single element affect lapply
 		fitAns <- if ( NS == 1) mcAns else mcAns[[i]]
 		if ( is.null(fitAns)) next
 		ans[ , i] <- fitAns$BestFit
-		avgDev[i] <- fitAns$AvgDeviation
+		rmsDev[i] <- fitAns$RMS.Deviation
+		r2cod[i] <- fitAns$R2.CoD
+		r2p[i] <- fitAns$R2.Pearson
+		pval[i] <- fitAns$Pvalue
 	}
+	out2 <- data.frame( "SampleID"=fids, "RMS.Deviation"=rmsDev, "R2.CoD"=r2cod, "R2.Pearson"=r2p,
+				"P.Value"=pval, stringsAsFactors=F)
 	cat( "  Done.\n")
 
 	# standardize the values to 100 %
@@ -148,13 +168,13 @@
 
 	if (plot) plotTranscriptProportions(pcts)
 
-	return( list( "BestFit"=pcts, "AvgDeviation"=avgDev))
+	return( list( "BestFit"=pcts, "Statistics"=out2))
 }
 
 
 `data.frame.TranscriptDeconvolution` <- function( tbl, targetM=getTargetMatrix(), 
 					geneColumn="GENE_ID", intensityColumns=setdiff( colnames(tbl), geneColumn),
-					useLog=FALSE, normalize=TRUE, minIntensity=1, 
+					useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA"),
 					plot=TRUE) {
@@ -188,18 +208,23 @@
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
 					algorithm=algorithm, verbose=verbose)
-			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "Dev=", fitAns$AvgDeviation)
+			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "RMS.Dev=", round(fitAns$RMS.Deviation,digits=3))
 			return( fitAns)
 		})
 
-	avgDev <- vector( length=NS)
+	rmsDev <- r2cod <- r2p <- pval <- vector( length=NS)
 	for ( i in 1:NS) {
 		# catch case of a single element affect lapply
 		fitAns <- if ( NS == 1) mcAns else mcAns[[i]]
 		if ( is.null(fitAns)) next
 		ans[ , i] <- fitAns$BestFit
-		avgDev[i] <- fitAns$AvgDeviation
+		rmsDev[i] <- fitAns$RMS.Deviation
+		r2cod[i] <- fitAns$R2.CoD
+		r2p[i] <- fitAns$R2.Pearson
+		pval[i] <- fitAns$Pvalue
 	}
+	out2 <- data.frame( "SampleID"=fids, "RMS.Deviation"=rmsDev, "R2.CoD"=r2cod, "R2.Pearson"=r2p,
+				"P.Value"=pval, stringsAsFactors=F)
 	cat( "  Done.\n")
 
 	# standardize the values to 100 %
@@ -208,7 +233,7 @@
 
 	if (plot) plotTranscriptProportions(pcts)
 
-	return( list( "BestFit"=pcts, "AvgDeviation"=avgDev))
+	return( list( "BestFit"=pcts, "Statistics"=out2))
 }
 
 
