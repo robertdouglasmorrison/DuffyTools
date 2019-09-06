@@ -480,13 +480,21 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 
 # try to convert AA to DNA given the current annotation info
-`convertAApositionToGenomicDNAposition` <- function( geneID, AAposition, AAlength) {
+`convertAApositionToGenomicDNAposition` <- function( geneID, AAposition, AAlength=1) {
 
-	outPos <- outEnd <- 0
-	out <- list( "SEQ_POSITION"=outPos, "SEQ_END"=outEnd)
+	outSID <- outPos <- outEnd <- NA
+	out <- list( "SEQ_ID"=outSID, "SEQ_POSITION"=outPos, "SEQ_END"=outEnd)
+
+	if ( any( c( length(geneID), length(AAposition), length( AAlength)) > 1)) {
+		warning( "Only using the first geneID/position elements")
+		geneID <- geneID[1]
+		AAposition <- AAposition[1]
+		AAlength <- AAlength[1]
+	}
 
 	cdsmap <- subset.data.frame( getCurrentCdsMap(), GENE_ID == geneID)
 	if ( nrow( cdsmap) < 1) return( out)
+	outSID <- cdsmap$SEQ_ID[1]
 
 	# make a little band of relative DNA positions
 	vNow <- vector()
@@ -507,9 +515,9 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	where <- base::match( lastAAbase, names(vNow), nomatch=0)
 	if ( where > 0) outEnd <- vNow[ where]
 	if ( outPos > outEnd) { tmp <- outPos; outPos <- outEnd; outEnd <- tmp }
-	names(outPos) <- names(outEnd) <- ""
+	names(outSID) <- names(outPos) <- names(outEnd) <- ""
 
-	out <- list( "SEQ_POSITION"=outPos, "SEQ_END"=outEnd)
+	out <- list( "SEQ_ID"=outSID, "SEQ_POSITION"=outPos, "SEQ_END"=outEnd)
 	return( out)
 }
 
@@ -517,10 +525,14 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 # try to convert DNA to AA given the current annotation info
 `convertGenomicDNApositionToAAposition` <- function( seqID, DNAposition) {
 
-	outPos <- NA
-	outGene <- NA
-
+	outPos <- outGene <- NA
 	out <- list( "GENE_ID"=outGene, "AA_POSITION"=outPos)
+
+	if ( any( c( length(seqID), length(DNAposition)) > 1)) {
+		warning( "Only using the first seqID/position elements")
+		seqID <- seqID[1]
+		DNAposition <- DNAposition[1]
+	}
 
 	gmap <- subset.data.frame( getCurrentGeneMap(), SEQ_ID == seqID)
 	if ( nrow( gmap) < 1) return( out)

@@ -2,7 +2,7 @@
 #				uses lower level 'transcriptBlend' tool
 
 
-`getTargetMatrix` <- function( speciesID=getCurrentSpecies(), target=NULL) {
+`getTranscriptDeconvolutionTargetMatrix` <- function( speciesID=getCurrentSpecies(), target=NULL) {
 
 	# grapb the 'most appropriate' target
 	if ( speciesID %in% PARASITE_SPECIES) {
@@ -31,7 +31,111 @@
 }
 
 
-`fileSet.TranscriptDeconvolution` <- function( files, fids, targetM=getTargetMatrix(), 
+`buildTranscriptDeconvolutionTargetMatrix` <- function( dimensionIDset, transcript.files, de.files, nGenesPerDimension=NULL,
+					speciesID=getCurrentSpecies(), dropGenePattern=NULL, dropProductPattern=NULL) {
+
+	if ( speciesID != getCurrentSpecies()) setCurrentSpecies( speciesID)
+	prefix <- getCurrentSpeciesFilePrefix()
+	geneMap <- subset( getCurrentGeneMap(), REAL_G=TRUE)
+
+	# step 1:  make sure all files and sampleIDs are in agreement
+	NS <- length(dimensionIDset)
+	NTF <- length(transcript.files)
+	NDEF <- length(de.files)
+	if ( ! all( c( NTF, NDEF) == NS)) stop( "All arguments must be same length: dimensionIDset, transcript.files, de.files")
+	for ( i in 1:NS) {
+		sid <- dimensionIDset[i]
+		tfid <- basename( transcript.files[i])
+		defid <- basename( de.files[i])
+		if ( ! grepl( sid, tfid, fixed=T)) stop( paste( "SampleID not in Transcript filename: ", sid, tfid))
+		if ( ! grepl( sid, defid, fixed=T)) stop( paste( "SampleID not in DE ratios filename: ", sid, defid))
+	}
+	if ( ! all( grep( prefix, basename(transcript.files)) %in% 1:NS)) stop( "Expected species prefix not in all transcript files")
+	if ( ! all( grep( prefix, basename(de.files)) %in% 1:NS)) stop( "Expected species prefix not in all DE ratio files")
+	if ( ! all( file.exists( transcript.files))) stop( "Some transcript files not found")
+	if ( ! all( file.exists( de.files))) stop( "Some DE ratio files not found")
+	# OK, the files and IDs are self consistent
+
+	# step 2:  get the reference transcriptomes for these samples
+	cat( "\nLoading reference transcriptomes..\n")
+	targetM <- expressionFileSetToMatrix( transcript.files, dimensionIDset, verbose=T)
+	# force check that the genes we see are in this annotation
+	drops <- which( ! ( rownames(targetM) %in% geneMap$GENE_ID))
+	if ( length(drops)) {
+		cat( "\nSome GeneIDs not in current species genome annotation.  Dropping: ", length( drops))
+		targetM <- targetM[ -drops, ]
+	}
+
+	# step 3:  gather the genes that will be the marker gene set for each dimension
+	if ( is.null( nGenesPerDimension)) {
+		gpd <- round( nrow(geneMap) / NS / 2)
+		nGenesPerDimension <- gpd
+	}
+	cat( "\nLoading marker genes..\n")
+	markerGenes <- markerRanks <- markerTypes <- vector()
+	for ( i in 1:NS) {
+		f <- de.files[i]
+		tmp <- read.delim( f, as.is=T)
+		drops1 <- drops2 <- vector()
+		if ( ! is.null( dropGenePattern)) {
+			drops1 <- grep( dropGenePattern, tmp$GENE_ID)
+		}
+		if ( ! is.null( dropProductPattern)) {
+			drops2 <- grep( dropProductPattern, tmp$PRODUCT)
+		}
+		drops <- sort( unique( c( drops1, drops2)))
+		if ( length(drops)) {
+			cat( "\nDropping unwanted genes: ", length(drops), "\n")
+			tmp <- tmp[ -drops, ]
+		}
+		# grap up to 2N here, then trim out excess later
+		Ng2 <- nGenesPerDimension * 2
+		if ( Ng2 > nrow(tmp)) Ng2 <- nrow(tmp)
+		markerGenes <- c( markerGenes, tmp$GENE_ID[1:Ng2])
+		markerRanks <- c( markerRanks, 1:Ng2)
+		markerTypes <- c( markerTypes, rep( dimensionIDset[i], Ng2))
+		cat( "\r", i, dimensionIDset[i], Ng2, length(markerGenes))
+	}
+
+	# step 4:  keep just one copy of each gene, and track its type and rank
+	ord <- order( markerGenes, markerRanks, markerTypes)
+	best <- match( sort( unique( markerGenes)), markerGenes[ord])
+	bestMarkerGenes <- markerGenes[ ord[ best]]
+	bestMarkerRanks <- markerRanks[ ord[ best]]
+	bestMarkerTypes <- markerTypes[ ord[ best]]
+
+	# now enforce the N limit
+	dropExcess <- vector()
+	for (ct in sort( unique( bestMarkerTypes))) {
+		now <- which( bestMarkerTypes == ct)
+		if ( length(now) > nGenesPerDimension) {
+			dropNow <- setdiff( now, now[1:nGenesPerDimension])
+			dropExcess <- c( dropExcess, dropNow)
+		}
+	}
+	if ( length( dropExcess)) {
+		bestMarkerGenes <- bestMarkerGenes[ -dropExcess]
+		bestMarkerRanks <- bestMarkerRanks[ -dropExcess]
+		bestMarkerTypes <- bestMarkerTypes[ -dropExcess]
+	}
+
+	# now finalize with just those best
+	# given this set as the proposed marker genes, make the target matrix we will use
+	who <- match( bestMarkerGenes, rownames(targetM))
+	targetM <- targetM[ who, ]
+	out <- data.frame( "GENE_ID"=bestMarkerGenes, "Dimension"=bestMarkerTypes, 
+				"Rank"=bestMarkerRanks, "PRODUCT"=gene2Product( bestMarkerGenes),
+				targetM, stringsAsFactors=F)
+	outfile <- paste( prefix, "Deconvolution.TargetMatrix.txt", sep=".")
+	write.table( out, outfile, sep="\t", quote=F, row.names=F)
+	outfile2 <- paste( prefix, "Deconvolution.TargetMatrix.rda", sep=".")
+	save( targetM, file=outfile2)
+	cat( "\nWrote new Deconvolution Target Matrix: ", nGenesPerDimension, "  \tN_Row: ", nrow(targetM))
+	return()
+}
+
+
+`fileSet.TranscriptDeconvolution` <- function( files, fids, targetM=getTranscriptDeconvolutionTargetMatrix(), 
 					geneColumn="GENE_ID", intensityColumn="RPKM_M",
 					sep="\t", useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
@@ -112,7 +216,7 @@
 }
 
 
-`matrix.TranscriptDeconvolution` <- function( m, targetM=getTargetMatrix(), 
+`matrix.TranscriptDeconvolution` <- function( m, targetM=getTranscriptDeconvolutionTargetMatrix(), 
 					useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA"),
@@ -139,71 +243,6 @@
 			if (i > 1) verbose <<- FALSE
 			fitAns <- fit.transcriptBlend( tbl, targetM, geneColumn="GENE_ID", 
 					intensityColumn="INTENSITY", useLog=useLog, 
-					normalize=normalize, minIntensity=minIntensity, 
-					arrayFloorIntensity=arrayFloorIntensity, 
-					dropLowVarianceGenes=dropLowVarianceGenes, 
-					algorithm=algorithm, verbose=verbose)
-			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "RMS.Dev=", round(fitAns$RMS.Deviation,digits=3))
-			return( fitAns)
-		})
-
-	rmsDev <- r2cod <- r2p <- pval <- vector( length=NS)
-	for ( i in 1:NS) {
-		# catch case of a single element affect lapply
-		fitAns <- if ( NS == 1) mcAns else mcAns[[i]]
-		if ( is.null(fitAns)) next
-		ans[ , i] <- fitAns$BestFit
-		rmsDev[i] <- fitAns$RMS.Deviation
-		r2cod[i] <- fitAns$R2.CoD
-		r2p[i] <- fitAns$R2.Pearson
-		pval[i] <- fitAns$Pvalue
-	}
-	out2 <- data.frame( "SampleID"=fids, "RMS.Deviation"=rmsDev, "R2.CoD"=r2cod, "R2.Pearson"=r2p,
-				"P.Value"=pval, stringsAsFactors=F)
-	cat( "  Done.\n")
-
-	# standardize the values to 100 %
-	pcts <- ans
-	for ( i in 1:NS) pcts[ , i] <- ans[ , i] * 100 / sum( ans[ , i])
-
-	if (plot) plotTranscriptProportions(pcts)
-
-	return( list( "BestFit"=pcts, "Statistics"=out2))
-}
-
-
-`data.frame.TranscriptDeconvolution` <- function( tbl, targetM=getTargetMatrix(), 
-					geneColumn="GENE_ID", intensityColumns=setdiff( colnames(tbl), geneColumn),
-					useLog=FALSE, normalize=FALSE, minIntensity=0, 
-					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
-					algorithm=c("port","default","plinear","LM","GenSA"),
-					plot=TRUE) {
-
-	# evaluate all column names
-	found <- ( intensityColumns %in% colnames(tbl))
-	if ( sum(found) < length(intensityColumns)) {
-		cat( "\nSome intensity columns not found: ", intensityColumns[ !found])
-		intensityColumns <- intensityColumns[ found]
-		tbl <- tbl[ , c( geneColumn, intensityColumns)]
-	}
-	NS <- length( intensityColumns)
-	ND <- ncol(targetM)
-	fids <- intensityColumns
-
-	ans <- matrix( 0, nrow=ND, ncol=NS)
-	colnames(ans) <- fids
-	rownames(ans) <- colnames(targetM)
-
-	verbose <- TRUE
-	algorithm <- match.arg( algorithm)
-	if (algorithm == "GenSA") require( GenSA)
-	if (algorithm == "LM") require( minpack.lm)
-
-	# try to do in multi core
-	mcAns <- multicore.lapply( 1:NS, FUN=function(i) {
-			if (i > 1) verbose <<- FALSE
-			fitAns <- fit.transcriptBlend( tbl, targetM, geneColumn=geneColumn,
-					intensityColumn=intensityColumns[i], useLog=useLog, 
 					normalize=normalize, minIntensity=minIntensity, 
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 

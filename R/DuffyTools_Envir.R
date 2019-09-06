@@ -56,23 +56,23 @@ OrthoEnv <- new.env( hash=TRUE, parent=emptyenv())
 ALL_GENE_SETS <- c( "Blood.GeneModules", "BTM.AntibodyResponses", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
-			"KEGG.Pathways", "MetabolicPathways", "PBMC.GeneModules", 
+			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", 
 			"HGNC.GeneFamily", "Reactome", "WikiPathways", "HumanImmuneSubsets", "MouseImmuneSubsets", 
 			"CellTypes", "SortedCellTypes", "MPMP.Pathways", "ParasiteLifeCycle")
 MAMMAL_GENE_SETS <- c( "Blood.GeneModules", "BTM.AntibodyResponses", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
-			"KEGG.Pathways", "MetabolicPathways", "PBMC.GeneModules", 
+			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", 
 			"HGNC.GeneFamily", "Reactome", "WikiPathways", "HumanImmuneSubsets", "MouseImmuneSubsets", 
 			"CellTypes", "SortedCellTypes")
 PARASITE_GENE_SETS <- c( "Blood.GeneModules", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
-			"KEGG.Pathways", "MetabolicPathways", "PBMC.GeneModules", 
+			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", 
 			"HGNC.GeneFamily", "Reactome", "WikiPathways", "MPMP.Pathways", "ParasiteLifeCycle")
 BACTERIA_GENE_SETS <- c( "GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
-			"KEGG.Pathways", "MetabolicPathways", "HGNC.GeneFamily", "Reactome", "WikiPathways", 
+			"KEGG.Pathways", "MetabolicPathways", "HGNC.GeneFamily", "Panther.Pathways", "Reactome", "WikiPathways", 
 			"TFOE.Regulons", "Tuberculist.FunctionalGroups", "Tuberculist.GO.Ontology",
 			"ISB.Corems")
 

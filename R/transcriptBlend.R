@@ -272,9 +272,13 @@
 }
 
 
-`do.TranscriptBlend.GenSA` <- function( inten, m, wts, start, lower, upper) {
+`do.TranscriptBlend.GenSA` <- function( inten, m, wts, start, lower, upper, seed=NULL) {
 
 	# wrapper to implement fitting transcriptome by Generalize Simulated Annealing
+
+	# GenSA as implemented has a hard coded seed for RNG.  We want random behavior each time thru
+	# GEnSA docs suggest using a negative value
+	my.seed <- -(as.integer( Sys.time()))
 
 
 	# the penalty function that GenSA will minimize
@@ -296,13 +300,12 @@
 
 	# say 'good enough' if we explain 95% of the intensity
 	stopValue <- mean( inten, na.rm=T) * 0.01
-	control.list <- list( "maxit"=5000, "threshold.stop"=stopValue, "smooth"=FALSE, "max.call"=10000000,
-				"max.time"=60, "trace.mat"=TRUE)
+	control.list <- list( "maxit"=5000, "threshold.stop"=stopValue, 
+				"temperature"=6000, "smooth"=FALSE, "max.call"=10000000,
+				"max.time"=100, "trace.mat"=TRUE, "seed"=my.seed)
 
 	#make sure the starts are above zero
-	#cat( "\nDebug GenSA: starts: ", wts)
-	#cat( "\nDebug GenSA: lower: ", lower)
-	#cat( "\nDebug GenSA: upper: ", upper)
+	cat( "\nDebug GenSA: starts: ", wts)
 	wts[ wts < 0.001] <- 0.001
 
 	ans <- GenSA( par=wts, lower=lower, upper=upper, fn=genSA.intensity.residual, 
@@ -310,6 +313,7 @@
 
 	# extract the answers
 	fractions <- ans$par
+	GenSA.Trace <<- ans$trace.mat
 	names( fractions) <- colnames(m)
 	model <- transcriptBlend( m, fractions)
 	resids <- inten - model
