@@ -6,9 +6,9 @@
 				m=NULL, contrast=NULL, useLog=TRUE,
 				groupColumn="Group", geneSets=defaultGeneSets(speciesID), descriptor="CombinedGeneSets", 
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 5 else 2, 
-				min.rpkm=0, offset=2,
+				min.rpkm=1, min.variance=1, offset=2,
 				addCellTypes=(speciesID %in% MAMMAL_SPECIES), addLifeCycle=(speciesID %in% PARASITE_SPECIES), 
-				doQuSage= TRUE, verbose=TRUE, ...)
+				doQuSage= TRUE, verbose=TRUE, n.points=2^12, ...)
 {
 
 	require( qusage)
@@ -76,7 +76,16 @@
 		drops <- which( bigV < min.rpkm)
 		if ( length( drops)) {
 			m <- m[ -drops, ]
-			cat( "\nDropping low expression rows below: ", min.rpkm, ":   N=", length(drops))
+			cat( "\nDropping low expression rows below: ", min.rpkm, " RPKM:   N=", length(drops))
+			bigV <- bigV[ -drops]
+		}
+		# QuSage also dies if the variance is too small
+		smallV <- apply( m, MARGIN=1, min, na.rm=T)
+		rangeV <- bigV - smallV
+		drops <- which( rangeV < min.variance)
+		if ( length( drops)) {
+			m <- m[ -drops, ]
+			cat( "\nDropping low variance rows below: ", min.variance, " RPKM:   N=", length(drops))
 		}
 
 		# QuSage chokes on duplicate IDs
@@ -144,7 +153,7 @@
 		ans <- do.QuSage( eset=m, labels=grps, contrast=contrast, geneSets=myGeneSets, descriptor=descriptor,
 				group1=group1, group2=group2, path=path, prefix=prefix, makeDownHTML=TRUE,
 				shortNames=myGeneSetShortNames, longNames=myGeneSetNames, addCellTypes=addCellTypes,
-				addLifeCycle=addLifeCycle, doQuSage=doQuSage)
+				addLifeCycle=addLifeCycle, doQuSage=doQuSage, n.points=n.points, ...)
 		out <- list( ans, "Matrix"=mOrig)
 		return(out)
 
@@ -160,7 +169,7 @@
 				do.QuSage( eset=m, labels=myGroups, contrast=myContrast, geneSets=myGeneSets, descriptor=descriptor,
 					group1=group1, group2=group2, path=path, prefix=prefix, makeDownHTML=(Ngroups>2),
 					shortNames=myGeneSetShortNames, longNames=myGeneSetNames, addCellTypes=addCellTypes,
-					addLifeCycle=addLifeCycle, doQuSage=doQuSage)
+					addLifeCycle=addLifeCycle, doQuSage=doQuSage, n.points=n.points, ...)
 			}
 		multicore.lapply( allGroups, multicore.qusage)
 	}
@@ -177,7 +186,7 @@
 do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", group1="Group1", group2="Group2", 
 			path=".", prefix=getCurrentSpeciesFilePrefix(), makeDownHTML=TRUE, 
 			shortNames=names(geneSets), longNames=names(geneSets), addCellTypes=FALSE, addLifeCycle=FALSE,
-			doQuSage=TRUE) {
+			doQuSage=TRUE, n.points=2^12, ...) {
 
 	# having less than 2 items in any group will break qusage.  Check
 	grpTable <- table( labels)
@@ -191,7 +200,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 
 	if (doQuSage) {
 
-		ans <- qusage( eset=eset, labels=labels, contrast=contrast, geneSets=geneSets)
+		ans <- qusage( eset=eset, labels=labels, contrast=contrast, geneSets=geneSets, n.points=n.points, ...)
 
 		# modify and clean up the results
 		pval <- pdf.pVal(ans)
