@@ -260,7 +260,7 @@
 }
 
 
-`DNAtoFrameShiftingPeptides` <- function( dnaSet, min.aa.length=10) {
+`DNAtoFrameShiftingPeptides` <- function( dnaSet, min.aa.length=10, referenceAA=NULL) {
 
 	dnaIn <- as.character( dnaSet)
 	nIn <- length( dnaIn)
@@ -276,11 +276,27 @@
 			pepTerms <- strsplit( pepStrings, split=STOP_CODON_PATTERN, fixed=FALSE)
 	
 			# which reading frame has the best?
-			bigLength <- sapply( pepTerms, function(x) return( max( nchar(x))))
-			bigPepTerm <- sapply( pepTerms, function(x) return( x[ which.max( nchar(x))]))
-			bestFrame <- which.max( bigLength)
-			bestPep <- bigPepTerm[ bestFrame]
-			bestLen <- bigLength[ bestFrame]
+			if ( is.null( referenceAA)) {
+				bigLength <- sapply( pepTerms, function(x) return( max( nchar(x))))
+				bigPepTerm <- sapply( pepTerms, function(x) return( x[ which.max( nchar(x))]))
+				bestFrame <- which.max( bigLength)
+				bestPep <- bigPepTerm[ bestFrame]
+				bestLen <- bigLength[ bestFrame]
+			} else {
+				bestLen <- -9999
+				data( BLOSUM62)
+				for (f in 1:3) {
+					pa <- pairwiseAlignment( pepTerms[[f]], referenceAA, type="global-local", scoreOnly=T,
+								substitutionMatrix=BLOSUM62)
+					best <- which.max( pa)
+					myPep <- pepTerms[[f]][best]
+					if ( (myLen <- nchar(myPep)) > bestLen) {
+						bestFrame <- f
+						bestPep <- myPep
+						bestLen <- myLen
+					}
+				}
+			}
 			if ( bestLen < min.aa.length) break
 	
 			N <- N + 1

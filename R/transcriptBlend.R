@@ -304,15 +304,22 @@
 				"temperature"=6000, "smooth"=FALSE, "max.call"=10000000,
 				"max.time"=100, "trace.mat"=TRUE, "seed"=my.seed)
 
+	# the GenSA tool seems unable to push any parameter all the way to zero, as if it can't 
+	# equal the lower bound, instead must stay above it
+	# so let's let the lower bounds go a bit bit negative, and clean up later
+	lower[ lower == 0] <- -0.5
 	#make sure the starts are above zero
-	cat( "\nDebug GenSA: starts: ", wts)
-	wts[ wts < 0.001] <- 0.001
+	#cat( "\nDebug GenSA: starts: ", wts)
+	wts[ wts <= lower] <- 0.001
 
 	ans <- GenSA( par=wts, lower=lower, upper=upper, fn=genSA.intensity.residual, 
 			control=control.list, obs=inten, m=m)
 
 	# extract the answers
 	fractions <- ans$par
+	# Clean up:  don't let any final calls be below zero percent
+	fractions[ fractions < 0] <- 0
+
 	GenSA.Trace <<- ans$trace.mat
 	names( fractions) <- colnames(m)
 	model <- transcriptBlend( m, fractions)

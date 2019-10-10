@@ -320,7 +320,7 @@
 	}
 
 	LAS <- if ( NS < 5) 1 else 3
-	X_LIM_SCALE <- if ( NS < 10) 1.2 else 1.5
+	X_LIM_SCALE <- 1.3
 	nextra <- length(gaps)
 
 	if ( doLines) {
@@ -382,7 +382,7 @@
 		}
 		ans <- barplot( pcts, col=col, main=paste( "Transcript Proportions:   ", label), 
 			ylab="Proportion per Component", las=LAS, 
-			xlim=c(0.2,(NS+nextra+1)*X_LIM_SCALE), font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
+			xlim=c(0.2,(NS+nextra+1)*X_LIM_SCALE+0.5), font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
 			legend=TRUE, args.legend=list( "cex"=legend.cex, "bg"='white'), ...)
 		samplesToLabel <- barAts
 		if ( text.rotation == 0) {
@@ -487,7 +487,8 @@
 	# we have the compares done, draw it too
 	if (plot) {
 		pctsGrp <- t( apply( pcts, 1, function(x) tapply( x, grpFac, mean)))
-		colnames(pctsGrp) <- paste( colnames(pctsGrp), "\n(N=", as.numeric(table(as.numeric(grpPtrs))), ")", sep="")
+		# show the group counts, if not too many
+		if (NG <=12) colnames(pctsGrp) <- paste( colnames(pctsGrp), "\n(N=", as.numeric(table(as.numeric(grpPtrs))), ")", sep="")
 		plotTranscriptProportions( pctsGrp, label=label, ...)
 	}
 

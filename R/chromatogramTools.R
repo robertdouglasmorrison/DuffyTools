@@ -991,7 +991,7 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=type, lwd=2, 
 }
 
 
-`cleanChromatogramDNA` <- function( chromoObj, referenceDNA, referenceAA=NULL) {
+`cleanChromatogramDNA` <- function( chromoObj, referenceDNA, referenceAA=NULL, nSkip=20, verbose=TRUE) {
 
 	# we find cases where Sanger sequencing is inserting duplicate bases, which throw off reading frame
 	# try to find and correct, using a reference DNA and perhaps AA sequence.
@@ -1007,8 +1007,23 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=type, lwd=2, 
 	dnaScores <- pairwiseAlignment( chromoDNA, referenceDNA, type="global-local", scoreOnly=T)
 	dna <- chromoDNA[ which.max(dnaScores)]
 
-	# step 2: repeatedly see if we find a 1-2bp gap
-	ans <- DNAtoCleanChromatogramDNA( dna, referenceDNA=referenceDNA, referenceAA=referenceAA)
+	# step 2: try to re-call "N" bases manually, but ignore the edges
+	hasNcall <- which( names(peakPos) == "N")
+	NP <- length(peakPos)
+	hasNcall <- setdiff( hasNcall, c( 1:nSkip, (NP-nSkip+1):NP))
+	if ( length( hasNcall)) {
+		for (k in hasNcall) {
+			baseAns <- baseCallOnePeak( peakPos[k], traceM)
+			newBase <- names(baseAns)[1]
+			if ( newBase != "N") {
+				substr( dna, k, k) <- newBase
+				names(peakPos)[k] <- newBase
+			}
+		}
+	}
+
+	# step 3: repeatedly see if we find a 1-2bp gap
+	ans <- DNAtoCleanChromatogramDNA( dna, referenceDNA=referenceDNA, referenceAA=referenceAA, verbose=verbose)
 	dnaNow <- ans$DNA
 	details <- ans$CleaningDetails
 	if ( ! is.null( details)) {
@@ -1034,4 +1049,167 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=type, lwd=2, 
 	out <- list( "TraceM"=traceM, "PeakPosition"=peakPos, "DNA_Calls"=dnaOut, "AA_Calls"=aaOut)
 	out
 }
+
+
+# some routines from trying to quantify codon calls at specific mutation sites
+
+# get the motif region directly from the ABI file
+motifChromatogram <- function( f, motif, gene="", plot=TRUE, min.score=0, verbose=TRUE, referenceDNA=NULL) {
+
+	motifName <- names(motif)[1]
+	motif <- toupper( motif[1])
+	if (is.null(motifName) || is.na(motifName) || motifName == "") motifName <- motif
+
+	# given one ABI file, extract the subset that we want
+	ch <- loadChromatogram( f)
+	ch2 <- subsetChromatogram( ch, substring=motif)
+	if ( ! is.null( referenceDNA)) ch2 <- cleanChromatogramDNA( ch2, referenceDNA=referenceDNA, nSkip=1, verbose=verbose)
+
+	if (plot) {
+		mainText <- paste( "  Motif:  ", motifName, "    Gene:  ", gene, 
+					"\nFile: ", sub( ".ab1$","",basename(f)))
+		plotChromatogram( ch2, label=mainText)
+	}
+
+	# sanity check to see if we got that motif
+	aaSeqs <- ch2$AA_Calls[1:3]
+	pa <- pairwiseAlignment( aaSeqs, motif, type="local-global", scoreOnly=T)
+	best <- which.max( pa)
+	if ( pa[best] < min.score) {
+		if( verbose) {
+			cat( "\nFailed to find motif in chromatogram.\nMotif=", motif, 
+				"  File", basename(f), "  Score=", pa[best])
+		}
+		if (plot) {
+			txt <- paste( "Failed to find motif: ", motif)
+			usr <- par('usr')
+			text( mean(usr[1:2]), mean(usr[3:4]), txt, pos=3, cex=1, font=2)
+		}
+		return( NULL)
+	}
+	return( ch2)
+}
+
+
+# zoom in on just the center codon
+motifCodonChromatogram <- function( ch, motif, plot=TRUE) {
+
+	# given the chromatogram subset that contains the motif, 
+	# extract the exact center as the codon of interest
+	if ( is.null(ch)) return(NULL)
+
+	motifName <- names(motif)[1]
+	motif <- toupper( motif[1])
+	if (is.null(motifName) || is.na(motifName) || motifName == "") motifName <- motif
+
+	aaSeqs <- ch$AA_Calls[1:3]
+	pa <- pairwiseAlignment( aaSeqs, motif, type="local-global", scoreOnly=T)
+	best <- which.max( pa)
+	pa <- pairwiseAlignment( aaSeqs[best], motif, type="local-global", scoreOnly=F)
+	subjStart <- start( subject( pa))
+	pattStart <- start( pattern( pa))
+	# use exactly the center
+	nFlankAA <- floor( nchar(motif)/2)
+	alleleLocAA <- pattStart + nFlankAA
+	alleleLocDNA <- alleleLocAA * 3 - 2
+	traceMstart <- ch$PeakPosition[alleleLocDNA]
+	traceMstop <- ch$PeakPosition[alleleLocDNA+2]
+	traceHalfWidth <- round( (traceMstop - traceMstart) / 4)
+	traceMstart <- traceMstart - traceHalfWidth
+	traceMstop <- traceMstop + traceHalfWidth
+	smallTM <- ch$TraceM[ traceMstart:traceMstop, ]
+	rownames(smallTM) <- 1:nrow(smallTM)
+
+	# draw what/where we found it
+	if (plot) {
+		bigY <- max( smallTM, na.rm=T)
+		rect( traceMstart, -bigY/30, traceMstop, bigY, border='black', lwd=4)
+	}
+
+	# extract just that region to send back
+	smallPeaks <- ch$PeakPosition[ alleleLocDNA:(alleleLocDNA+2)]
+	smallDNA <- substr( ch$DNA_Calls[1], alleleLocDNA, alleleLocDNA+2)
+	smallAA <- substr( ch$AA_Calls[best], alleleLocAA, alleleLocAA)
+
+	# adjust the peak centers to these new local units
+	smallPeaks <- smallPeaks - traceMstart + 1
+
+	# send this tiny chromatogram back
+	out <- list( "TraceM"=smallTM, "PeakPosition"=smallPeaks, "DNA_Calls"=smallDNA, "AA_Calls"=smallAA)
+	return( out)
+}
+
+
+measureDominantCodons <- function( ch, nCodons=1, plot=T) {
+
+	# start with what is given
+	peaks <- ch$PeakPosition
+	tm <- ch$TraceM
+	calledAA <- substr( ch$AA_Calls[1], 1, 1)
+
+	# use just the center top region to ignore the tails
+	# mask out the tails
+	tmIn <- tm
+	halfWidth <- 2
+	maskM <- matrix( 0, nrow=nrow(tm), ncol=ncol(tm))
+	for ( p in peaks) maskM[ (p-halfWidth):(p+halfWidth), ] <- 1
+	tm <- tm * maskM
+	tmFull <- tm
+	total <- apply( tmFull, MARGIN=1, sum, na.rm=T)
+	
+	# we may be asked to call more than one, so set up to loop around
+	aaOut <- dnaOut <- rep.int( "", nCodons)
+	rankOut <- pctOut <- rep.int( NA, nCodons)
+	myPct <- vector( length=3)
+	for ( i in 1:nCodons) {
+	
+		# grab the called base data and the overall sums
+		big <- apply( tm, MARGIN=1, max, na.rm=T)
+		calledBase <- apply( tm[ peaks, ], MARGIN=1, function(x) colnames(tm)[ which.max(x)])
+		calledAA <- DNAtoAA( paste(calledBase,collapse=""), readingFrame=1)
+		for ( ip in 1:3) {
+			p <- peaks[ip]
+			px <- (p-halfWidth):(p+halfWidth)
+			myPct[ip] <- sum(big[px]) * 100 / sum(total[px])
+		}
+		# the percentage of the dominant allele is from the lowest of the 3 bases!
+		whoLow <- which.min( myPct)
+		pctAns <- round( myPct[whoLow])
+		lowPeakHeight <- tm[ peaks[whoLow], calledBase[whoLow]]
+
+		# store the answer for this codon call, with a lower limit on how much
+		# we can trust what we found
+		if (pctAns < 10) break
+		aaOut[i] <- calledAA
+		dnaOut[i] <- paste( calledBase, collapse="")
+		pctOut[i] <- pctAns
+		rankOut[i] <- i
+
+		# if we need more than one call, subtract out what we called and repeat
+		if ( i < nCodons) {
+			for ( j in 1:3) {
+				myBase <- calledBase[j]
+				p <- peaks[j]
+				px <- (p-halfWidth):(p+halfWidth)
+				newValues <- tm[ px, myBase] - lowPeakHeight
+				newValues <- pmax( newValues, 0)
+				tm[ px, myBase] <- newValues
+			}
+		}
+	}
+
+	# only keep/show what we filled in
+	nFound <- sum( aaOut != "")
+	length(aaOut) <- length(dnaOut) <- length(pctOut) <- length(rankOut) <- nFound
+	if ( plot) {
+		usr <- par( "usr")
+		myX <- mean(usr[1:2])
+		myY <- max(tmFull, na.rm=T)
+		txt <- paste( aaOut, "=", pctOut, "%", sep="", collapse="; ")
+		text( myX, myY, txt, font=2, cex=1.4, pos=3)
+	}
+	return( data.frame( "Status"="Pass", "AA_Call"=aaOut, "Codon"=dnaOut, "Percent"=pctOut, "Rank"=rankOut,
+					stringsAsFactors=F))
+}
+
 
