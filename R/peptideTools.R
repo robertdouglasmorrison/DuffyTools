@@ -274,6 +274,16 @@
 		repeat {
 			pepStrings <- DNAtoAA( dna, clipAtStop=FALSE, readingFrames=1:3)
 			pepTerms <- strsplit( pepStrings, split=STOP_CODON_PATTERN, fixed=FALSE)
+
+			# reattach any terminal stop codons
+			goodStops <- grep( "\\*$", pepStrings)
+			for (k in goodStops) {
+				tmp <- pepTerms[[k]]
+				nt <- length(tmp)
+				tmpStr <- paste( tmp[nt], "*", sep="")
+				tmp[nt] <- tmpStr
+				pepTerms[[k]] <- tmp
+			}
 	
 			# which reading frame has the best?
 			if ( is.null( referenceAA)) {

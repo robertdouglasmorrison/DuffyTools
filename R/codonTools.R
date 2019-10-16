@@ -74,11 +74,12 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 	for ( j in 1:length(aa)) {
 		thisAAvec <- aaV[[j]]
 		aaPattern <- PASTE( "^",thisAAvec, sep="")
+		aaPattern[ thisAAvec == "*"] <- "^\\*"
 		dnaV <- sapply( 1:length(thisAAvec), function(i) {
 				who <- grep( aaPattern[i], names(codonFreq))
 				# use the codon frequencies as the sampling probabilities
 				prob <- codonFreq[who]
-				dnaSet <- SUB( "^[A-Z]_", "", names(codonFreq)[who])
+				dnaSet <- SUB( "^[A-Z\\*]_", "", names(codonFreq)[who])
 				return( sample( dnaSet, size=1, prob=prob))
 			})
 		out[j] <- PASTE( dnaV, collapse="")
