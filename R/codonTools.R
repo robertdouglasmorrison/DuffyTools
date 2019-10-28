@@ -1,5 +1,21 @@
 # codonTools.R
 
+APPEND <- base::append
+GREP <- base::grep
+GSUB <- base::gsub
+MAPPLY <- base::mapply
+MATCH <- base::match
+ORDER <- base::order
+PASTE <- base::paste
+REV <- base::rev
+SAPPLY <- base::sapply
+STRSPLIT <- base::strsplit
+SUB <- base::sub
+SUBSTR <- base::substr
+TAPPLY <- base::tapply
+TOUPPER <- base::toupper
+WHICH <- base::which
+
 
 `codon.defaults` <- function() {
 	# the data object is called 'codonMap'
@@ -14,9 +30,9 @@
 
 codonUsageFrequency <- function( dna, allAA=FALSE) {
 
-	dnaV <- strsplit( dna, split="")[[1]]
+	dnaV <- STRSPLIT( dna, split="")[[1]]
 	Ndna <- length( dnaV)
-	dnaV <- base::toupper( dnaV)
+	dnaV <- TOUPPER( dnaV)
 
 	# we only want the true codons, none of the extended
 	codonMap <- getCodonMap()[ 1:64, ]
@@ -30,22 +46,21 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 	}
 	aa <- rep.int( "?", Naa)
 
-	triplets <- mapply( beg, end, FUN=function(b,e) { return( paste( dnaV[b:e], collapse=""))},
+	triplets <- MAPPLY( beg, end, FUN=function(b,e) { return( PASTE( dnaV[b:e], collapse=""))},
 			USE.NAMES=FALSE)
-	where <- base::match( triplets, codonMap$DNA, nomatch=0)
+	where <- MATCH( triplets, codonMap$DNA, nomatch=0)
 	aa[ where > 0] <- codonMap$AA[ where]
-	out <- paste( aa, triplets, sep="_")
+	out <- PASTE( aa, triplets, sep="_")
 
 	# we may be asked to make sure every AA is seen at least once
 	if (allAA) {
-		missingA <- setdiff( codonMap$AA, aa)
+		missingA <- base::setdiff( codonMap$AA, aa)
 		if ( length(missingA)) {
-			smlMap <- subset( codonMap, AA %in% missingA)
-			out2 <- paste( smlMap$AA, smlMap$DNA, sep="_")
+			smlMap <- subset.data.frame( codonMap, AA %in% missingA)
+			out2 <- PASTE( smlMap$AA, smlMap$DNA, sep="_")
 			out <- c( out, out2)
 		}
 	}
-
 
 	return( table(out))
 }
@@ -54,18 +69,16 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 # turn amino acids to DNA
 `AAtoCodonOptimizedDNA` <- function( aa, dnaRef) {
 
-	PASTE <- base::paste
-	SUB <- base::sub
 	codonFreq <- codonUsageFrequency( dnaRef, allAA=TRUE)
 	out <- rep.int( "", length(aa))
 	
-	aa <- toupper( aa)
-	aaV <- strsplit( aa, split="")
+	aa <- TOUPPER( aa)
+	aaV <- STRSPLIT( aa, split="")
 
 	# test to provide a clean error
-	allDefinedAA <- unique.default( substr( names(codonFreq), 1,1))
+	allDefinedAA <- unique.default( SUBSTR( names(codonFreq), 1,1))
 	allGivenAA <- unique.default( unlist( aaV))
-	missing <- setdiff( allGivenAA, allDefinedAA)
+	missing <- base::setdiff( allGivenAA, allDefinedAA)
 	if ( length( missing)) {
 		cat( "\n\nError:  given some undefined AA characters: ", missing)
 		stop( "Unable to convert AA to Codon Optimized DNA.")
@@ -75,8 +88,8 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 		thisAAvec <- aaV[[j]]
 		aaPattern <- PASTE( "^",thisAAvec, sep="")
 		aaPattern[ thisAAvec == "*"] <- "^\\*"
-		dnaV <- sapply( 1:length(thisAAvec), function(i) {
-				who <- grep( aaPattern[i], names(codonFreq))
+		dnaV <- SAPPLY( 1:length(thisAAvec), function(i) {
+				who <- GREP( aaPattern[i], names(codonFreq))
 				# use the codon frequencies as the sampling probabilities
 				prob <- codonFreq[who]
 				dnaSet <- SUB( "^[A-Z\\*]_", "", names(codonFreq)[who])
@@ -91,12 +104,9 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 # turn DNA to AA
 DNAtoAA <- function( dna, clipAtStop=TRUE, readingFrames=1:6) {
 
-	PASTE <- base::paste
-	MATCH <- base::match
-
-	dnaV <- strsplit( dna, split="")[[1]]
+	dnaV <- STRSPLIT( dna, split="")[[1]]
 	nc <- length( dnaV)
-	readingFrames <- intersect( 1:6, readingFrames)
+	readingFrames <- base::intersect( 1:6, readingFrames)
 	if ( any( readingFrames %in% 4:6)) {
 		dnaRV <- myReverseComplement( dna, as.vector=TRUE)
 	}
@@ -126,15 +136,12 @@ DNAtoAA <- function( dna, clipAtStop=TRUE, readingFrames=1:6) {
 
 DNAVtoAAV <- function( dnaVec) {
 
-	PASTE <- base::paste
-	MATCH <- base::match
-	MAPPLY <- base::mapply
 
 	# faster simple case:  'dna' is a vector, in frame, forward strand.
 	Ndna <- length(dnaVec)
 	if ( Ndna < 3) return("")
 
-	dna <- base::toupper( dnaVec)
+	dna <- TOUPPER( dnaVec)
 	codonMap <- getCodonMap()
 
 	beg <- seq.int( 1, Ndna, 3)
@@ -161,8 +168,8 @@ myReverseComplement <- function( dna, as.vector=FALSE) {
 		dna <- dna[1]
 	}
 	nc <- base::nchar(dna)
-	dnaV <- base::unlist( strsplit( dna, ""))
-	newV <- rev( dnaV)
+	dnaV <- base::unlist( STRSPLIT( dna, split=""))
+	newV <- REV( dnaV)
 	back <- nc:1
 	newV[ dnaV[ back] == "A"] <- "T"
 	newV[ dnaV[ back] == "C"] <- "G"
@@ -175,7 +182,7 @@ myReverseComplement <- function( dna, as.vector=FALSE) {
 	newV[ dnaV[ back] == "t"] <- "a"
 	newV[ dnaV[ back] == "n"] <- "n"
 	if (as.vector) return( newV)
-	return( base::paste( newV, collapse=""))
+	return( PASTE( newV, collapse=""))
 }
 
 
@@ -185,10 +192,10 @@ myReverse <- function( dna, as.vector=FALSE) {
 		warning( "'reverse' requires a single charater string...dropping some.")
 		dna <- dna[1]
 	}
-	dnaV <- base::unlist( strsplit( dna, ""))
-	newV <- rev( dnaV)
+	dnaV <- base::unlist( STRSPLIT( dna, split=""))
+	newV <- REV( dnaV)
 	if (as.vector) return( newV)
-	return( base::paste( newV, collapse=""))
+	return( PASTE( newV, collapse=""))
 }
 
 
@@ -320,10 +327,10 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 	# allow strings as well as expected vectors of bases
 	if ( length(dnaQuery) == 1 && nchar(dnaQuery[1]) > 1) {
-		dnaQuery <- strsplit( dnaQuery, split="")[[1]]
+		dnaQuery <- STRSPLIT( dnaQuery, split="")[[1]]
 	}
 	if ( length(genomeDNA) == 1 && nchar(genomeDNA[1]) > 1) {
-		genomeDNA <- strsplit( genomeDNA, split="")[[1]]
+		genomeDNA <- STRSPLIT( genomeDNA, split="")[[1]]
 	}
 
 	# given a vector of DNA bases and the its genomic location  < dnaQuery, position, end >,
@@ -360,15 +367,15 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		for ( ie in 1:nrow(cdsmap)) {
 			thisCDS <- genomeDNA[ cdsmap$POSITION[ie] : cdsmap$END[ie] ]
 			names( thisCDS) <- cdsmap$POSITION[ie] : cdsmap$END[ie] 
-			forwardDNA <- base::append( forwardDNA, thisCDS)
+			forwardDNA <- APPEND( forwardDNA, thisCDS)
 		}
 		codingDNA <- forwardDNA
 		if ( thisStrand == "-") {
-			tmp <- base::paste( codingDNA, collapse="")
+			tmp <- PASTE( codingDNA, collapse="")
 			tmp <- myReverseComplement(tmp)
-			tmp <- strsplit( tmp, split="")[[1]]
+			tmp <- STRSPLIT( tmp, split="")[[1]]
 			codingDNA <- tmp
-			names( codingDNA) <- rev( names( forwardDNA))
+			names( codingDNA) <- REV( names( forwardDNA))
 		}
 
 		# force a trim to multiple of 3 bases
@@ -402,25 +409,25 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		codingDNA <- forwardDNA
 		codingLocs <- as.integer( names( codingDNA))
 		queryLocs <- position : end
-		where <- base::match( codingLocs, queryLocs, nomatch=0)
-		codingHits <- which( where > 0)
+		where <- MATCH( codingLocs, queryLocs, nomatch=0)
+		codingHits <- WHICH( where > 0)
 		if ( length( codingHits) > 0) {
 			newstr2 <- newstr
 			codingDNA[ codingHits] <- dnaQuery[ where]
 			# with the possibility of Indels, these query bases may not be singletons any more
-			isDiff <- which( codingDNA != forwardDNA)
+			isDiff <- WHICH( codingDNA != forwardDNA)
 			if ( length(isDiff)) {
 				baseLen <- nchar( codingDNA)
 				# try to estimate how many 'post-indel' AA for each 'pre-indel' codon, pad the ends for edge cases
 				baseCumSum <- cumsum( c( 1, baseLen, 1))
-				snpDNA <- base::paste( codingDNA, collapse="")
+				snpDNA <- PASTE( codingDNA, collapse="")
 				if ( thisStrand == "-") {
 					snpDNA <- myReverseComplement(snpDNA)
-					baseCumSum <- cumsum( c( 1, rev(baseLen), 1))
+					baseCumSum <- cumsum( c( 1, REV(baseLen), 1))
 				}
-				snpDNA <- strsplit( snpDNA, split="")[[1]]
+				snpDNA <- STRSPLIT( snpDNA, split="")[[1]]
 				if ( thisStrand == "-") {
-					names( snpDNA) <- rep( rev( names( forwardDNA)), times=baseLen)
+					names( snpDNA) <- rep( REV( names( forwardDNA)), times=baseLen)
 				} else {
 					names( snpDNA) <- rep( names( forwardDNA), times=baseLen)
 				}
@@ -431,7 +438,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 				nAAused <- 0
 				for ( j in seq( 2, newNbases, by=3)) {
 					# account for the padding around the cum sum vector
-					ndna <- diff( baseCumSum[ c(j-1,j+2)])
+					ndna <- base::diff( baseCumSum[ c(j-1,j+2)])
 					naa <- round( ndna/3)
 					if (naa == 1) {
 						newstr2[ j] <- snpAA[nAAused+1]
@@ -439,12 +446,12 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 					} else if ( naa < 1) {
 						newstr2[ j] <- ""
 					} else {
-						newstr2[ j] <- paste( snpAA[ (nAAused+1):(nAAused+naa)], collapse="")
+						newstr2[ j] <- PASTE( snpAA[ (nAAused+1):(nAAused+naa)], collapse="")
 						if ( thisStrand == "-") newstr2[j] <- myReverse( newstr2[j])
 						nAAused <- nAAused + naa
 					}
 				}
-				whodiff <- which( newstr2 != newstr)
+				whodiff <- WHICH( newstr2 != newstr)
 				for ( ic in whodiff) {
 					if ( newstr2[ic] == "") next
 					genLocation <- as.integer( names( newstr2)[ic])
@@ -455,15 +462,15 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 			} else {
 				# no Indels, so do it fast and like before...
 				if ( thisStrand == "-") {
-					tmp <- base::paste( codingDNA, collapse="")
+					tmp <- PASTE( codingDNA, collapse="")
 					tmp <- myReverseComplement(tmp)
-					tmp <- strsplit( tmp, split="")[[1]]
+					tmp <- STRSPLIT( tmp, split="")[[1]]
 					codingDNA <- tmp
-					names( codingDNA) <- rev( names( forwardDNA))
+					names( codingDNA) <- REV( names( forwardDNA))
 				}
 				thisAA <- DNAVtoAAV( codingDNA)
 				newstr2[ seq( 2, nCodingBases, by=3)] <- thisAA
-				whodiff <- which( newstr2 != newstr)
+				whodiff <- WHICH( newstr2 != newstr)
 				for ( ic in whodiff) {
 					if ( newstr2[ic] == "") next
 					genLocation <- as.integer( names( newstr2)[ic])
@@ -503,17 +510,17 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		thisBeg <- cdsmap$POSITION[j]
 		thisEnd <- cdsmap$END[j]
 		sml <- thisBeg:thisEnd
-		vNow <- base::append( vNow, sml)
+		vNow <- APPEND( vNow, sml)
 	}
 	names( vNow) <- 1:length(vNow)
-	if ( cdsmap$STRAND[1] == "-") names( vNow) <- rev( 1:length(vNow))
+	if ( cdsmap$STRAND[1] == "-") names( vNow) <- REV( 1:length(vNow))
 
 	firstAAbase <- (AAposition-1) * 3 + 1
 	lastAAbase <- (AAposition+AAlength-1) * 3 
 
-	where <- base::match( firstAAbase, names(vNow), nomatch=0)
+	where <- MATCH( firstAAbase, names(vNow), nomatch=0)
 	if ( where > 0) outPos <- vNow[ where]
-	where <- base::match( lastAAbase, names(vNow), nomatch=0)
+	where <- MATCH( lastAAbase, names(vNow), nomatch=0)
 	if ( where > 0) outEnd <- vNow[ where]
 	if ( outPos > outEnd) { tmp <- outPos; outPos <- outEnd; outEnd <- tmp }
 	names(outSID) <- names(outPos) <- names(outEnd) <- ""
@@ -550,10 +557,10 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		thisBeg <- cdsmap$POSITION[j]
 		thisEnd <- cdsmap$END[j]
 		sml <- thisBeg:thisEnd
-		vNow <- base::append( vNow, sml)
+		vNow <- APPEND( vNow, sml)
 	}
 	names( vNow) <- 1:length(vNow)
-	if ( cdsmap$STRAND[1] == "-") names( vNow) <- rev( 1:length(vNow))
+	if ( cdsmap$STRAND[1] == "-") names( vNow) <- REV( 1:length(vNow))
 
 	where <- base::match( DNAposition, vNow, nomatch=0)
 	if ( where > 0) {
@@ -581,7 +588,6 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		cat( "\nRequired 'genomicDNA' argument is missing...")
 		return( outDNA)
 	}
-
 	seqID <- cdsmap$SEQ_ID[1]
 
 	# make a little band of absolute DNA positions
@@ -590,18 +596,18 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		thisBeg <- cdsmap$POSITION[j]
 		thisEnd <- cdsmap$END[j]
 		sml <- thisBeg:thisEnd
-		vNow <- base::append( vNow, sml)
+		vNow <- APPEND( vNow, sml)
 	}
 
 	# get that chunk of genomic DNA
 	beg <- min( vNow)
 	end <- max( vNow)
-	myDNA <- strsplit( substr( genomicDNA, beg, end), split="")[[1]]
+	myDNA <- STRSPLIT( SUBSTR( genomicDNA, beg, end), split="")[[1]]
 
 	# convert to relative positions
 	vNow <- vNow - beg + 1
 	myDNA <- myDNA[ vNow]
-	outDNA <- base::paste( myDNA, collapse="")
+	outDNA <- PASTE( myDNA, collapse="")
 
 	# flip if reverse strand
 	if ( cdsmap$STRAND[1] == "-") outDNA <- myReverseComplement( outDNA)
@@ -632,7 +638,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 	aaList <- loadFasta( AAfasta)
 	aaNames <- aaList$desc
-	aaNames <- sub( "(gi.+ref\\|)(NP_.+)(\\.[1-9]\\|.+$)", "\\2", aaNames)
+	aaNames <- SUB( "(gi.+ref\\|)(NP_.+)(\\.[1-9]\\|.+$)", "\\2", aaNames)
 	aaSeqs <- aaList$seq
 	cat( "\n  N_Proteins:  ", length( aaNames), head( aaNames))
 
@@ -640,20 +646,20 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	if ( is.null( GImap)) {
 		aaGeneIDs <- aaNames
 	} else {
-		where <- base::match( aaNames, GImap$protAcc, nomatch=0)
+		where <- MATCH( aaNames, GImap$protAcc, nomatch=0)
 		aaGeneIDs <- rep( "", times=length(where))
 		thisGeneName <- GImap$name[where]
 		thisGInumber <- GImap$locusLinkId[where]
-		allGeneID <- base::paste( thisGeneName, thisGInumber, sep=":GI")
+		allGeneID <- PASTE( thisGeneName, thisGInumber, sep=":GI")
 		aaGeneIDs[ where > 0] <- allGeneID
 	}
 	aaGeneIDs <- intersect( aaGeneIDs, geneMap$GENE_ID)
 	cat( "\n  N_Matching_Genes:   ", length( aaGeneIDs), head( aaGeneIDs))
 
 	cat( "\nLooking up genes in geneMap...\n")
-	aaGenePtrs <- sapply( aaGeneIDs, function(x) {
+	aaGenePtrs <- SAPPLY( aaGeneIDs, function(x) {
 				if ( x == "") return( 0)
-				where <- grep( x, geneMap$GENE_ID, fixed=T)[1]
+				where <- GREP( x, geneMap$GENE_ID, fixed=T)[1]
 				if ( is.na(where)) return( 0)
 				return( where)
 			})
@@ -663,7 +669,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	codonMap <- getCodonMap()
 	codonTable <- vector()
 
-	visitOrder <- base::order( aaGenePtrs)
+	visitOrder <- ORDER( aaGenePtrs)
 
 	cat( "\n\nVisiting all named proteins")
 	curSeqID <- ""
@@ -686,15 +692,15 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		thisDNA <- convertGenomicDNAtoCodingDNA( geneID, genomicDNA)
 
 		# for this AA and DNA, see what codon is for each AA
-		allAA <- strsplit( thisAA, split="")[[1]]
-		allDNA <- strsplit( thisDNA, split="")[[1]]
+		allAA <- STRSPLIT( thisAA, split="")[[1]]
+		allDNA <- STRSPLIT( thisDNA, split="")[[1]]
 
-		allCODONs <- sapply( seq( 1, length(allDNA), by=3), function(x) {
-					base::paste( allDNA[ x:(x+2)], collapse="")
+		allCODONs <- SAPPLY( seq( 1, length(allDNA), by=3), function(x) {
+					PASTE( allDNA[ x:(x+2)], collapse="")
 				})
 		nUse <- round( fraction * min( length( allAA), length(allCODONs)))
 
-		smallTable <- base::table( base::paste( allAA[1:nUse], allCODONs[1:nUse], sep=":"))
+		smallTable <- base::table( PASTE( allAA[1:nUse], allCODONs[1:nUse], sep=":"))
 		if ( length( codonTable) > 0) {
 			codonTable <- mergeTables( codonTable, smallTable)
 		} else {
@@ -703,7 +709,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 		if ( i %% 200 == 0) {
 			cat( "\n", i, thisname, "\n")
-			print( head( ibase::sort( codonTable, decreasing=T)))
+			print( head( base::sort( codonTable, decreasing=T)))
 		}
 	}
 	cat( "\n")
@@ -714,16 +720,16 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 `calculateCodonScores` <- function( codonTable) {
 
-	hasN <- grep( ":.*N", names( codonTable))
+	hasN <- GREP( ":.*N", names( codonTable))
 	if ( length(hasN) > 0) codonTable <- codonTable[ -hasN]
 
 	# now get the top codons for each AA
-	AAout <- sub( ":.+", "", names( codonTable))
+	AAout <- SUB( ":.+", "", names( codonTable))
 
 	allAA <- allCodons <- allCounts <- allPercents <- allPct1 <- allPct2 <- allPct3 <- vector()
 	nCodons <- 0
 	
-	tapply( 1:length(AAout), INDEX=factor( AAout), FUN=function(x) {
+	TAPPLY( 1:length(AAout), INDEX=factor( AAout), FUN=function(x) {
 
 			# given the set of rows in 'codonTable' that all share one AA
 			# turn the relative abundance of each base into a phred score
@@ -737,8 +743,8 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 				thisCnt <- codonTable[i]
 				# keep all that are more than 5% of the time
 				if ( thisCnt < sumCnts * 0.05) next
-				thisCodon <- sub( ".:", "", names( codonTable)[i])
-				theseBases <- strsplit( thisCodon, split="")[[1]]
+				thisCodon <- SUB( ".:", "", names( codonTable)[i])
+				theseBases <- STRSPLIT( thisCodon, split="")[[1]]
 				if ( ! all( theseBases %in% rownames(m))) next
 				m[ theseBases[1], 1] <-  m[ theseBases[1], 1] + thisCnt
 				m[ theseBases[2], 2] <-  m[ theseBases[2], 2] + thisCnt
@@ -750,7 +756,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 				myCnts[nNow] <- thisCnt
 			}
 			totalCnts <- apply( m, MARGIN=2, FUN=sum)
-			visitOrd <- base::order( myCnts, decreasing=T)
+			visitOrd <- ORDER( myCnts, decreasing=T)
 			for ( j in 1:length(myX)) {
 				i <- visitOrd[j]
 				thisCodon <- myCodons[i]
@@ -778,13 +784,14 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	rownames(basePcts) <- 1:nrow(basePcts)
 	phredIntScore <- apply( basePcts, MARGIN=1, function(x) {
 					phred <- round( x * 40 / 100)
-					return( base::paste( phred, collapse=" "))
+					return( PASTE( phred, collapse=" "))
 				})
 
-	phredAsciiScore <- sapply( phredIntScore, solexaToPhred, scoreType="Phred33")
+	phredAsciiScore <- SAPPLY( phredIntScore, solexaToPhred, scoreType="Phred33")
 
 	out <- data.frame( "AA"=allAA, "Codon"=allCodons, "Count"=allCounts, "Percent"=allPercents,
-				basePcts, "PhredIntegers"=phredIntScore, "PhredString"=phredAsciiScore)
+				basePcts, "PhredIntegers"=phredIntScore, "PhredString"=phredAsciiScore,
+				stringsAsFactors=F)
 	return( out)
 }
 
@@ -810,40 +817,40 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	cat( "\nLooking for unique ambiguous IUPAC triples..\n")
 	for( i in 1:NB) {
 		dna1 <- allbases[i]
-		alts1 <- if ( is.na( wherei <- match( dna1, ambiguityLetters))) dna1 else ambiguityBases[[wherei]]
+		alts1 <- if ( is.na( wherei <- MATCH( dna1, ambiguityLetters))) dna1 else ambiguityBases[[wherei]]
 		len1 <- length(alts1)
 		for( j in 1:NB) {
 			dna2 <- allbases[j]
-			alts2 <- if ( is.na( wherej <- match( dna2, ambiguityLetters))) dna2 else ambiguityBases[[wherej]]
+			alts2 <- if ( is.na( wherej <- MATCH( dna2, ambiguityLetters))) dna2 else ambiguityBases[[wherej]]
 			len2 <- length(alts2)
 			for( k in 1:NB) {
 				dna3 <- allbases[k]
-				alts3 <- if ( is.na( wherek <- match( dna3, ambiguityLetters))) dna3 else ambiguityBases[[wherek]]
+				alts3 <- if ( is.na( wherek <- MATCH( dna3, ambiguityLetters))) dna3 else ambiguityBases[[wherek]]
 				len3 <- length(alts3)
 
 				# nothing to do for the standard triples
 				if ( all( c(len1, len2, len3) == 1)) next
 
-				thisAlternateTriple <- paste( dna1, dna2, dna3, sep="")
+				thisAlternateTriple <- PASTE( dna1, dna2, dna3, sep="")
 
 				# the test is "do all alternatives give the same one AA?"
 				aaHits <- vector()
 				for ( c1 in alts1)
 				for ( c2 in alts2)
 				for ( c3 in alts3) {
-					thisStandardTriple <- paste( c1, c2, c3, sep="")
-					who <- match( thisStandardTriple, codonMap$DNA, nomatch=0)
+					thisStandardTriple <- PASTE( c1, c2, c3, sep="")
+					who <- MATCH( thisStandardTriple, codonMap$DNA, nomatch=0)
 					aaHits <- c( aaHits, codonMap$AA[who])
 				}
 				aaHits <- unique.default( aaHits)
 				cat( "\r", thisAlternateTriple, " Hits: ", length(aaHits), aaHits)
 
 				if ( length(aaHits) == 1) {
-					bestRow <- match( aaHits[1], codonMap$AA)
+					bestRow <- MATCH( aaHits[1], codonMap$AA)
 					smlDF <- codonMap[ bestRow, ]
 					smlDF$DNA <- thisAlternateTriple
-					smlDF$RNA <- gsub( "T","U", thisAlternateTriple, fixed=T)
-					altMap <- rbind( altMap, smlDF)
+					smlDF$RNA <- GSUB( "T","U", thisAlternateTriple, fixed=T)
+					altMap <- base::rbind( altMap, smlDF)
 					cat( "\nNew: ", nrow( altMap), smlDF$DNA, smlDF$AA, smlDF$AA_Long, "\n")
 					next
 				}
@@ -867,13 +874,13 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 						rowKey <- "I"
 					}
 					if ( altAA != "") {
-						bestRow <- match( rowKey, codonMap$AA)
+						bestRow <- MATCH( rowKey, codonMap$AA)
 						smlDF <- codonMap[ bestRow, ]
 						smlDF$DNA <- thisAlternateTriple
-						smlDF$RNA <- gsub( "T","U", thisAlternateTriple, fixed=T)
+						smlDF$RNA <- GSUB( "T","U", thisAlternateTriple, fixed=T)
 						smlDF$AA <- altAA
 						smlDF$AA_Long <- altAAlong
-						altMap <- rbind( altMap, smlDF)
+						altMap <- base::rbind( altMap, smlDF)
 						cat( "\nNew + Ambig AA: ", nrow( altMap), smlDF$DNA, smlDF$AA, smlDF$AA_Long, "\n")
 						next
 					}
@@ -890,7 +897,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 
 `test.codonTools` <- function() {
-	checkEquals( strsplit(DNAtoAA( "ATGTAG"),split="")[[1]], 
-			DNAVtoAAV( strsplit("ATGTAG", split="")[[1]]))
+	checkEquals( STRSPLIT(DNAtoAA( "ATGTAG"),split="")[[1]], 
+			DNAVtoAAV( STRSPLIT("ATGTAG", split="")[[1]]))
 	checkEquals( DNAtoAA( "ATGTAG"), c("F1"="M*", "F2"="C", "F3"="V"))
 }

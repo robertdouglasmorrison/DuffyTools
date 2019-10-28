@@ -104,7 +104,9 @@
 	ans <- stringDist( toupper(strs), method="substitutionMatrix", substitutionMatrix=subM,
 				type="global")
 	# the score tool finds maximum, and we used negative scores, so invert
-	return( -ans)
+	# return( -ans)
+	# as of Oct 2019, string distance seems to now return positive distance....
+	return( ans)
 }
 
 

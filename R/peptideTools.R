@@ -1,6 +1,23 @@
 # peptideTools.R -  peptide based tools
 
 
+LAPPLY <- base::lapply
+MATCH <- base::match
+ORDER <- base::order
+PASTE <- base::paste
+SAPPLY <- base::sapply
+SETDIFF <- base::setdiff
+STRSPLIT <- base::strsplit
+SUBSTR <- base::substr
+TABLE <- base::table
+TAPPLY <- base::tapply
+WHICH <- base::which
+WHICH.MAX <- base::which.max
+WHICH.MIN <- base::which.min
+UNION <- base::union
+
+
+
 `DNAtoBestPeptide` <- function( dnaSet, clipAtStop=FALSE, readingFrames=1:6,
 				tieBreakMode=c("evalue","sample","reference"), reference=NULL) {
 
@@ -8,16 +25,16 @@
 	if ( tieBreakMode == "reference") {
 		require( Biostrings)
 		data( BLOSUM62)
-		refAA <- toupper( as.character( reference))
+		refAA <- base::toupper( as.character( reference))
 	}
 
-	out <- sapply( as.character( dnaSet), function( dna) {
+	out <- SAPPLY( as.character( dnaSet), function( dna) {
 
 			pepsIn <- DNAtoAA( dna, clipAtStop=clipAtStop, readingFrames=readingFrames)
 
 			# if ignoring stop codons, break into all coding fragments of each
 			if ( ! clipAtStop) {
-				pepFrags <- unlist( strsplit( pepsIn, split=STOP_CODON_PATTERN, fixed=FALSE), use.names=F)
+				pepFrags <- unlist( STRSPLIT( pepsIn, split=STOP_CODON_PATTERN, fixed=FALSE), use.names=F)
 			} else {
 				pepFrags <- pepsIn
 			}
@@ -37,7 +54,7 @@
 
 			if ( tieBreakMode == "reference") {
 				paScores <- pairwiseAlignment( pepFrags, refAA, type="local", substitutionMatrix=BLOSUM62, scoreOnly=T)
-				return( pepFrags[ which.max( paScores)])
+				return( pepFrags[ WHICH.MAX( paScores)])
 			}
 
 			if ( tieBreakMode == "evalue") {
@@ -84,9 +101,9 @@
 
 		# don't revisit any sites already done
 		if ( length( maskBases)) {
-			dnaGapAns <- setdiff( dnaGapAns, maskBases)
+			dnaGapAns <- SETDIFF( dnaGapAns, maskBases)
 			if( ! length( dnaGapAns)) dnaGapAns <- -1
-			refGapAns <- setdiff( refGapAns, maskBases)
+			refGapAns <- SETDIFF( refGapAns, maskBases)
 			if( ! length( refGapAns)) refGapAns <- -1
 		}
 
@@ -94,13 +111,13 @@
 		if ( length(dnaGapAns) > 1) {
 			midPt <- nchar( dnaStr) / 2
 			dx <- abs( dnaGapAns + N_FLANK - midPt)
-			best <- which.min( dx)
+			best <- WHICH.MIN( dx)
 			dnaGapAns <- dnaGapAns[ best]
 		}
 		if ( length(refGapAns) > 1) {
 			midPt <- nchar( refStr) / 2
 			dx <- abs( refGapAns + N_FLANK - midPt)
-			best <- which.min( dx)
+			best <- WHICH.MIN( dx)
 			refGapAns <- refGapAns[ best]
 		}
 		if ( dnaGapAns < 0 && refGapAns < 0) break
@@ -109,11 +126,11 @@
 		if ( refGapAns > 0) {
 			# gap in reference means extra base in chromatogram
 			gapLocation <- refGapAns + N_FLANK
-			nOtherGaps <- sum( gregexpr( "-", substr( dnaStr, 1, refGapAns), fixed=T)[[1]] > 0)
+			nOtherGaps <- sum( gregexpr( "-", SUBSTR( dnaStr, 1, refGapAns), fixed=T)[[1]] > 0)
 			dnaLocation <- dnaStart + gapLocation - 1 - nOtherGaps
-			newLeft <- substr( dnaNow, 1, dnaLocation-1)
-			newRight <- substr( dnaNow, dnaLocation+1, nchar(dnaNow))
-			dnaNew <- paste( newLeft, newRight, sep="")
+			newLeft <- SUBSTR( dnaNow, 1, dnaLocation-1)
+			newRight <- SUBSTR( dnaNow, dnaLocation+1, nchar(dnaNow))
+			dnaNew <- PASTE( newLeft, newRight, sep="")
 
 			# is this better?
 			if ( is.null( referenceAA)) {
@@ -124,15 +141,15 @@
 				scoreNow <- pairwiseAlignment( aaNow, referenceAA, type="local", scoreOnly=T)
 				scoreNew <- pairwiseAlignment( aaNew, referenceAA, type="local", scoreOnly=T)
 			}
-			extraBase <- substr( dnaNow, dnaLocation, dnaLocation)
-			oldContext <- substr( dnaNow, dnaLocation-1, dnaLocation+1)
-			newContext <- paste( substr(oldContext,1,1), substr(oldContext,3,3), sep="")
+			extraBase <- SUBSTR( dnaNow, dnaLocation, dnaLocation)
+			oldContext <- SUBSTR( dnaNow, dnaLocation-1, dnaLocation+1)
+			newContext <- PASTE( SUBSTR(oldContext,1,1), SUBSTR(oldContext,3,3), sep="")
 			pctBetter <- round( (scoreNew-scoreNow) * 100 / scoreNow, digits=2)
 			if (verbose) {
 				cat( "\n--------------------------")
 				cat( "\nCleaning Chromatogram DNA:  found extra base in Chromatogram.")
-				cat( "\nDNA Context:", substr(dnaStr, gapLocation-N_FLANK,gapLocation+N_FLANK))
-				cat( "\nRef Context:", substr(refStr, gapLocation-N_FLANK,gapLocation+N_FLANK))
+				cat( "\nDNA Context:", SUBSTR(dnaStr, gapLocation-N_FLANK,gapLocation+N_FLANK))
+				cat( "\nRef Context:", SUBSTR(refStr, gapLocation-N_FLANK,gapLocation+N_FLANK))
 				cat( "\nExtra Base: ", extraBase,"   Was: ", oldContext, "   Now: ", newContext)
 			}
 			if ( scoreNew > scoreNow) {
@@ -146,20 +163,20 @@
 				if (verbose) cat( "\nBut Score no better!    Was: ", scoreNow, "   Now: ", scoreNew)
 			}
 			if (verbose) cat( "\n--------------------------\n")
-			maskBases <- sort( unique( c( maskBases, (refGapAns - N_FLANK %/% 2):(refGapAns + N_FLANK %/% 2))))
+			maskBases <- sort( unique.default( c( maskBases, (refGapAns - N_FLANK %/% 2):(refGapAns + N_FLANK %/% 2))))
 			next
 		}
 		if ( dnaGapAns > 0) {
 			# gap in chromatogram means extra base in reference 
 			gapLocation <- dnaGapAns + N_FLANK
-			nOtherGaps <- sum( gregexpr( "-", substr( dnaStr, 1, dnaGapAns), fixed=T)[[1]] > 0)
-			extraRefBase <- substr( refStr, gapLocation, gapLocation)
+			nOtherGaps <- sum( gregexpr( "-", SUBSTR( dnaStr, 1, dnaGapAns), fixed=T)[[1]] > 0)
+			extraRefBase <- SUBSTR( refStr, gapLocation, gapLocation)
 			dnaLocation <- dnaStart + gapLocation - 1 - nOtherGaps
-			newLeft <- substr( dnaNow, 1, dnaLocation-1)
+			newLeft <- SUBSTR( dnaNow, 1, dnaLocation-1)
 			# since the gap is in my string, don't step past it
-			#newRight <- substr( dnaNow, dnaLocation+1, nchar(dnaNow))
-			newRight <- substr( dnaNow, dnaLocation, nchar(dnaNow))
-			dnaNew <- paste( newLeft, extraRefBase, newRight, sep="")
+			#newRight <- SUBSTR( dnaNow, dnaLocation+1, nchar(dnaNow))
+			newRight <- SUBSTR( dnaNow, dnaLocation, nchar(dnaNow))
+			dnaNew <- PASTE( newLeft, extraRefBase, newRight, sep="")
 
 			# is this better?
 			if ( is.null( referenceAA)) {
@@ -170,14 +187,14 @@
 				scoreNow <- pairwiseAlignment( aaNow, referenceAA, type="local", scoreOnly=T)
 				scoreNew <- pairwiseAlignment( aaNew, referenceAA, type="local", scoreOnly=T)
 			}
-			oldContext <- substr( dnaNow, dnaLocation-1, dnaLocation)
-			newContext <- paste( substr(oldContext,1,1), extraRefBase, substr(oldContext,2,2), sep="")
+			oldContext <- SUBSTR( dnaNow, dnaLocation-1, dnaLocation)
+			newContext <- PASTE( SUBSTR(oldContext,1,1), extraRefBase, SUBSTR(oldContext,2,2), sep="")
 			pctBetter <- round( (scoreNew-scoreNow) * 100 / scoreNow, digits=2)
 			if (verbose) {
 				cat( "\n--------------------------")
 				cat( "\nCleaning Chromatogram DNA:  found missing base in Chromatogram.")
-				cat( "\nDNA Context:", substr(dnaStr, gapLocation-N_FLANK,gapLocation+N_FLANK))
-				cat( "\nRef Context:", substr(refStr, gapLocation-N_FLANK,gapLocation+N_FLANK))
+				cat( "\nDNA Context:", SUBSTR(dnaStr, gapLocation-N_FLANK,gapLocation+N_FLANK))
+				cat( "\nRef Context:", SUBSTR(refStr, gapLocation-N_FLANK,gapLocation+N_FLANK))
 				cat( "\nMissing Base: ", extraRefBase,"   Was: ", oldContext, "   Now: ", newContext)
 			}
 			if ( scoreNew > scoreNow) {
@@ -186,13 +203,13 @@
 				nFix <- nFix + 1
 				# let's call it as being appended to previous instead of prepended to the current base
 				fixLoc[nFix] <- dnaLocation - 1
-				fixWas[nFix] <- substr(oldContext,1,1)
-				fixNew[nFix] <- substr(newContext,1,2)
+				fixWas[nFix] <- SUBSTR(oldContext,1,1)
+				fixNew[nFix] <- SUBSTR(newContext,1,2)
 			} else {
 				if (verbose) cat( "\nBut Score no better!    Was: ", scoreNow, "   Now: ", scoreNew)
 			}
 			if (verbose) cat( "\n--------------------------\n")
-			maskBases <- sort( unique( c( maskBases, (dnaGapAns - N_FLANK %/% 2):(dnaGapAns + N_FLANK %/% 2))))
+			maskBases <- sort( unique.default( c( maskBases, (dnaGapAns - N_FLANK %/% 2):(dnaGapAns + N_FLANK %/% 2))))
 			next
 		}
 	}
@@ -205,7 +222,7 @@
 		# note that every cleaning modification we did throws off the locations w.r.t. the original DNA
 		# we want the 'Location' data to be in caller's original units
 		if ( nFix > 1) {
-			ord <- order( detailsOut$Location)
+			ord <- ORDER( detailsOut$Location)
 			detailsOut <- detailsOut[ ord, ]
 			rownames(detailsOut) <- 1:nFix
 			curDelta <- nchar(detailsOut$PreviousBase[1]) - nchar(detailsOut$CleanedBase[1])
@@ -226,9 +243,9 @@
 			"M"=5, "N"=6, "O"=0, "P"=7, "Q"=5, "R"=5, "S"=4, "T"=5, "U"=0, "V"=4, "W"=11,
 			"X"= -1, "Y"=7, "Z"=4, "*"=1, "?"= -1)
 
-	bases <- strsplit( pepSet, split="")
-	scores <- sapply( bases, function(x) {
-				wh <- match( x, names(aaScores), nomatch=0)
+	bases <- STRSPLIT( pepSet, split="")
+	scores <- SAPPLY( bases, function(x) {
+				wh <- MATCH( x, names(aaScores), nomatch=0)
 				return( sum( aaScores[ wh]))
 			})
 	
@@ -246,17 +263,17 @@
 			"X", "Y", "Z", "*", "?")
 
 	# get the overall distribution of aa, knowing that 5 of the 6 reading frames are not the right one
-	aaChars <- strsplit( aaSet, split="")
-	totalDist <- table( factor( unlist( strsplit(allFrames,split="")), levels=aaLevels))
+	aaChars <- STRSPLIT( aaSet, split="")
+	totalDist <- table( factor( unlist( STRSPLIT(allFrames,split="")), levels=aaLevels))
 
 	# see how similar each is to the overall distribution
-	pvals <- sapply( aaChars, FUN=function(x) {
+	pvals <- SAPPLY( aaChars, FUN=function(x) {
 			if ( ! length(x)) return(0)
 			thisDist <- table( factor( x, levels=aaLevels))
 			return( cor.test( totalDist, thisDist)$p.value)
 		})
 
-	return( which.max( as.numeric(pvals)))
+	return( WHICH.MAX( as.numeric(pvals)))
 }
 
 
@@ -273,23 +290,23 @@
 		# repeatedly find the best peptide remaining in the DNA string
 		repeat {
 			pepStrings <- DNAtoAA( dna, clipAtStop=FALSE, readingFrames=1:3)
-			pepTerms <- strsplit( pepStrings, split=STOP_CODON_PATTERN, fixed=FALSE)
+			pepTerms <- STRSPLIT( pepStrings, split=STOP_CODON_PATTERN, fixed=FALSE)
 
 			# reattach any terminal stop codons
 			goodStops <- grep( "\\*$", pepStrings)
 			for (k in goodStops) {
 				tmp <- pepTerms[[k]]
 				nt <- length(tmp)
-				tmpStr <- paste( tmp[nt], "*", sep="")
+				tmpStr <- PASTE( tmp[nt], "*", sep="")
 				tmp[nt] <- tmpStr
 				pepTerms[[k]] <- tmp
 			}
 	
 			# which reading frame has the best?
 			if ( is.null( referenceAA)) {
-				bigLength <- sapply( pepTerms, function(x) return( max( nchar(x))))
-				bigPepTerm <- sapply( pepTerms, function(x) return( x[ which.max( nchar(x))]))
-				bestFrame <- which.max( bigLength)
+				bigLength <- SAPPLY( pepTerms, function(x) return( max( nchar(x))))
+				bigPepTerm <- SAPPLY( pepTerms, function(x) return( x[ WHICH.MAX( nchar(x))]))
+				bestFrame <- WHICH.MAX( bigLength)
 				bestPep <- bigPepTerm[ bestFrame]
 				bestLen <- bigLength[ bestFrame]
 			} else {
@@ -298,7 +315,7 @@
 				for (f in 1:3) {
 					pa <- pairwiseAlignment( pepTerms[[f]], referenceAA, type="global-local", scoreOnly=T,
 								substitutionMatrix=BLOSUM62)
-					best <- which.max( pa)
+					best <- WHICH.MAX( pa)
 					myPep <- pepTerms[[f]][best]
 					if ( (myLen <- nchar(myPep)) > bestLen) {
 						bestFrame <- f
@@ -327,14 +344,14 @@
 			outDnaStop[N] <- dnaStop
 	
 			# mask it out and go around again
-			polyN <- paste( rep.int( "N", (dnaStop-dnaStart+1)), collapse="")
-			substr( dna, dnaStart, dnaStop) <- polyN
+			polyN <- PASTE( rep.int( "N", (dnaStop-dnaStart+1)), collapse="")
+			base::substr( dna, dnaStart, dnaStop) <- polyN
 		}
 	
 		out <- data.frame( "Peptide"=outPeptide, "Frame"=outFrame, "AA_Length"=outLength, 
 				"DNA_Start"=outDnaStart, "DNA_Stop"=outDnaStop, stringsAsFactors=F)
 		if ( nrow(out)) {
-			ord <- order( out$DNA_Start, decreasing=F)
+			ord <- ORDER( out$DNA_Start, decreasing=F)
 			out <- out[ ord, ]
 			rownames(out) <- 1:nrow(out)
 		}
@@ -386,11 +403,11 @@
 	proteinLengths <- nchar( fa$seq)
 	spacerString <- "XXXXXXXXXX"
 	proteinStarts <- c( 1, (cumsum( proteinLengths + nchar(spacerString)) + 1)[ 1:(nProteins-1)])
-	giantPDictString <- AAString( paste( fa$seq, collapse=spacerString))
+	giantPDictString <- AAString( PASTE( fa$seq, collapse=spacerString))
 	if (verbose) cat( "\nPre-scanning for perfect matches..")
 	pdAns <- matchPDict( pepstrings, giantPDictString)
 	pdStarts <- startIndex( pdAns)
-	pdLengths <- sapply( pdStarts, length)
+	pdLengths <- SAPPLY( pdStarts, length)
 	if (verbose) cat( "  ", sum( pdLengths > 0), "out of", nPeptides, "\n")
 
 
@@ -405,7 +422,7 @@
 
 		# use the pre-screen PDict answer to perhaps use only a local subset of the proteins
 		if ( pdLengths[ipep] > 0) {
-			pdHits <- sort( unique( fastFindInterval( pdStarts[[ipep]], proteinStarts)))
+			pdHits <- sort( unique.default( fastFindInterval( pdStarts[[ipep]], proteinStarts)))
 			protstrings <- protstrings[ pdHits]
 			protNames <- protNames[ pdHits]
 		} else {
@@ -416,12 +433,12 @@
 		scores <- pairwiseAlignment( protstrings, peptide, type="local", 
 					substitutionMatrix=substitutionMatrix, 
 					gapOpening=-5, gapExtension=-3, scoreOnly=T); 
-		best <- which.max(scores); 
+		best <- WHICH.MAX(scores); 
 		topScore <- scores[ best]
 		topName <- protNames[best]
 		topScorePerAA <- topScore / thisLen
 		# if more than K all are 'best', choose which (subset?) to keep
-		whoBest <- which( scores == topScore)
+		whoBest <- WHICH( scores == topScore)
 		bestPtrs <- whoBest
 		nBestReported <- nBestFound <- length( bestPtrs)
 		# default is same as 'all'
@@ -433,7 +450,7 @@
 			}
 		} else {
 			if ( tieBreakMode == "topN") {
-				ord <- order( scores, decreasing=T)
+				ord <- ORDER( scores, decreasing=T)
 				whoBest <- ord[ 1:nBest]
 				bestPtrs <- whoBest
 				nBestReported <- nBestFound <- length( bestPtrs)
@@ -464,7 +481,7 @@
 			bestSubjFrag[j] <- as.character( subject( ans))
 			from <- protStart[j] <- start( subject(ans)) - start( pattern(ans)) + 1
 			to <- protStop[j] <- protStart[j] + width( peptide) - 1
-			thatPep <- proteinRegion[j] <- substr( as.character( protstrings[ bestPtrs[j]]), from, to)
+			thatPep <- proteinRegion[j] <- SUBSTR( as.character( protstrings[ bestPtrs[j]]), from, to)
 			editDist[j] <- stringDist( c( thisPep, thatPep))[1]
 		}
 	
@@ -500,15 +517,10 @@
 		}
 	}
 
-	TABLE <- base::table
-	WHICH <- base::which
-	SAPPLY <- base::sapply
-	UNION <- base::union
-
 	# part 2:  any tests that need vectors of single characters
 	lens <- nchar( peps)
-	pepVs <- strsplit( peps, split="")
-	pepAAtables <- lapply( pepVs, function(x) sort.int( TABLE(x), decreasing=T))
+	pepVs <- STRSPLIT( peps, split="")
+	pepAAtables <- LAPPLY( pepVs, function(x) sort.int( TABLE(x), decreasing=T))
 	AAtableLens <- SAPPLY( pepAAtables, length)
 
 	tooFewAA <- WHICH( AAtableLens < min.aa)
@@ -565,12 +577,12 @@ peptideChopper <- function( proteinSet, len=15, overlap=9, remove.duplicates=TRU
 		}
 
 		# extract all those peptides
-		pepSet <- substr( rep.int( pseq, npeps), start=pepStart, stop=pepEnd)
+		pepSet <- SUBSTR( rep.int( pseq, npeps), start=pepStart, stop=pepEnd)
 
 		# eliminate duplicates
 		nBefore <- length( pepSet)
 		if ( remove.duplicates) {
-			duplicates <- which( duplicated( pepSet))
+			duplicates <- WHICH( duplicated( pepSet))
 			if ( length( duplicates) > 0) {
 				pepSet <- pepSet[ -duplicates]
 				pepStart <- pepStart[ -duplicates]
@@ -636,7 +648,7 @@ peptideTableSet <- function( gSet, len=15, overlap=c(7:9)) {
 	}
 
 	myDF <- data.frame( gSet, cnts, stringsAsFactors=FALSE)
-	colnames( myDF) <- c( "Gene", paste( "Overlap_", overlap, sep=""))
+	colnames( myDF) <- c( "Gene", PASTE( "Overlap_", overlap, sep=""))
 	rownames( myDF) <- 1:nrow( myDF)
 	write.table( myDF, file="peptideOverview.txt", sep="\t", quote=FALSE)
 }
@@ -651,7 +663,7 @@ peptideViewer <- function( gene, AAoffset=0, len=15, overlap=9, overlayDF=NULL, 
 	ans <- out$peptideSets
 
 	if (asPNG) {
-		jpeg( file=paste( gene, ".jpg", sep=""), width=1000, height=650, pointsize=12)
+		jpeg( file=PASTE( gene, ".jpg", sep=""), width=1000, height=650, pointsize=12)
 	}
 
 	# plot setup
@@ -668,7 +680,7 @@ peptideViewer <- function( gene, AAoffset=0, len=15, overlap=9, overlayDF=NULL, 
 			overlay <- TRUE
 			otherStarts <- vector()
 			for( i in 1:nrow( otherPeps)) otherStarts[i] <- regexpr( otherPeps$Sequence[i], protein, fixed=TRUE)
-			missing <- which( otherStarts < 0)
+			missing <- WHICH( otherStarts < 0)
 			if (length( missing) > 0) cat( "\nN_overlay peptides not matching protein", length(missing))
 		}
 	}
@@ -679,10 +691,10 @@ peptideViewer <- function( gene, AAoffset=0, len=15, overlap=9, overlayDF=NULL, 
 	par(mfcol=c(nPlotsPerScreen,1))
 	for ( iplot in 1:nPlots) {
 		thisXlim <- c( ((iplot-1)*ncDraw[1]), iplot*ncDraw[1]) + AAoffset
-		plot( 0,0, xlim=thisXlim, ylim=c(0,5),type="n", xlab=paste( gene, "  amino acid position"), ylab="")
+		plot( 0,0, xlim=thisXlim, ylim=c(0,5),type="n", xlab=PASTE( gene, "  amino acid position"), ylab="")
 	
 		# blindly draw the whole protein at the bottom
-		text( (1:nc), rep(0,times=nc), labels=unlist(strsplit(protein,"")), adj=0, cex=myCex, col=1)
+		text( (1:nc), rep(0,times=nc), labels=unlist(STRSPLIT(protein,"")), adj=0, cex=myCex, col=1)
 		xwid <- 1.0
 		ygap <- 0.7
 
@@ -703,7 +715,7 @@ peptideViewer <- function( gene, AAoffset=0, len=15, overlap=9, overlayDF=NULL, 
 
 		# now try to overlay the 'others'
 		if ( overlay) {
-			overSet <- which( (otherStarts > 0) & (otherStarts >= (thisXlim[1]-len)) & (otherStarts <= thisXlim[2]))
+			overSet <- WHICH( (otherStarts > 0) & (otherStarts >= (thisXlim[1]-len)) & (otherStarts <= thisXlim[2]))
 			if ( length( overSet) > 0) {
 				text( (((otherStarts[overSet]-1)*xwid)+1), ((maxDeep+1)*ygap), 
 					labels=otherPeps$Sequence[ overSet], adj=0, cex=myCex, col=2)
@@ -738,7 +750,7 @@ peptideRedundancySniffer <- function() {
 	for ( i in 1:ncol(pepTable)) {
 		oneSet <- pepTable[ ,i]
 		# because the table is ragged, some are empty slots
-		good <- which( oneSet != "")
+		good <- WHICH( oneSet != "")
 		cat( "\nReading Gene: ", colnames(pepTable)[i], "\tN_peptides in: ", length( good))
 		pepSet <- append( pepSet, oneSet[ good])
 	}
@@ -748,13 +760,13 @@ peptideRedundancySniffer <- function() {
 	fullLen <- nchar( pepSet[1])
 	for ( iLess in 1:3) {
 		iend <- fullLen - iLess
-		smlSet <- substr( pepSet, 1, iend)
+		smlSet <- SUBSTR( pepSet, 1, iend)
 		cat( "\n\nUnique over N-terminal ",iend, "-mer:  ", length( unique( smlSet)), sep="")
 	}
 	for ( iLess in 1:3) {
 		iend <- fullLen
 		ibeg <- 1 + iLess
-		smlSet <- substr( pepSet, ibeg, iend)
+		smlSet <- SUBSTR( pepSet, ibeg, iend)
 		cat( "\n\nUnique over C-terminal ",(fullLen-iLess), "-mer:  ", length( unique( smlSet)), sep="")
 	}
 }
@@ -765,7 +777,7 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 	if ( is.data.frame( peptides)) {
 		if ( ! all( colnames( peptides) == c( "Peptide", "Count"))) 
 				stop( "Expected data frame with {Peptide, Count} columns")
-		ord <- order( peptides$Count, decreasing=TRUE)
+		ord <- ORDER( peptides$Count, decreasing=TRUE)
 		allPeps <- peptides$Peptide[ord]
 		allCnts <- peptides$Count[ord]
 	} else {
@@ -775,7 +787,7 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 
 	cat( "\nGiven Peptides:  ", N <- length( allPeps))
 
-	tapply( 1:N, factor( allPeps), FUN=function(x) {
+	TAPPLY( 1:N, factor( allPeps), FUN=function(x) {
 			if ( length(x) < 2) return()
 			newcnt <- sum( allCnts[x])
 			allCnts[ x[1]] <<- newcnt
@@ -788,7 +800,7 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 	cat( "\nUnique Peptides: ", length( peps))
 
 	# only keep the ones with at least K reads to support it
-	keep <- which( cnts >= min.count)
+	keep <- WHICH( cnts >= min.count)
 	peps <- peps[ keep]
 	cnts <- cnts[ keep]
 	len <- nchar( peps)
@@ -797,8 +809,8 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 
 
 	# build a set of A-Z 'first AA' sets
-	first <- substr( peps, 1,1)
-	letterSets <- lapply( LETTERS, function(x) which( first == x))
+	first <- SUBSTR( peps, 1,1)
+	letterSets <- LAPPLY( LETTERS, function(x) WHICH( first == x))
 	names( letterSets) <- LETTERS
 
 	cat( "\n")
@@ -808,25 +820,25 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 
 			if ( len[i] < iter) next
 			# extract the suffix from one peptide, and see all it hits
-			mykey <- substr( peps[i], 1, 1)
-			prefix <- substr( peps[i], 1, iter)
-			suffix <- substr( peps[i], iter+1, len[i])
-			theirkey <- substr( suffix, 1,1)
+			mykey <- SUBSTR( peps[i], 1, 1)
+			prefix <- SUBSTR( peps[i], 1, iter)
+			suffix <- SUBSTR( peps[i], iter+1, len[i])
+			theirkey <- SUBSTR( suffix, 1,1)
 			totest <- letterSets[[ theirkey]]
 			hits <- grep( suffix, peps[totest], fixed=T)
 			#targets <- substr( peps[totest], 1, nchar(suffix))
 			#hits <- which( targets == suffix)
 			if ( length(hits) < 1) next
 			hits <- totest[ hits]
-			hits <- setdiff( hits, i)
+			hits <- SETDIFF( hits, i)
 			if ( length(hits) < 1) next
 
 			# for each other peptide that starts with my suffix, prepend my prefix
 			for ( j in hits) {
 				loc <- regexpr( suffix, peps[j], fixed=TRUE)
 				if ( loc != 1) next
-				newpep <- paste( prefix, peps[j], sep="")
-				letterSets[[ theirkey]] <- setdiff( letterSets[[ theirkey]], j)
+				newpep <- PASTE( prefix, peps[j], sep="")
+				letterSets[[ theirkey]] <- SETDIFF( letterSets[[ theirkey]], j)
 				letterSets[[ mykey]] <- c( letterSets[[ mykey]], j)
 				peps[j] <- newpep
 				len[j] <- nchar(newpep)
@@ -835,7 +847,7 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 			}
 
 			# remove me fron the set
-			letterSets[[mykey]] <- setdiff( letterSets[[mykey]], i)
+			letterSets[[mykey]] <- SETDIFF( letterSets[[mykey]], i)
 			peps[i] <- ""
 			len[i] <- 0
 			cnts[i] <- 0
@@ -846,9 +858,9 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 		cat( "\nTotal:  ", sum( ans), "\n")
 	}
 
-	keep <- which( len > 0 & cnts > 0)
+	keep <- WHICH( len > 0 & cnts > 0)
 	out <- data.frame( "Peptide"=peps[keep], "Count"=cnts[keep], stringsAsFactors=FALSE)
-	ord <- order( out$Peptide, -out$Count)
+	ord <- ORDER( out$Peptide, -out$Count)
 	out <- out[ ord, ]
 	rownames(out) <- 1:nrow(out)
 
@@ -881,7 +893,7 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 	geneFac <- factor( genes)
 	genesOut <- levels(geneFac)
 
-	genePtr <- match( genesOut, gmap$GENE_ID, nomatch=0)
+	genePtr <- MATCH( genesOut, gmap$GENE_ID, nomatch=0)
 	if ( all( genePtr == 0)) warning( "No Peptide GeneIDs match current SpeciesID...")
 
 	totSpecOut <- uniSpecOut <- aapkmOut <- pctOut <- vector()
@@ -896,8 +908,8 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 	for ( i in 1:length(genesOut)) {
 
 		thisGene <- genesOut[i]
-		who <- which( genes == thisGene)
-		uniSpecOut[i] <- length( unique( peptides[who]))
+		who <- WHICH( genes == thisGene)
+		uniSpecOut[i] <- length( unique.default( peptides[who]))
 		totSpecOut[i] <- sum( counts[who])
 		pctOut[i] <- totSpecOut[i] * 100 / sum(counts)
 
@@ -925,7 +937,7 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 				"AAPKM"=aapkmOut,"PCT_SPECTRA"=pctOut, "TOTAL_SPECTRA"=totSpecOut, 
 				"UNIQUE_SPECTRA"=uniSpecOut, stringsAsFactors=FALSE)
 	}
-	ord <- order( out$AAPKM, decreasing=T)
+	ord <- ORDER( out$AAPKM, decreasing=T)
 	out <- out[ ord, ]
 	rownames(out) <- 1:nrow(out)
 
@@ -943,24 +955,24 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 
 	tbl1 <- read.delim( file1, as.is=T, sep=sep)
 	genes1 <- tbl1[[ gene1Column]]
-	if ( is.null( genes1)) stop( paste( "GeneID column not found.  Tried: ", gene1Column, "\nFound: ", colnames(tbl1)))
+	if ( is.null( genes1)) stop( PASTE( "GeneID column not found.  Tried: ", gene1Column, "\nFound: ", colnames(tbl1)))
 	value1 <- tbl1[[ value1Column]]
-	if ( is.null( value1)) stop( paste( "Abundance column not found.  Tried: ", value1Column, "\nFound: ", colnames(tbl1)))
+	if ( is.null( value1)) stop( PASTE( "Abundance column not found.  Tried: ", value1Column, "\nFound: ", colnames(tbl1)))
 	count1 <- tbl1[[ count1Column]]
-	if ( is.null( count1)) stop( paste( "Count column not found.  Tried: ", count1Column, "\nFound: ", colnames(tbl1)))
+	if ( is.null( count1)) stop( PASTE( "Count column not found.  Tried: ", count1Column, "\nFound: ", colnames(tbl1)))
 
 	tbl2 <- read.delim( file2, as.is=T, sep=sep)
 	genes2 <- tbl2[[ gene2Column]]
-	if ( is.null( genes2)) stop( paste( "GeneID column not found.  Tried: ", gene2Column, "\nFound: ", colnames(tbl2)))
+	if ( is.null( genes2)) stop( PASTE( "GeneID column not found.  Tried: ", gene2Column, "\nFound: ", colnames(tbl2)))
 	value2 <- tbl2[[ value2Column]]
-	if ( is.null( value2)) stop( paste( "Abundance column not found.  Tried: ", value2Column, "\nFound: ", colnames(tbl2)))
+	if ( is.null( value2)) stop( PASTE( "Abundance column not found.  Tried: ", value2Column, "\nFound: ", colnames(tbl2)))
 	count2 <- tbl2[[ count2Column]]
-	if ( is.null( count2)) stop( paste( "Count column not found.  Tried: ", count2Column, "\nFound: ", colnames(tbl2)))
+	if ( is.null( count2)) stop( PASTE( "Count column not found.  Tried: ", count2Column, "\nFound: ", colnames(tbl2)))
 
 	# we will keep the union of both gene sets
 	allGenes <- base::sort( unique.default( c( genes1, genes2)))
-	wh1 <- base::match( allGenes, genes1, nomatch=0)
-	wh2 <- base::match( allGenes, genes2, nomatch=0)
+	wh1 <- MATCH( allGenes, genes1, nomatch=0)
+	wh2 <- MATCH( allGenes, genes2, nomatch=0)
 	NG <- length( allGenes)
 	allProd <- gene2ProductAllSpecies( allGenes)
 
@@ -987,7 +999,7 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 	if ( ! is.null( dropLowCountCutoff)) {
 		cat( "\nRemoving proteins with less than", dropLowCountCutoff, "peptide/spectra counts: ")
 		bignMax <- pmax( bign1, bign2)
-		dropTooLow <- which( bignMax < dropLowCountCutoff)
+		dropTooLow <- WHICH( bignMax < dropLowCountCutoff)
 		cat( " ", length( dropTooLow))
 		if ( ! length( dropTooLow)) rm( dropTooLow)
 	}
@@ -1001,13 +1013,13 @@ peptide.mergeOverlaps <- function( peptides, max.tail=5, min.count=2) {
 
 	if ( exists( "dropTooLow")) out <- out[ -dropTooLow, ]
 
-	ord <- order( out$LOG2FOLD, decreasing=T)
+	ord <- ORDER( out$LOG2FOLD, decreasing=T)
 	out <- out[ ord, ]
 	rownames(out) <- 1:nrow(out)
 
 	# let's give the output the column names we used as input
-	colnames(out)[4:5] <- paste( c(value1Column,value2Column), 1:2, sep="_")
-	colnames(out)[6:7] <- paste( c(count1Column,count2Column), 1:2, sep="_")
+	colnames(out)[4:5] <- PASTE( c(value1Column,value2Column), 1:2, sep="_")
+	colnames(out)[6:7] <- PASTE( c(count1Column,count2Column), 1:2, sep="_")
 
 	return( out)
 }
@@ -1021,13 +1033,13 @@ molecularWeight <- function( peptides) {
 		"U"=168.07, "V"=99.14, "W"=186.21, "X"=NA, "Y"=163.18, "Z"=NA)
 
 	N <- length( peptides)
-	terms <- strsplit( peptides, split="")
-	ans <- sapply( terms, FUN=function(x) {
+	terms <- STRSPLIT( peptides, split="")
+	ans <- SAPPLY( terms, FUN=function(x) {
 			# get how many of each AA, and sum up that many of each weight
-			aaTbl <- table( x)
+			aaTbl <- base::table( x)
 			aaIDs <- names( aaTbl)
-			where <- match( aaIDs, names(AA_WTS), nomatch=0)
-			good <- which( where > 0)
+			where <- MATCH( aaIDs, names(AA_WTS), nomatch=0)
+			good <- WHICH( where > 0)
 			myWts <- as.vector( aaTbl[good]) * AA_WTS[where[good]]
 			return( sum( myWts, na.rm=T))
 		})

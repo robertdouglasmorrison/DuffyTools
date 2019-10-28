@@ -60,7 +60,9 @@
 				legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, ...)
 		geneSetName <- "Radar"
 		plotFile <- file.path( radarPath, paste( geneSetName, "png", sep="."))
-		dev.print( png, plotFile, width=900, height=640)
+		dev.print( png, plotFile, width=1000, height=700)
+		plotFile <- file.path( radarPath, paste( geneSetName, "pdf", sep="."))
+		dev.print( pdf, plotFile, width=12, height=8)
 		csvFile <- file.path( radarPath, paste( geneSetName, "csv", sep="."))
 		write.table( ans, csvFile, sep=",", quote=T, row.names=F)
 
@@ -96,7 +98,9 @@
 			}
 
 			plotFile <- file.path( radarPath, paste( "Radar", gs, "png", sep="."))
-			dev.print( png, plotFile, width=900, height=640)
+			dev.print( png, plotFile, width=1000, height=700)
+			plotFile <- file.path( radarPath, paste( "Radar", gs, "pdf", sep="."))
+			dev.print( pdf, plotFile, width=12, height=8)
 			csvFile <- file.path( radarPath, paste( "Radar", gs, "csv", sep="."))
 			write.table( ans, csvFile, sep=",", quote=T, row.names=F)
 

@@ -99,7 +99,7 @@
 	if ( !is.null(nCores) && nCores > 1) {
 
 		# get all the subsets
-		setOfSets <- tapply( x, INDEX, FUN=function(x) {x}, simplify=FALSE)
+		setOfSets <- base::tapply( x, INDEX, FUN=function(x) {x}, simplify=FALSE)
 
 		# transform to a list of non-empty chunks
 		listOfSets <- vector( mode="list")
@@ -127,7 +127,7 @@
 
 		return( out)
 	} else {
-		return( tapply( x, INDEX, FUN, ...))
+		return( base::tapply( x, INDEX, FUN, ...))
 	}
 }
 
@@ -147,7 +147,7 @@
 		MCLAPPLY_DEBUG <<- ans
 		return( ans)
 	} else {
-		return( lapply( x, FUN, ...))
+		return( base::lapply( x, FUN, ...))
 	}
 }
 
@@ -160,7 +160,7 @@
 	if ( !is.null(nCores) && nCores > 1) {
 
 		# get all the subsets
-		rowPtrs <- tapply( 1:nrow(data), INDICES, FUN=NULL)
+		rowPtrs <- base::tapply( 1:nrow(data), INDICES, FUN=NULL)
 
 		# transform to a list of non-empty chunks
 		listOfDFs <- vector( mode="list")
