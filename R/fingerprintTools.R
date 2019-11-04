@@ -133,8 +133,8 @@ bestMatchingFingerprint <- function( tbl, seq, finger=c("CLAG2","DBL4","COMBO"),
 	best <- which( seqDist == bestDist)
 
 	out <- data.frame( "N_Best"=length(best), "BestMatch"=paste(tbl$ISOLATE_ID[best], collapse="; "), 
-				"EditDist"=bestDist, "Score"=score(paAns), "BestSeq"=as.character(subject(paAns)),
-				"GivenSeq"=as.character(pattern(paAns)), stringsAsFactors=F)
+				"EditDist"=bestDist, "Score"=score(paAns), "BestSeq"=as.character(alignedSubject(paAns)),
+				"GivenSeq"=as.character( alignedPattern(paAns)), stringsAsFactors=F)
 
 	out
 }

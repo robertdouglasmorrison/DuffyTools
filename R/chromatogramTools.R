@@ -47,15 +47,12 @@
 `revCompChromatogram` <- function( chromoObj) {
 
 	traceM <- revCompTraceMatrix( chromoObj$TraceM)
-	tmpPeakPos <- chromoObj$PeakPosition
-	# turn into a matrix for the RevComp, then take back just column 1
-	tmpPeakPosM <- matrix( tmpPeakPos, nrow=length(tmpPeakPos), ncol=1)
-	#cat( "\nDebug:  typeof:  ", typeof( tmpPeakPos), "  dim: ", dim( tmpPeakPos))
-	peakPosM <- revCompPeakPosMatrix( tmpPeakPosM, nrow.TM=nrow(traceM))
-	peakPos <- peakPosM[ ,1]
+	peakPos <- revCompPeakPosition( chromoObj$PeakPosition, nrow(traceM))
 
 	dna <- rev( chromoObj$DNA_Calls)
+	names(dna) <- c( "DNA", "rc(DNA)")
 	aa <- DNAtoAA( dna[1], clipAtStop=F, readingFrame=1:6)
+	names(aa) <- paste( "AA_Frame", 1:6, sep="")
 	
 	names(peakPos) <- strsplit( dna[1], split="")[[1]]
 
@@ -75,21 +72,28 @@
 	out[ , 2] <- tmp[ ,3]
 	out[ , 3] <- tmp[ ,2]
 	out[ , 4] <- tmp[ ,1]
+	rownames(out) <- 1:N
+	out
+}
+
+
+`revCompPeakPosition` <- function( peakPos, nrow.TM) {
+
+	# do the reverse of where the peaks are
+	out <- rev( nrow.TM - peakPos + 1)
 	out
 }
 
 
 `revCompPeakPosMatrix` <- function( peakPosM, nrow.TM) {
 
-	N <- nrow(peakPosM)
-	# first do the reverse
-	out <- peakPosM[ N:1, ,drop=FALSE]
-	# next update all the location pointers given the trace matrix extent
-	for ( i in 1:ncol( peakPosM)) {
-		out[ ,i] <- (nrow.TM - out[ ,i] + 1)
-	}
-	out
+	# do the reverse of where the peaks are
+	N <- nrow( peakPosM)
+	outM <- peakPosM[ N:1, , drop=F]
+	outM[,1] <- nrow.TM - outM[,1] + 1
+	outM
 }
+
 
 
 `baseCallOnePeak` <- function( peakSite, traceM, min.pct=0.10) {
@@ -238,6 +242,95 @@
 	traceOut <- round( traceOut, digits=2)
 
 	out <- list( "TraceM"=traceOut, "PeakPosition"=peaksOut, "DNA_Calls"=dna, "AA_Calls"=aa)
+	out
+}
+
+
+`chromatogramToTable` <- function( chromoObj) {
+
+	# turn the 4 pieces into what we need to make one table
+	# trace matrix is trivial
+	traceM <- chromoObj$TraceM
+	ntr <- nrow( traceM)
+	row.names <- rownames( traceM)
+
+	# put the peak locations where they go
+	peakVec <- peakCount <- rep.int( NA, ntr)
+	peakLocs <- as.integer( chromoObj$PeakPosition)
+	peakVec[ peakLocs] <- peakLocs
+	peakCount[ peakLocs] <- 1:length(peakLocs)
+
+	# show just the 'fwd' strand calls at the peaks
+	dna <- chromoObj$DNA_Calls
+	dnaV <- rep.int( "", ntr)
+	dnaCalls <- strsplit( dna[1], split="")
+	dnaV[ peakLocs] <- dnaCalls[[1]]
+
+	# and show all the reading frames too
+	aa <- chromoObj$AA_Calls
+	aaM <- matrix( "", nrow=ntr, ncol=6)
+	colnames(aaM) <- names(aa)
+	aaCalls <- strsplit( aa, split="")
+	read1.4 <- seq( 2, length(peakLocs), by=3)
+	read2.5 <- seq( 3, length(peakLocs), by=3)
+	read3.6 <- seq( 4, length(peakLocs), by=3)
+
+	# makw sure the lengths are all the same
+	if ( length(aaCalls[[1]]) > length( read1.4)) {
+		length(aaCalls[[1]]) <- length(aaCalls[[4]]) <- length(read1.4)
+	}
+	if ( length(aaCalls[[1]]) < length( read1.4)) length(read1.4) <- length(aaCalls[[1]])
+	if ( length(aaCalls[[2]]) > length( read2.5)) {
+		length(aaCalls[[2]]) <- length(aaCalls[[5]]) <- length(read2.5)
+	}
+	if ( length(aaCalls[[2]]) < length( read2.5)) length(read2.5) <- length(aaCalls[[2]])
+	if ( length(aaCalls[[3]]) > length( read3.6)) {
+		length(aaCalls[[3]]) <- length(aaCalls[[6]]) <- length(read3.6)
+	}
+	if ( length(aaCalls[[3]]) < length( read3.6)) length(read3.6) <- length(aaCalls[[3]])
+
+	# now stuff those AA calls in
+	aaM[ peakLocs[read1.4], 1] <- aaCalls[[1]]
+	aaM[ peakLocs[read1.4], 4] <- aaCalls[[4]]
+	aaM[ peakLocs[read2.5], 2] <- aaCalls[[2]]
+	aaM[ peakLocs[read2.5], 5] <- aaCalls[[5]]
+	aaM[ peakLocs[read3.6], 3] <- aaCalls[[3]]
+	aaM[ peakLocs[read3.6], 6] <- aaCalls[[6]]
+
+	out <- data.frame( "Row"=row.names, traceM, "PeakPosition"=peakVec, "PeakCount"=peakCount, 
+			"DNA_Call"=dnaV, aaM, stringsAsFactors=F)
+	rownames(out) <- 1:nrow(out)
+	out
+}
+
+
+`chromatogramFromTable` <- function( tbl) {
+
+	expectedColumns1 <- c( "Row", "A", "C", "G", "T", "PeakPosition", "DNA_Call")
+	expectedColumns2 <- paste( "AA_Frame", 1:6, sep="")
+	if ( ncol(tbl) != 13 || ! all( colnames(tbl)[1:7] == expectedColumns1)) {
+		cat( "\nGiven 'tbl' object does not have chromatogram column names..")
+		stop()
+	}
+
+	traceIn <- as.matrix( tbl[ , 2:5])
+	rownames(traceIn) <- as.integer( tbl$Row)
+
+	peaks <- as.numeric( tbl$PeakPosition)
+	good <- which( !is.na( peaks))
+	peaksV <- peaks[ good]
+
+	dna <- tbl$DNA_Call
+	dnaV <- dna[good]
+	dnaStr <- paste( dnaV, collapse="")
+	rcDnaStr <- myReverseComplement( dnaStr)
+	dna <- c( dnaStr, rcDnaStr)
+	names(dna) <- c( "DNA", "rc(DNA)")
+
+	aa <- DNAtoAA( dnaStr, clipAtStop=F, readingFrame=1:6)
+	names(aa) <- paste( "AA_Frame", 1:6, sep="")
+
+	out <- list( "TraceM"=traceIn, "PeakPosition"=peaksV, "DNA_Calls"=dna, "AA_Calls"=aa)
 	out
 }
 
@@ -418,8 +511,10 @@
 	}
 
 	if ( ! is.null(range)) {
-		firstPeak <- peakPos[ min(range)]
-		lastPeak <- peakPos[ max(range)]
+		peak1 <- max( 1, min( range, na.rm=T))
+		peakN <- min( length(peakPos), max( range, na.rm=T))
+		firstPeak <- peakPos[ peak1]
+		lastPeak <- peakPos[ peakN]
 		firstTracePoint <- max( 1, firstPeak - halfPeak)
 		lastTracePoint <- min( NT, lastPeak + halfPeak)
 	}
@@ -469,7 +564,7 @@
 
 
 `plotChromatogram` <- function( chromoObj, label="", subset=NULL, lwd=2, lty=1, cex=1, font=2, 
-				add=FALSE, forceYmax=NULL, showAA=TRUE) {
+				add=FALSE, forceYmax=NULL, showAA=TRUE, showTraceRowNumbers=FALSE) {
 
 	# given a chromatogram object, show the whole thing
 	acgtBases <- c('A','C','G','T','N','-')
@@ -553,7 +648,10 @@
 		DO_SUBSET <- TRUE
 	} else {
 		if ( is.logical(showAA) && showAA) AAtoShow <- chromoObj$AA_Calls[1]
-		if ( is.numeric(showAA)) AAtoShow <- chromoObj$AA_Calls[showAA]
+		if ( is.numeric(showAA)) {
+			AAtoShow <- chromoObj$AA_Calls[showAA]
+			AAoffset <- showAA
+		}
 	}
 
 	mainText <- paste( "Chromatogram:  ", label)
@@ -602,6 +700,13 @@
 					font=2, lwd.ticks=0, cex.axis=cex*1.4)
 			}
 		}
+	}
+
+	if ( showTraceRowNumbers != "") {
+		traceRowValues <- as.numeric( rownames(traceM)[ firstTracePoint:lastTracePoint])
+		myAtValues <- pretty( traceRowValues)
+		myAts <- myAtValues - traceRowValues[1] + 1
+		axis( side=3, at=myAts, labels=myAtValues, padj=1)
 	}
 }
 

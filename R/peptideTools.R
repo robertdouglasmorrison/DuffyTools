@@ -86,9 +86,9 @@ UNION <- base::union
 	repeat {
 		pa <- pairwiseAlignment( dnaNow, referenceDNA, type="local", scoreOnly=F)
 		dnaStart <- start( pattern( pa))
-		dnaStr <- as.character( pattern( pa))
+		dnaStr <- as.character( alignedPattern( pa))
 		refStart <- start( subject( pa))
-		refStr <- as.character( subject( pa))
+		refStr <- as.character( alignedSubject( pa))
 		scoreNow <- score(pa)
 		# if we don't have a good score, don't even try
 		if ( scoreNow < nchar(dnaNow)*0.1) break
@@ -477,8 +477,8 @@ UNION <- base::union
 			ans <- pairwiseAlignment( peptide, protstrings[ bestPtrs[j]], type="local", 
 						substitutionMatrix=substitutionMatrix, 
 						gapOpening=-5, gapExtension=-3, scoreOnly=F)
-			bestPattFrag[j] <- as.character( pattern( ans))
-			bestSubjFrag[j] <- as.character( subject( ans))
+			bestPattFrag[j] <- as.character( alignedPattern( ans))
+			bestSubjFrag[j] <- as.character( alignedSubject( ans))
 			from <- protStart[j] <- start( subject(ans)) - start( pattern(ans)) + 1
 			to <- protStop[j] <- protStart[j] + width( peptide) - 1
 			thatPep <- proteinRegion[j] <- SUBSTR( as.character( protstrings[ bestPtrs[j]]), from, to)
