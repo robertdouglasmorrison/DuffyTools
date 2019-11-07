@@ -319,3 +319,40 @@ getGeneLimits <- function( geneids, geneMap) {
 	return( "OK")
 }
 
+
+# stand alone to see if within each gene, are there multiple gene models that cause exons or cds to overlap
+checkIntraGeneOverlaps <- function( emap) {
+
+	# run along the genes and see if any of its sub-sections overlap
+	geneFac <- factor( emap$GENE_ID)
+	N <- nrow( emap)
+
+	nbad <- 0
+	tapply( 1:N, geneFac, function(x) {
+			if ( (nEx <- length(x)) < 2) return(NULL)
+			for ( i in 1:(nEx-1)) {
+				beg1 <- emap$POSITION[ x[ i]]
+				end1 <- emap$END[ x[ i]]
+				set1 <- beg1 : end1
+				for ( j in (i+1):nEx) {
+					beg2 <- emap$POSITION[ x[ j]]
+					end2 <- emap$END[ x[ j]]
+					set2 <- beg2 : end2
+
+					nover <- length( intersect( set1, set2))
+					if (nover) {
+						nbad <<- nbad + 1
+						cat( "\n", emap$GENE_ID[x[i]], i, j, beg1, end1, beg2, end2)
+					}
+				}
+			}
+			return()
+		})
+	
+	if ( nbad) {
+		cat( "\n\nFound gene sub-section overlaps: ", nbad)
+	} else {
+		cat( "\n\nNo overlaps detected.")
+	}
+}
+
