@@ -62,7 +62,7 @@
 
 
 `inspectChromatogramPair` <- function( fwdFile, revFile, fwdStart, revStart, fwdShow=20, revShow=fwdShow,
-					fwdAA=1, revAA=fwdAA, showTraceRowNumbers=T) {
+					fwdAA=1, revAA=fwdAA, substring=NULL, showTraceRowNumbers=T) {
 
 	# visually inspect these 2 chromatograms at one region of overlapping interest
 	# read them in
@@ -88,8 +88,13 @@
 	par( mfcol=c(2,1))
 
 	# get that subset from both
-	fwdSubObj <- subsetChromatogram( fwdObj, range=fwdStart:(fwdStart+fwdShow))
-	revSubObj <- subsetChromatogram( revObj, range=revStart:(revStart+revShow))
+	if ( is.null( substring)) {
+		fwdSubObj <- subsetChromatogram( fwdObj, range=fwdStart:(fwdStart+fwdShow))
+		revSubObj <- subsetChromatogram( revObj, range=revStart:(revStart+revShow))
+	} else {
+		fwdSubObj <- subsetChromatogram( fwdObj, substring=substring)
+		revSubObj <- subsetChromatogram( revObj, substring=substring)
+	}
 
 	# draw them
 	plotChromatogram( fwdSubObj, label="Forward", showAA=fwdAA, showTraceRowNumbers=showTraceRowNumbers)

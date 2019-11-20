@@ -725,7 +725,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 			cat( "\nFile not found: ", file)
 			return( "Error")
 		}
-		con <<- openCompressedFile( file, open="r")
+		con <<- openCompressedFile( file, open="rb")
 		filename <<- file
 		return( file)
 	}
@@ -738,7 +738,10 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 		if ( nread < 4) return(NULL)
 		isRID <- seq( 1, nread, by=4)
 		N <<- N + length(isRID)
-		return( list( "rid"=base::sub( "^@","",txt[isRID]), "seq"=txt[isRID+1], "score"=txt[isRID+3]))
+		# strip off the "@" from the IDs
+		ridStrs <- txt[isRID]
+		ridStrs <- base::substr( ridStrs, 2, nchar(ridStrs))
+		return( list( "rid"=ridStrs, "seq"=txt[isRID+1], "score"=txt[isRID+3]))
 	}
 
 	finalize <- function() {
@@ -767,9 +770,10 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 
 	write <- function( rid, seq, score) {
 	
-		txt <- paste( "@", rid, "\n", seq, "\n+\n", score, sep="")
-		writeLines( txt, con=con)
-		N <<- N + 1
+		#txt <- base::paste( "@", rid, "\n", seq, "\n+\n", score, sep="")
+		#writeLines( txt, con=con)
+		writeLines( base::paste( "@", rid, "\n", seq, "\n+\n", score, sep=""), con=con)
+		N <<- N + length(rid)
 		return()
 	}
 
@@ -1035,3 +1039,216 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 			"Reduction"=reduction, "PctReduced"=pct, stringsAsFactors=F)
 	return(out)
 }
+
+
+`fastqDemultiplex` <- function( fastqFileSet, indexFile, sep=",", sampleColumn="SampleID", 
+				index1Column="i7", index2Column="i5", plexStripPattern="^.+0:", 
+				buffer.size=100000, max.mismatch=1) {
+
+	# set up to demultiplex a set of FASTQ files into many separate new FASTQ files
+	# by extracting the multiplex adaptor sequences from the read ID line of each raw read
+	indexTbl <- read.delim( indexFile, sep=sep, as.is=T, header=T)
+	if ( ! (sampleColumn %in% colnames(indexTbl))) {
+		cat( "\nFailed to find the sample ID column in Index file.  Tried: ", sampleColumn)
+		cat( "\nCheck Index file contents, and file separator.  Used:      ", sep, "\n")
+		return(NULL)
+	}
+	index1 <- indexTbl[[ index1Column]]
+	if ( is.null(index1)) {
+		cat( "\nFailed to find Index 1 column in Index file.  Tried: ", index1Column)
+		return(NULL)
+	}
+	hasIndex2 <- FALSE
+	if ( !is.null(index2Column) && (index2Column != "")) {
+		index2 <- indexTbl[[ index2Column]]
+		if ( is.null(index2)) {
+			cat( "\nFailed to find Index 2 column in Index file.  Tried: ", index2Column)
+			return(NULL)
+		}
+		hasIndex2 <- TRUE
+	}
+
+	# OK, the Index table seems valid, so make the file names we will create and the multiplex adaptors we will search for
+	outIDs <- indexTbl[[ sampleColumn]]
+	outFiles <- paste( gsub( " ", ".", outIDs), "fastq.gz", sep=".")
+	NS <- length( outIDs)
+
+	# make sure all input files are found
+	if ( ! all( file.exists( fastqFileSet))) {
+		cat( "\nError:  Some input FASTQ files not found.")
+		return(NULL)
+	}
+	NFIN <- length(fastqFileSet)
+
+	# we may allow the set of plex patterns to grow if we condone mismatches, so build the table 
+	# of pointers from plex patterns to output files
+	if (hasIndex2) {
+		plexPatterns <- paste( index1, sapply( index2, myReverseComplement), sep="+")
+	} else {
+		plexPatterns <- index1
+	}
+	plexFilePtrs <- 1:NS
+	nNewPlex <- 0
+
+	# create the FQ writers for each output file
+	# this makes a list of closures, each one a function for writing reads out to that one file
+	fqList <- vector( mode="list", length=NS)
+	for ( i in 1:NS) {
+		myFile <- outFiles[i]
+		fqList[[i]] <- fastqWriter()
+		if ( fqList[[i]]$initialize(myFile) != myFile) {
+			cat( "\nFailed to initialize new FQ writer for file: ", myFile)
+			return( NULL)
+		}
+	}
+		
+	UNIQUE <- base::unique.default
+	MATCH <- base::match
+	WHICH <- base::which
+
+
+	# local function to extract the multiplex part from the read ID lines
+	extractPlexString <- function( rids, plexStripPattern) {
+					return( sub( plexStripPattern, "", rids))
+				}
+
+
+	# we are now ready to start reading in from the set of input files
+	options( warn=-1)
+	on.exit( options( warn=0))
+
+	totalIn <- totalOut <- totalDrop <- totalPerfect <- totalMismatch <- 0
+
+	# tally up what never did map to output files
+	worstPlexNotFound <- vector()
+
+	for ( iIN in 1:NFIN) {
+		cat( "\n")
+		infile <- fastqFileSet[iIN]
+		fin <- fastqReader()
+		if ( fin$initialize(infile) != infile) {
+			cat( "\nError initializing FQ reader for file: ", infile)
+			cat( "\nSkipping this file..")
+			next
+		}
+
+		nin <- nout <- ndrop <- nperfect <- nmismatch <- 0
+
+		# try to only test for mismatches if we keep finding them
+		nTryMissNoneFound <- 0
+
+		# the main loop is to look at the indexing info in the ID line, and pass it off to one output file
+		cat("\nReading: ", iIN, "of", NFIN, " \t", basename(infile), "\n")
+		repeat {
+			item <- fin$read( buffer.size)
+			if (is.null(item)) break
+			
+			rids <- item[[1]]
+			seqs <- item[[2]]
+			scores <- item[[3]]
+			nReads <- length(rids)
+			if (nReads < 1) break
+			nin <- nin + nReads
+	
+			# get just the multiplex info
+			myPlexs <- extractPlexString( rids, plexStripPattern)
+
+			# all of these should exist in our table
+			# write reads to each output
+			wh <- MATCH( myPlexs, plexPatterns, nomatch=0)
+			for ( iOut in UNIQUE(wh)) {
+				if ( iOut == 0) next
+				now <- WHICH( wh == iOut)
+				myFQ <- plexFilePtrs[ iOut]
+				fqList[[myFQ]]$write( rids[now], seqs[now], scores[now])
+			}
+			nout <- nout + sum( wh > 0)
+			nperfect <- nperfect + sum( wh > 0 & wh <= NS)
+			nmismatch <- nmismatch + sum( wh > NS)
+
+			# see if any of the unmatched plex strings are 'close enough'
+			# to consider extending our set 
+			if ( max.mismatch > 0 && nTryMissNoneFound < 10) {
+				foundNew <- FALSE
+				badPlex <- UNIQUE( myPlexs[ wh == 0])
+				if ( length( badPlex)) {
+					plexDist <- adist( badPlex, plexPatterns[1:NS])
+					# given this small matrix of edit distances, see if any are good enough
+					# and unique enough, to warrant being added
+					for (k in 1:nrow(plexDist)) {
+						bestDist <- min( plexDist[ k, ])
+						if ( bestDist > max.mismatch) next
+						bestPlex <- WHICH( plexDist[ k, ] == bestDist)
+						if ( length(bestPlex) > 1) next
+						# OK, we have one new plex string that is close enough to one and
+						# only one original index string.  Add it to the list, and point 
+						# at the same file
+						plexPatterns <- c( plexPatterns, badPlex[k])
+						plexFilePtrs <- c( plexFilePtrs, plexFilePtrs[bestPlex])
+						nNewPlex <- nNewPlex + 1
+						cat( "\nAdd Mmismatch: ", badPlex[k], " \tAs: ", plexPatterns[bestPlex],
+								" \tSample: ", bestPlex, " \tEditDist: ", bestDist)
+						foundNew <- TRUE
+						nTryMissNoneFound <- 0
+					}
+				}
+				if ( ! foundNew) nTryMissNoneFound <- nTryMissNoneFound + 1
+
+				# if we just added some new plax patterns see if we can write some reads out
+				if (foundNew) {
+					cat( "\n")
+					whonew <- WHICH( wh == 0)
+					rids2 <- rids[ whonew]
+					seqs2 <- seqs[ whonew]
+					scores2 <- scores[ whonew]
+					myPlexs <- myPlexs[ whonew]
+					wh <- MATCH( myPlexs, plexPatterns, nomatch=0)
+					for ( iOut in unique(wh)) {
+						if ( iOut == 0) next
+						now <- WHICH( wh == iOut)
+						myFQ <- plexFilePtrs[ iOut]
+						fqList[[myFQ]]$write( rids2[now], seqs2[now], scores2[now])
+					}
+					nout <- nout + sum( wh > 0)
+					nperfect <- nperfect + sum( wh > 0 & wh <= NS)
+					nmismatch <- nmismatch + sum( wh > NS)
+				}
+			}
+			ndrop <- ndrop + sum( wh == 0)
+			plexNotFound <- table( myPlexs[ wh == 0])
+			worstPlexNotFound <- if ( length( worstPlexNotFound)) plexNotFound else mergeTables( worstPlexNotFound, plexNotFound)
+			# heartbeat diagnostics
+			cat( "\rN_In, N_Out, N_Drop, %Perfect, %Mismatch, %Drop: ", nin, nout, ndrop, 
+					round(nperfect*100/nin,digits=1), round(nmismatch*100/nin,digits=1), 
+					round(ndrop*100/nin,digits=1))
+			if ( nin %% 10000000 == 0) {
+				cat( "\nMost seen unexpected multiplex strings:\n")
+				print( sort( worstPlexNotFound, decreasing=T)[1:10])
+			}
+		}
+
+		# done reading this input file...
+		fin$finalize()
+		cat( "\rN_In, N_Out, N_Drop, %Perfect, %Mismatch, %Drop: ", nin, nout, ndrop, 
+					round(nperfect*100/nin,digits=1), round(nmismatch*100/nin,digits=1), 
+					round(ndrop*100/nin,digits=1))
+		totalIn <- totalIn + nin
+		totalOut <- totalOut + nout
+		totalDrop <- totalDrop + ndrop
+		totalPerfect <- totalPerfect + nperfect
+		totalMismatch <- totalMismatch + nmismatch
+
+	}  # looping over all input files..
+
+	# lastly, close all these new files
+	for ( i in 1:NS) {
+		fqList[[i]]$finalize()
+	}
+
+	# all done now
+	cat( "\n\nDone.")
+	cat( "\rN_In, N_Out, N_Drop, %Perfect, %Mismatch, %Drop: ", totalIn, totalOut, totalDrop, 
+					round(totalPerfect*100/totalIn,digits=1), round(totalMismatch*100/totalIn,digits=1), 
+					round(totalDrop*100/totalIn,digits=1), "\n")
+}
+

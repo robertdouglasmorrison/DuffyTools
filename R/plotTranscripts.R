@@ -222,7 +222,8 @@
 			keepIntergenics=FALSE, label="Plot", plotType=c("Volcano"),
 			pch=21, col=c('blue','red', 'black'), cut.fold=1, cut.pvalue=0.05, shortNames=TRUE,
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.pch=21, 
-			marker.pos=NULL, sep="\t", min.intensity=0, intensityColumn="RPKM_1", ...) {
+			marker.pos=NULL, sep="\t", min.intensity=0, intensityColumn="RPKM_1", 
+			left.label=NULL, right.label=NULL, ...) {
 
 	tmp <- read.delim( file, as.is=T, sep=sep)
 	cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
@@ -273,7 +274,8 @@
 		ans <- makeVolcanoPlot( genes, fold, pval, label=label, cex=cex,
 			pch=pch, col=col, cut.fold=cut.fold, cut.pvalue=cut.pvalue,
 			marker.genes=marker.genes, marker.col=marker.col, marker.cex=marker.cex,
-			marker.labels=marker.labels, marker.pch=marker.pch, marker.pos=marker.pos, ...)
+			marker.labels=marker.labels, marker.pch=marker.pch, marker.pos=marker.pos, 
+			left.label=left.label, right.label=right.label, ...)
 	}
 
 	return( invisible( ans))
@@ -429,7 +431,7 @@
 			pch=21, col=c('blue','red','black'), cut.fold=1, cut.pvalue=0.05,
 			clip.fold=10, clip.pvalue=1e-10,
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, 
-			marker.pch=21, marker.pos=NULL, cex=1, ...) {
+			marker.pch=21, marker.pos=NULL, cex=1, left.label=NULL, right.label=NULL, ...) {
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
 
@@ -504,6 +506,11 @@
 			}
 		}
 	}
+
+	# optional labels to remind which group is which
+
+	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in", left.label), cex=1, font=2)
+	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in", right.label), cex=1, font=2)
 
 	return( list( "x"=fold, "y"=y, "id"=genes ))
 }

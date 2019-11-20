@@ -464,19 +464,29 @@
 
 	if ( ! is.null( substring)) {
 		# we will find DNA or AA in any reading frame
-		subSeq <- as.character( substring)
+		subSeq <- as.character( substring)[1]
 		chromoDNA <- chromoObj$DNA_Calls
 		chromoAA <- chromoObj$AA_Calls
 
 		# look in both DNA and AA, (since it's 2 different scoring matrices, compensate a bit
 		require( Biostrings)
-		dnaScores <- pairwiseAlignment( chromoDNA, subSeq, type="local-global", scoreOnly=T) * 3
-		aaScores <- pairwiseAlignment( chromoAA, subSeq, type="local-global", scoreOnly=T)
+		data( BLOSUM62)
+		DNA_MATRIX <- nucleotideSubstitutionMatrix()
+		notDNA <- grepl( "Q|E|I|L|F|P|J|Z|X|\\*", subSeq)
+		if (notDNA) {
+			subSeq <- gsub( "?", "X", subSeq, fixed=T)
+			chromoAA <- gsub( "?", "X", chromoAA, fixed=T)
+		} else {
+			subSeq <- gsub( "?", "N", subSeq, fixed=T)
+		}
+
+		dnaScores <- if ( notDNA) -99999 else pairwiseAlignment( chromoDNA, subSeq, type="local-global", substitutionMatrix=DNA_MATRIX, scoreOnly=T) * 3
+		aaScores <- pairwiseAlignment( chromoAA, subSeq, type="local-global", substitutionMatrix=BLOSUM62, scoreOnly=T)
 	
 		if ( max( dnaScores) > max(aaScores)) {
 			best <- which.max( dnaScores)
 			bestDNA <- chromoDNA[ which.max( dnaScores)]
-			pa <- pairwiseAlignment( bestDNA, subSeq, type="local-global", scoreOnly=F)
+			pa <- pairwiseAlignment( bestDNA, subSeq, type="local-global", substitutionMatrix=DNA_MATRIX, scoreOnly=F)
 			startDNA <- start( pattern( pa))
 			stopDNA <- startDNA + width( pattern( pa)) - 1
 			needChromoRevComp <- (best > 1)
@@ -484,7 +494,7 @@
 		} else {
 			best <- which.max( aaScores)
 			bestAA <- chromoAA[ which.max( aaScores)]
-			pa <- pairwiseAlignment( bestAA, subSeq, type="local-global", scoreOnly=F)
+			pa <- pairwiseAlignment( bestAA, subSeq, type="local-global", substitutionMatrix=BLOSUM62, scoreOnly=F)
 			startAA <- start( pattern( pa))
 			stopAA <- startAA + width( pattern( pa)) - 1
 			stopDNA <- (stopAA*3)
@@ -596,21 +606,25 @@
 		subSeq <- as.character( subset)
 		chromoDNA <- chromoObj$DNA_Calls
 		chromoAA <- chromoObj$AA_Calls
+
 		# look in both DNA and AA, (since it's 2 different scoring matrices, compensate a bit
-		dnaScores <- pairwiseAlignment( chromoDNA, subSeq, type="local-global", scoreOnly=T) * 3
-		aaScores <- pairwiseAlignment( chromoAA, subSeq, type="local-global", scoreOnly=T)
+		require( Biostrings)
+		data( BLOSUM62)
+		DNA_MATRIX <- nucleotideSubstitutionMatrix()
+		dnaScores <- pairwiseAlignment( chromoDNA, subSeq, type="local-global", substitutionMatrix=DNA_MATRIX, scoreOnly=T) * 3
+		aaScores <- pairwiseAlignment( chromoAA, subSeq, type="local-global", substitutionMatrix=BLOSUM62, scoreOnly=T)
 
 		if ( max( dnaScores) > max(aaScores)) {
 			best <- which.max( dnaScores)
 			bestDNA <- chromoDNA[ which.max( dnaScores)]
-			pa <- pairwiseAlignment( bestDNA, subSeq, type="local-global", scoreOnly=F)
+			pa <- pairwiseAlignment( bestDNA, subSeq, type="local-global", substitutionMatrix=DNA_MATRIX, scoreOnly=F)
 			startDNA <- start( pattern( pa))
 			stopDNA <- startDNA + width( pattern( pa)) - 1
 			needChromoRevComp <- (best > 1)
 		} else {
 			best <- which.max( aaScores)
 			bestAA <- chromoAA[ which.max( aaScores)]
-			pa <- pairwiseAlignment( bestAA, subSeq, type="local-global", scoreOnly=F)
+			pa <- pairwiseAlignment( bestAA, subSeq, type="local-global", substitutionMatrix=BLOSUM62, scoreOnly=F)
 			startAA <- start( pattern( pa))
 			stopAA <- startAA + width( pattern( pa)) - 1
 			stopDNA <- (stopAA*3)
@@ -702,7 +716,7 @@
 		}
 	}
 
-	if ( showTraceRowNumbers != "") {
+	if ( showTraceRowNumbers) {
 		traceRowValues <- as.numeric( rownames(traceM)[ firstTracePoint:lastTracePoint])
 		myAtValues <- pretty( traceRowValues)
 		myAts <- myAtValues - traceRowValues[1] + 1
@@ -826,6 +840,8 @@ findSeqInChromatograms <- function( isolateName, seq, type=c("DNA","AA"), allowP
 	# given a (small) sequence, find and show that region in all the chromatograms that saw it
 	isolateID <- sub( "_DBL4$", "", isolateName)
 	isolateID <- sub( "_CLAG2$", "", isolateID)
+	type <- match.arg( type)
+
 	fragFile <- file.path( RESULTS.PATH, paste( isolateID, ".", finger, ".Fragment", type, ".fasta", sep=""))
 	fa <- loadFasta( fragFile, verbose=T)
 	nFrag <- length( fa$desc)
@@ -933,7 +949,7 @@ findSeqInChromatograms <- function( isolateName, seq, type=c("DNA","AA"), allowP
 }
 
 
-plotChromatogramSet <- function( chromoSet, isolateName, seq, type=type, lwd=2, cex=1, font=2) {
+plotChromatogramSet <- function( chromoSet, isolateName, seq, type=c("DNA","AA"), lwd=2, cex=1, font=2) {
 
 	# given a set of sub-regions in chromatograms, show them all in one plot
 	nChromo <- length( chromoSet)
@@ -1101,6 +1117,7 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=type, lwd=2, 
 	# we find cases where Sanger sequencing is inserting duplicate bases, which throw off reading frame
 	# try to find and correct, using a reference DNA and perhaps AA sequence.
 	require( Biostrings)
+	DNA_MATRIX <- nucleotideSubstitutionMatrix()
 
 	# first efforts, quite subjective, currently only changing the DNA & AA fields
 	#		not yet modifying the trace matrix or peak calls...
@@ -1109,7 +1126,7 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=type, lwd=2, 
 	chromoDNA <- chromoObj$DNA_Calls
 
 	# step 1: see which strand is better match to reference
-	dnaScores <- pairwiseAlignment( chromoDNA, referenceDNA, type="global-local", scoreOnly=T)
+	dnaScores <- pairwiseAlignment( chromoDNA, referenceDNA, type="global-local", substitutionMatrix=DNA_MATRIX, scoreOnly=T)
 	dna <- chromoDNA[ which.max(dnaScores)]
 
 	# step 2: try to re-call "N" bases manually, but ignore the edges
@@ -1207,10 +1224,14 @@ motifCodonChromatogram <- function( ch, motif, plot=TRUE) {
 	motif <- toupper( motif[1])
 	if (is.null(motifName) || is.na(motifName) || motifName == "") motifName <- motif
 
+	require( Biostrings)
+	data( BLOSUM62)
 	aaSeqs <- ch$AA_Calls[1:3]
-	pa <- pairwiseAlignment( aaSeqs, motif, type="local-global", scoreOnly=T)
+	aaSeqs <- gsub( "?", "X", aaSeqs, fixed=T)
+	motif <- gsub( "?", "X", motif, fixed=T)
+	pa <- pairwiseAlignment( aaSeqs, motif, type="local-global", substitutionMatrix=BLOSUM62, scoreOnly=T)
 	best <- which.max( pa)
-	pa <- pairwiseAlignment( aaSeqs[best], motif, type="local-global", scoreOnly=F)
+	pa <- pairwiseAlignment( aaSeqs[best], motif, type="local-global", substitutionMatrix=BLOSUM62, scoreOnly=F)
 	subjStart <- start( subject( pa))
 	pattStart <- start( pattern( pa))
 	# use exactly the center
@@ -1318,3 +1339,105 @@ measureDominantCodons <- function( ch, nCodons=1, plot=T) {
 }
 
 
+# quantify how confident the dominant call is for a region of peaks
+# by looking at the proportion of intensity that the top base explains
+# returns a value in 0 to 100 range
+`chromatogramConfidence` <- function( ch, centerPeak, nNeighbors=0) {
+
+	# get the raw chromatogram data and the peak list
+	if ( is.null(ch)) return( NULL)
+	peaks <- ch$PeakPosition
+	tm <- ch$TraceM
+	if ( is.null(tm)) return( NULL)
+	if ( ! nrow(tm)) return( NULL)
+
+	# the peak we were told to center on must be a real peak
+	myPeakPtr <- match( centerPeak, peaks, nomatch=0)
+	if ( !myPeakPtr || centerPeak > nrow(tm)) {
+		cat( "\nGiven Peak location is not in the chromatogram peak set: ", centerPeak)
+		cat( "\nNot one of: ", peaks)
+		return( NULL)
+	}
+
+	# deduce how far apart peaks are, to estimate how many points around the center top to include
+	avgPeakSep <- median( diff( peaks))
+	peakHalfWidth <- max( 1, floor( avgPeakSep / 3))
+
+	# given how many peaks to look at, and the half width, get the correct region of the trace matrix
+	leftPtr <- max( 1, myPeakPtr - nNeighbors)
+	rightPtr <- min( length(peaks), myPeakPtr + nNeighbors)
+	leftPeak <- peaks[ leftPtr]
+	rightPeak <- peaks[ rightPtr]
+	NP <- rightPtr - leftPtr + 1
+	leftPt <- leftPeak - peakHalfWidth
+	rightPt <- rightPeak + peakHalfWidth
+	cm <- tm[ leftPt:rightPt, ]
+	#peakPts <- (leftPeak : rightPeak) - leftPt + 1
+	peakPts <- peaks[ leftPtr : rightPtr] - leftPt + 1
+
+	# now create a mask so we look at just the tops of the peaks
+	wantPts <- sort( unlist( lapply( peakPts, function(x) return( (x-peakHalfWidth) : (x+peakHalfWidth)))))
+	nPtsPerPeak <- peakHalfWidth * 2 + 1
+	cm <- cm[ wantPts, ]
+
+	# see how deep and how consistent
+	totalCounts <- apply( cm, 1, sum, na.rm=T)
+	#callCounts <- apply( cm, 1, max, na.rm=T)
+	# the calls are not "always" the biggext value, although they should be.
+	# instead use the base call for the peak to get the one correct column
+	callCounts <- rep.int( 0, nrow(cm))
+	nnow <- 0
+	for ( i in 1:NP) {
+		myBase <- names( peaks)[ leftPtr + i - 1]
+		if ( !( myBase %in% colnames(cm))) next
+		myRows <- (nnow+1) : (nnow+nPtsPerPeak)
+		callCounts[myRows] <- cm[ myRows, myBase]
+		names(callCounts)[myRows] <- myBase
+		nnow <- nnow + nPtsPerPeak
+	}
+
+	# prevent divide by zero
+	totalCounts[ totalCounts < 1] <- 1
+	pctCall <- callCounts / totalCounts
+
+	# certainty is a function of Counts depth
+	certainty <- 1.0 - (2 ^ -totalCounts)
+
+	# confidence is the product of the dominant percentage times the certainty
+	# always on the interval 0..1
+	conf <- pctCall * certainty
+
+	# the overall confidence for the interval we inspectec is the average of all 
+	# points we used
+	avgConf <- mean( conf, na.rm=T)
+	# scale to 0..100
+	avgConf <- round( avgConf * 100, digits=2)
+	return( list( "Confidence"=avgConf, "StartPoint"=leftPt, "StopPoint"=rightPt))
+}
+
+
+measureConfidence <- function( ch, nNeighbors=7, plot=T) {
+
+	# start with what is given
+	peaks <- ch$PeakPosition
+
+	# use just the center top region to ignore the tails
+	centerPeak <- peaks[ floor( (length(peaks)+1) / 2)]
+	ans <- chromatogramConfidence( ch, centerPeak=centerPeak, nNeighbors=nNeighbors)
+	if ( is.null(ans)) return(0)
+
+	conf <- ans$Confidence
+
+	if ( plot) {
+		# draw something?...
+		tm <- ch$TraceM
+		xl <- ans$StartPoint
+		xh <- ans$StopPoint
+		bigY1 <- max( tm, na.rm=T)
+		bigY2 <- max( tm[xl:xh, ], na.rm=T)
+		bigY <- mean( c( bigY1, bigY2))
+		rect( xl, 0, xh, bigY, border=1, lwd=1)
+		text( xh, bigY*0.98, paste( "Confidence = ", conf, "%", sep=""), font=2, cex=0.95, pos=3)
+	}
+	return( conf)
+}
