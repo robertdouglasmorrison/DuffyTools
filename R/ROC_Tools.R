@@ -75,9 +75,10 @@ duffy.ROC <- function( goodScores, badScores, label="", visualize=TRUE, legend.c
 		sensAnsText <- round( sensAns, digits=3)
 		specAnsText <- round( specAns, digits=3)
 
-		legend( "bottomright", paste( c( "AUC (Area Under Curve) =", "Optimal Yes/No Cut Point =",
-						"Sensitivity =", "Specificity ="),
-				c( aucAnsText, cutAnsText, sensAnsText, specAnsText), "  "), bg='white', cex=legend.cex)
+		legendText <- paste( c( "AUC (Area Under Curve) =", "Optimal Yes/No Cutpoint =", "Sensitivity =", "Specificity ="),
+				c( aucAnsText, cutAnsText, sensAnsText, specAnsText), "    ")
+		legend( "bottomright", legendText, bg='white', cex=legend.cex)
+		dev.flush()
 	}
 	
 	return( list( "cutpoint"=cutAns, "AUC"=aucAns, "sensitivity"=sensAns, "specificity"=specAns))

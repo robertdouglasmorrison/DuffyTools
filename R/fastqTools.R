@@ -733,7 +733,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 	read <- function( n=1) {
 	
 		nlines <- n * 4
-		txt <- readLines( con, n=nlines)
+		txt <- readLines( con, n=nlines, skipNul=TRUE)
 		nread <- length( txt)
 		if ( nread < 4) return(NULL)
 		isRID <- seq( 1, nread, by=4)
