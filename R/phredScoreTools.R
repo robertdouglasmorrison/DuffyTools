@@ -89,6 +89,16 @@
 }
 
 
+`intToPhred` <- function( scores, scoreType="Phred33") {
+
+	# turn integers into Phred characters
+	# turn these into a character string where 0 == " "
+	offSet <- 33
+	if (scoreType == "Phred64") offSet <- 64
+	outStr <- intToUtf8( as.integer( scores + offSet))
+	return( outStr)
+}
+
 
 `solexaScore2phredScore` <- function( x) {
 
