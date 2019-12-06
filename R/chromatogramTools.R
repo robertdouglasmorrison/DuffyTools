@@ -75,6 +75,24 @@
 }
 
 
+`loadMultipleChromatograms` <- function( chromoFiles, curated=TRUE) {
+
+	out <- list()
+	n <- 0
+	for ( f in chromoFiles) {
+		ans <- loadChromatogram( f, curated=curated)
+		if (is.null(ans)) next
+		n <- n + 1
+		out[[n]] <- ans
+		# make a provisional name from the filename
+		chromoName <- sub( "\\.ab1$", "", basename(f))
+		names(out)[n] <- chromoName
+	}
+	if ( n == 0) return( NULL)
+	return( out)
+}
+
+
 `writeCuratedChromatogram` <- function( chromoObj, chromoFile=NULL) {
 
 	# filename is already in the object
@@ -515,6 +533,24 @@
 		# raw confidence is 0..1, scale to 0..100
 		confY <- peakConf * 100 * yScale
 		lines( confX, confY, lty=3, lwd=1, col='black')
+	}
+}
+
+
+`plotMultipleChromatograms` <- function( chromoSet, label="", seq=NULL, showAA=TRUE, 
+					showTraceRowNumbers=FALSE, showConfidence=FALSE, ...) {
+
+	# set up to draw more than one
+	nChromo <- length( chromoSet)
+	par( mfrow=c( nChromo, 1))
+	par( mai=c(0.8, 0.8, 0.7, 0.4))
+
+	for ( i in 1:nChromo) {
+		chromoObj <- chromoSet[[i]]
+		chromoLabel <- paste( label, names(chromoSet)[i], sep="  ")
+		plotChromatogram( chromoObj, label=chromoLabel, seq=seq, showAA=showAA,
+				showTraceRowNumbers=showTraceRowNumbers, showConfidence=showConfidence, 
+				...)
 	}
 }
 
@@ -1164,3 +1200,84 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=c("DNA","AA")
 	conf
 }
 
+
+`selectBestChromatogramSequence` <- function( chromoObj, reference, type=c("DNA","AA")) {
+
+	# given one chromatogram and reference sequence,
+	# find the one chromatogram sequence (DNA or AA) that best matches that reference
+	type <- match.arg( type)
+	require( Biostrings)
+	if ( type == "DNA") {
+		subM <- nucleotideSubstitutionMatrix()
+		mySeqs <- chromoObj$DNA_Calls
+	} else {
+		data( BLOSUM62)
+		subM <- BLOSUM62
+		mySeqs <- chromoObj$AA_Calls
+	}
+	
+	# do the similarity scoring test
+	paScores <- pairwiseAlignment( mySeqs, reference, type="local", scoreOnly=T, substitutionMatrix=subM)
+	best <- which.max( paScores)
+	
+	# gather what we send back
+	bestSeq <- mySeqs[ best]
+	bestScore <- paScores[ best]
+	bestLen <- nchar(bestSeq)
+	unitScore <- round( bestScore / bestLen, digits=3)
+	
+	# also see exactly where this best sequence lands in the reference
+	pa2 <- pairwiseAlignment( bestSeq, reference, type="local", scoreOnly=F, substitutionMatrix=subM)
+	pattStart <- start( pattern( pa2))
+	refStart <- start( subject( pa2))
+	refStop <- width( subject( pa2)) + refStart - 1
+	if ( pattStart > 1) {
+		refStart <- refStart - pattStart + 1
+		refStop <- refStop - pattStart + 1
+	}
+	
+	out <- list( "SeqName"=names(bestSeq), "Score"=bestScore, "UnitScore"=unitScore, "RefStart"=refStart, 
+			"RefStop"=refStop, "Sequence"=bestSeq)
+
+	# lastly, put the type into some of the column naems
+	names(out)[2:6] <- paste( type, names(out)[2:6], sep=".")
+	out
+}
+
+
+`getChromatogramSequenceConfidence` <- function( chromoObj, seq) {
+
+	# given one chromatogram and one of it's DNA or AA sequences,
+	# return the vector of confidence values for the elements of that seq string
+	peakConf <- chromoObj$PeakConfidence
+	
+	# the forward DNA is trivial, as that is exact the confidence that is stored
+	if ( seq == chromoObj$DNA_Calls[1]) return( peakConf)
+	
+	# the reverse DNA is almost as easy
+	if ( seq == chromoObj$DNA_Calls[2]) {
+		out <- rev( peakConf)
+		names(out) <- strsplit(chromoObj$DNA_Calls[2], split="")[[1]]
+		return( out)
+	}
+
+	# for the AA, we need to do merge/mean of the 3 bases per codon
+	who <- match( seq, chromoObj$AA_Calls, nomatch=0)
+	if  ( who == 0) return(NULL)
+	
+	# build the pair of indices that define the range for each codon
+	N <- length( peakConf)
+	if ( who %in% 1:3) {
+		myFrom <- seq( who, N, by=3)
+	} else {
+		peakConf <- rev( peakConf)
+		myFrom <- seq( (who-3), N, by=3)
+	}
+	myTo <- myFrom + 2
+	
+	# now we can step along each to calc the confidence for each aa
+	aaConf <- mapply( myFrom, myTo, FUN=function(x,y) mean( peakConf[ x:y]))
+	names( aaConf) <- strsplit( chromoObj$AA_Calls[who], split="")[[1]]
+	return( aaConf)
+}
+		
