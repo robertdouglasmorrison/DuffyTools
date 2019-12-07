@@ -7,13 +7,13 @@
 # covering one gene region into a single best consensus assembly
 
 `chromatogramAssembly` <- function( chromoFiles, referenceFastaFile, doCleaning=TRUE, 
-				cdsBases=NULL, verbose=TRUE) {
+				curated=TRUE, cdsBases=NULL, verbose=TRUE, min.DNA.unitscore=0.5) {
 
 	# For conserved genes, 'Cleaning' can catch fix chromatogram errors.
 	# But not advised for highly variant genes where the isolate likely has many indels
 
 	# Step 1:  load the set of chromatograms into memory
-	chromoSet <- loadMultipleChromatograms( chromoFiles, curated=T)
+	chromoSet <- loadMultipleChromatograms( chromoFiles, curated=curated)
 	nChromo <- length( chromoSet)
 	if ( is.null( chromoSet)) return( NULL)
 	
@@ -61,26 +61,57 @@
 	}
 	rownames(seqDF) <- 1:nrow(seqDF)
 	seqDF$DNA.AvgConfidence <- round( sapply( confInfo, mean, na.rm=T) * 100)
-	
+	seqDF$AA.Score <- 0;  seqDF$AA.UnitScore <- 0; 
+	seqDF$AA.RefStart <- NA;  seqDF$AA.RefStop <- NA; 
+	seqDF$AA.AvgConfidence <- 0;  seqDF$AA.Sequence <- ""
+	seqDF <- seqDF[ , c( 1:7, 9:15, 8)]
+	use <- which( seqDF$DNA.UnitScore >= min.DNA.unitscore)
+
+	# do a rough PA on the garage sequences
+	notUse <- which( seqDF$DNA.UnitScore < min.DNA.unitscore)
+	data( BLOSUM62)
+	for ( j in notUse) {
+		tmpDNA <- seqDF$DNA.Sequence[j]
+		tmpAA <- DNAtoBestPeptide( tmpDNA)
+		pa <- pairwiseAlignment( tmpAA, refAA, type="local", scoreOnly=F, substitutionMatrix=BLOSUM62)
+		aaScore <- score(pa)
+		aaStart <- start( pattern( pa))
+		aaStop <- width( pattern( pa)) + aaStart - 1
+		seqDF$AA.Score[j] <- aaScore
+		seqDF$AA.UnitScore[j] <- round( aaScore / nchar(tmpDNA)/3, digits=3)
+		seqDF$AA.RefStart[j] <- aaStart
+		seqDF$AA.RefStop[j]  <- aaStop
+		seqDF$AA.AvgConfidence[j] <- round( mean( seqDF$DNA.AvgConfidence[j]))
+		seqDF$AA.Sequence[j] <- tmpAA
+	}
+
 	# Step 5:  use all these sequences and confidence scores to build one large matrix of base calls at all locations
 	names(seqInfo) <- names(confInfo) <- seqDF$Chromatogram
-	matrixAns <- constructChromatogramBaseMatrix( seqInfo, confInfo, refDNA)
+	# don't always use all, some may be terrible
+	if ( ! length( use)) {
+		out <- list( "ReferenceName"=refName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), "ConsensusAA"="",
+			"ConfidenceAA"=integer(0), "ConsensusDNA"="", "ConfidenceDNA"=integer(0), 
+			"FragmentDetails"=seqDF, "BaseMatrix"=NULL, "ConfidenceMatrix"=NULL)
+		return(out)
+	}
+	matrixAns <- constructChromatogramBaseMatrix( seqInfo[use], confInfo[use], refDNA)
 	baseM <- matrixAns$BaseMatrix
 	confM <- matrixAns$ConfidenceMatrix
 
 	# Step 6:  now, use the confidence scores as the voting criteria, to extact the one final consensus
-	consensusSeqAns <- extractChromatogramConsensusSequence( baseM, confM)
+	#          we can use the DNA scores as relative weights
+	fragWts <- round( seqDF$DNA.UnitScore[use] * 10)
+	consensusSeqAns <- extractChromatogramConsensusSequence( baseM, confM, wts=fragWts)
 	finalDNAseq <- consensusSeqAns$sequence
 	finalDNAstr <- paste( finalDNAseq, collapse="")
 	finalDNAconf <- consensusSeqAns$confidence
 
 	# Step 7:  we can now turn the DNA back to AA, for both the final consensus and all the fragments
-	finalAA <- translateChromatogramSequence( finalDNAseq, mode="vector", badAA="", cdsBases=cdsBases)
-	finalAAconf <- translateChromatogramConfidence( finalDNAconf, mode="vector", badAA="", cdsBases=cdsBases)
+	finalAA <- translateChromatogramSequence( finalDNAseq, mode="vector", badAA="X", cdsBases=cdsBases, referenceAA=refAA)
+	finalAAconf <- translateChromatogramSeqConfidence( finalDNAseq, finalDNAconf, mode="vector", badAA="X", cdsBases=cdsBases)[[1]]
 	names(finalAAconf) <- strsplit( finalAA, split="")[[1]]
-	fragAA <- translateChromatogramSequence( baseM, mode="matrix", badAA=" ", cdsBases=cdsBases)
-	fragAAconf <- translateChromatogramConfidence( confM, mode="matrix", badAA="", cdsBases=cdsBases)
-
+	fragAA <- translateChromatogramSequence( baseM, mode="matrix", badAA=" ", cdsBases=cdsBases, referenceAA=refAA)
+	fragAAconf <- translateChromatogramSeqConfidence( baseM, confM, mode="matrix", badAA="", cdsBases=cdsBases)
 
 	# we can make the AA scores and locations too, to complete the info
 	trimmedAA <- gsub( " ", "", fragAA)
@@ -89,19 +120,16 @@
 	aaScores <- score(pa)
 	aaStarts <- start( pattern( pa))
 	aaStops <- width( pattern( pa)) + aaStarts - 1
-	seqDF$AA.Score <- aaScores
-	seqDF$AA.UnitScore <- round( aaScores / nchar( trimmedAA), digits=3)
-	seqDF$AA.RefStart <- aaStarts
-	seqDF$AA.RefStop <- aaStops
-	seqDF$AA.AvgConfidence <- round( sapply( fragAAconf, mean, na.rm=T))
-	seqDF$AA.Sequence <- fragAA
-	# lastly, move the DNA seqeunce to the very end
-	moveColumn <- which( colnames(seqDF) == "DNA.Sequence")
-	detailsDF <- cbind( seqDF[ , -moveColumn], "DNA.Sequence"=seqDF$DNA.Sequence, stringsAsFactors=F)
+	seqDF$AA.Score[use] <- aaScores
+	seqDF$AA.UnitScore[use] <- round( aaScores / nchar( trimmedAA), digits=3)
+	seqDF$AA.RefStart[use] <- aaStarts
+	seqDF$AA.RefStop[use]  <- aaStops
+	seqDF$AA.AvgConfidence[use] <- round( sapply( fragAAconf, mean, na.rm=T))
+	seqDF$AA.Sequence[use] <- fragAA
 
 	out <- list( "ReferenceName"=refName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), "ConsensusAA"=finalAA,
 			"ConfidenceAA"=finalAAconf, "ConsensusDNA"=finalDNAstr, "ConfidenceDNA"=finalDNAconf, 
-			"FragmentDetails"=detailsDF, "BaseMatrix"=baseM, "ConfidenceMatrix"=confM)
+			"FragmentDetails"=seqDF, "BaseMatrix"=baseM, "ConfidenceMatrix"=confM)
 	return( out)
 }
 
@@ -161,7 +189,7 @@
 }
 
 
-`constructChromatogramBaseMatrix` <- function( seqInfo, confInfo, refDNA) {
+`constructChromatogramBaseMatrix` <- function( seqInfo, confInfo, refDNA, wts=NULL) {
 
 	# given all the sequences and confidence scores that cover one reference construct.
 	# populate a matrix that holds all the calls at every location
@@ -214,25 +242,44 @@
 			if (myStop > newLen) myStop <- newLen
 		}
 
-		#  now do it for reals
+		#  now do the pairwise alignment for reals
 		pa <- pairwiseAlignment( mySeq, refDNA, type="local", scoreOnly=F, substitutionMatrix=subM)
 		myStart <- start( pattern(pa))
 		myStop <- myStart + width( pattern(pa)) - 1
 		refStart <- start( subject(pa))
 		refStop <- refStart + width( subject(pa)) - 1
+		myStartInRef <- refStart - myStart + 1
+		# we also need the aligned versions of the 2 strings to see where the indel gaps are
 		myAlignSeq <- as.character( alignedPattern(pa))
 		refAlignSeq <- as.character( alignedSubject(pa))
-		myStartInRef <- refStart - myStart + 1
 
-		# indels in the sequence are fine, but indels in the reference can not be allowed.
-		# check for those, and shift/concatenate those bases into previous cell
-		hasIndel <- grepl( "-", refAlignSeq, fixed=T)
-		if (hasIndel) {
+		# Indels in the chromatogram are allowed.
+		# Check for those, and re-assess what the sequence is as needed
+		hasSeqIndel <- grepl( "-", myAlignSeq, fixed=T)
+		if (hasSeqIndel) {
+			# indels shift the bases around, which also dictates that confidence scores shift too
+			myAlignBases <- strsplit( myAlignSeq, split="")[[1]]
+			indelSites <- which( myAlignBases == "-")
+			myAlignConfs <- rep.int( 0, length(myAlignBases))
+			goodSites <- setdiff( 1:length(myAlignBases), indelSites)
+			# slight chance that value locations may not align perfectly, catch and punish
+			myAlignConfs[ goodSites] <- myConfs[ 1:length(goodSites)]
+			myAlignConfs[ is.na(myAlignConfs)] <- 0.25  #  25% of a great score...
+			#done with shift, put these new values back
+			mySeq <- myAlignSeq
+			myBases <- myAlignBases
+			myConfs <- myAlignConfs
+		}
+
+		# Indels in the reference can not be allowed.
+		# Check for those, and shift/concatenate those bases into previous cell
+		hasRefIndel <- grepl( "-", refAlignSeq, fixed=T)
+		if (hasRefIndel) {
 			indelSites <- gregexpr( "-", refAlignSeq, fixed=T)[[1]]
 			nGapSoFar <- 0
 			for (k in indelSites) {
 				# because we shift every time we deal with a gap, the locations keep moving
-				kNow <- k - nGapsSoFar
+				kNow <- k - nGapSoFar
 				baseNow <- myBases[kNow]
 				kStore <- kNow + 1
 				myBases[kStore] <- paste( myBases[kStore], baseNow, sep="")
@@ -258,7 +305,7 @@
 }
 
 
-`extractChromatogramConsensusSequence` <- function( baseM, confM) {
+`extractChromatogramConsensusSequence` <- function( baseM, confM, wts=NULL) {
 	
 	# given the matrix of all base calls and the matrix of confidence scores, 
 	# extract the best consensus
@@ -267,11 +314,25 @@
 	outBases <- rep.int( " ", refLen)
 	outConfs <- rep.int( 0, refLen)
 
+	# we want to downplay any 'N' calls, regardless of how much confidence they had
+	confM[ baseM == "N"] <- 1
+
+	# force any weigtht to be integers
+	if ( ! is.null( wts)) wts <- as.integer( wts)
+
 	# step along, and count up how many votes for each
 	for ( i in 1:refLen) {
 		myBases <- baseM[ , i]
 		myConfs <- as.integer( confM[ , i])
-		myVotes <- rep( myBases, times=myConfs)
+		if (any( is.na( myConfs))) {
+			cat( "\nDebug: bases: ", myBases)
+			cat( "\nDebug: confs: ", myConfs)
+		}
+		if (is.null(wts)) {
+			myVotes <- rep( myBases, times=myConfs)
+		} else {
+			myVotes <- rep( myBases, times=(myConfs*wts))
+		}
 		# no votes at all is empty, skip
 		if ( ! length(myVotes)) next
 		bestBase <- names( sort( table( myVotes), decreasing=T))[1]
@@ -287,7 +348,7 @@
 
 
 `translateChromatogramSequence` <- function( seqData, cdsBases=NULL, mode=c("vector","string","matrix"),
-						badAA="X") {
+						badAA="X", referenceAA=NULL) {
 
 	# this function translates DNA from these chromatogram tools into AA
 
@@ -306,6 +367,7 @@
 	}
 
 	# were we given the CDS bases? default is full length as one exon
+	# keep in mind these are in the units of the reference
 	if ( is.null( cdsBases)) {
 		cdsBases <- 1:N
 	} else {
@@ -315,16 +377,37 @@
 	# ready to translate
 	out <- rep.int( "", nToDo)
 	for ( i in 1:nToDo) {
+		# we need to bear in mind that these DNA constructs may have indel gaps
+		myCdsBases <- cdsBases
 		if ( mode == "string") {
 			myData <- seqData[[i]]
+			indelSites <- as.numeric( gregexpr( "-", myData, fixed=T)[[1]])
+			if ( sum( indelSites > 0)) myCdsBases <- setdiff( myCdsBases, indelSites)
 		} else if ( mode == "matrix") {
 			myData <- seqData[ i, ]
+			indelSites <- which( myData == "-")
+			if ( length(indelSites)) myCdsBases <- setdiff( myCdsBases, indelSites)
 		} else {
 			myData <- seqData
+			indelSites <- which( myData == "-")
+			if ( length(indelSites)) myCdsBases <- setdiff( myCdsBases, indelSites)
 		}
-		dnaV <- myData[ cdsBases]
+		dnaV <- myData[ myCdsBases]
 		dnaStr <- paste( dnaV, collapse="")
-		aaStr <- DNAtoAA( dnaStr, clipAtStop=F, readingFrame=1)
+
+		# in spite of all best efforts, we can't garauntee that everything stays perfectly in frame
+		# so use more than one way to call it
+		aaStr.plain <- DNAtoAA( dnaStr, clipAtStop=F, readingFrame=1:3)
+		if ( is.null( referenceAA)) {
+			aaStr.best <- DNAtoBestPeptide( dnaStr, readingFrames=1:3, tieBreakMode="evalue")
+		} else {
+			aaStr.best <- DNAtoBestPeptide( dnaStr, readingFrames=1:3, tieBreakMode="reference", 
+							reference=referenceAA)
+		}
+		# keep the full length that is most like what we expect
+		dm <- adist( aaStr.plain, aaStr.best)
+		aaStr <- aaStr.plain[ which.min( dm)]
+
 		aaStr <- gsub( "?", badAA, aaStr, fixed=T)
 		out[i] <- aaStr
 	}
@@ -332,9 +415,10 @@
 }
 
 
-`translateChromatogramConfidence` <- function( confData, cdsBases=NULL, mode=c("vector","matrix"), badAA="X") {
+`translateChromatogramSeqConfidence` <- function( seqData, confData, cdsBases=NULL, mode=c("vector","matrix"), badAA="X") {
 
 	# this function translates DNA confidence calls from these chromatogram tools into AA confidence calls
+	# (but we need the sequence data too to find any indel gaps
 
 	# figure out how many translations we will be doing
 	mode <- match.arg( mode)
@@ -356,12 +440,20 @@
 	# ready to translate:  combine triplets by mean
 	out <- vector( mode="list", length=nToDo)
 	for ( i in 1:nToDo) {
+		# we need to bear in mind that these DNA constructs may have indel gaps
+		myCdsBases <- cdsBases
 		if ( mode == "matrix") {
 			myData <- confData[ i, ]
+			mySeq <- seqData[ i, ]
+			indelSites <- which( mySeq == "-")
+			if ( length(indelSites)) myCdsBases <- setdiff( myCdsBases, indelSites)
 		} else {
 			myData <- confData
+			mySeq <- seqData
+			indelSites <- which( mySeq == "-")
+			if ( length(indelSites)) myCdsBases <- setdiff( myCdsBases, indelSites)
 		}
-		confV <- myData[ cdsBases]
+		confV <- myData[ myCdsBases]
 
 		# take the mean of the triplets, where any zero values denote no data at that base
 		lenNow <- length( confV)
@@ -381,7 +473,6 @@
 		}
 		out[[i]] <- aaConf
 	}
-
-	if ( nToDo == 1) return( out[[1]])
 	return( out)
 }
+

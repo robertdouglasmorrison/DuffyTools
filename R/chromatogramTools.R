@@ -115,7 +115,7 @@
 	# given one DNA seq as called by the ABI tools, expand it to cover all
 	# ways we may want to see that sequence
 	DNA.set <- c( dna.seq, myReverseComplement(dna.seq))
-	names(DNA.set) <- c( "DNA", "rc(DNA)")
+	names(DNA.set) <- c( "DNA", "RevComp(DNA)")
 	AA.set <- DNAtoAA( dna.seq, clipAtStop=F, readingFrame=1:6)
 	names(AA.set) <- paste( "AA_Frame", 1:6, sep="")
 	
@@ -177,16 +177,16 @@
 	# good to call if at least some % of total intensity
 	good <- which( intenPcts >= min.pct)
 	outBase <- colnames(traceM)[ good]
-	if ( ! length(outBase)) {
-		outBase <- "N"
-		outPcts <- 0
-		outOrd <- 1
-	} else {
+	if ( length(outBase)) {
 		outPcts <- round( intenPcts[ good], digits=2)
-		outOrd <- order( outPcts, decreasing=T)
+		names(outPcts) <- outBase
+		ord <- order( outPcts, decreasing=T)
+	} else {
+		outPcts <- 0
+		names(outPcts) <- "N"
+		ord <- 1
 	}
-	out <- outPcts[outOrd]
-	names(out) <- outBase
+	out <- outPcts[ord]
 	return( out)
 }
 
@@ -555,300 +555,7 @@
 }
 
 
-chromatogramInspector <- function( isolateName, seq, type=c("DNA","AA"), allowPartialMatch=FALSE,
-							min.scorePerAA=1, finger=c("DBL4","CLAG2"), ...) {
-
-	require( "sangerseqR")
-	type <- match.arg( type)
-	finger <- match.arg( finger)
-
-	chromoSet <- findSeqInChromatograms( isolateName, seq, type=type, 
-						allowPartialMatch=allowPartialMatch, min.scorePerAA=min.scorePerAA, 
-						finger=finger)
-	ans <- plotChromatogramSet( chromoSet, isolateName, seq, type=type, ...)
-	ans
-}
-
-
-findSeqInChromatograms <- function( isolateName, seq, type=c("DNA","AA"), allowPartialMatch=FALSE,
-							min.scorePerAA=1, finger=c("DBL4","CLAG2")) {
-
-	# given a (small) sequence, find and show that region in all the chromatograms that saw it
-	isolateID <- sub( "_DBL4$", "", isolateName)
-	isolateID <- sub( "_CLAG2$", "", isolateID)
-	type <- match.arg( type)
-
-	fragFile <- file.path( RESULTS.PATH, paste( isolateID, ".", finger, ".Fragment", type, ".fasta", sep=""))
-	fa <- loadFasta( fragFile, verbose=T)
-	nFrag <- length( fa$desc)
-
-	# we will find this sequence in any fragments, and save up what we need to render them all afterward
-	chromoList <- vector( mode="list")
-	nChromo <- 0
-
-	require( Biostrings)
-	cat( "\nSearching..")
-	for ( i in 1:nFrag) {
-		thisFragID <- fa$desc[i]
-		thisSeq <- fa$seq[i]
-		# find where/if the given seq is in this fragment
-		if (allowPartialMatch) {
-			pa.type <- "local"
-		} else {
-			pa.type <- "global-local"
-		}
-		pa <- pairwiseAlignment( seq, thisSeq, type=pa.type, scoreOnly=F)
-		if ( score( pa) < (nchar(seq)*min.scorePerAA)) next
-		# yes, it's there, extract the location
-		fragStart <- start( subject( pa))
-		fragStop <- width( subject( pa)) + fragStart - 1
-
-		if ( ! allowPartialMatch) {
-			thisLen <- fragStop - fragStart + 1
-			seqLen <- nchar( seq)
-			if ( thisLen < seqLen) {
-				cat( "\nFound, but too short:  ", thisLen, seqLen, thisFragID)
-				next
-			}
-		}
-
-		# grab that chromatogram
-		# strip out any suffixes we added to the fragments name
-		thisFragID <- sub( "_Fwd_F.+", "", thisFragID)
-		thisFragID <- sub( "_Rev_F.+", "", thisFragID)
-		chromoFile <- file.path( SEQUENCE.PATH, isolateName, paste( thisFragID, ".ab1", sep=""))
-		if ( ! file.exists( chromoFile)) {
-			cat( "\nCan not find/open chromatogram file:  ", chromoFile)
-			next
-		}
-		ab1 <- sangerseq( read.abif( chromoFile))
-		primary.seq <- as.character( primarySeq(ab1))
-		traceM <- traceMatrix( ab1)
-		peakPosM <- peakPosMatrix( ab1)
-		peak.width <- round( nrow(traceM) / nrow(peakPosM))
-
-		# turn this DNA string into whatever it may represent
-		if ( type == "DNA") { 
-			primary.set <- c( primary.seq, myReverseComplement(primary.seq))
-			names(primary.set) <- c( "DNA", "rc(DNA)")
-		} else {
-			primary.set <- DNAtoAA( primary.seq, clipAtStop=F, readingFrame=1:6)
-			names(primary.set) <- paste( "AA_Frame", 1:6, sep="")
-		}
-
-		# find this small seq in the full length chromatograms
-		pa <- pairwiseAlignment( primary.set, seq, type="local-global", scoreOnly=T)
-		best <- which.max( pa)
-		bestScore <- pa[best]
-		scorePerAA <- round( bestScore / nchar(seq), digits=2)
-		pa <- pairwiseAlignment( primary.set[best], seq, type="local-global", scoreOnly=F)
-		fragStart <- start( pattern( pa))
-		fragStop <- width( pattern( pa)) + fragStart - 1
-		fragString <- substr( primary.set[best], fragStart, fragStop)
-
-		# given this best place, resolve any DNA & RevComp issues
-		needRevComp <- FALSE
-		if (type == "DNA" && best == 2) needRevComp <- TRUE
-		if (type == "AA" && best > 3) needRevComp <- TRUE
-		if (needRevComp) {
-			traceM <- revCompTraceMatrix( traceM)
-			peakPosM <- revCompPeakPosMatrix( peakPosM, nrow(traceM))
-			thisFragID <- paste( "RevComp(", thisFragID, ")")
-		}
-		fragStartDNA <- fragStartAA <- fragStart
-		fragStopDNA <- fragStopAA <- fragStop
-		if (type == "DNA") fragStartAA <- fragStopAA <- NA
-		if (type == "AA") {
-			fragStartDNA <- (fragStartAA-1) * 3 + 1
-			fragStopDNA <- fragStopAA * 3
-			# fine tune the locations for reading frame
-			frame.shift <- 0
-			if ( best %in% c(2,5)) frame.shift <- 1
-			if ( best %in% c(3,6)) frame.shift <- 2
-			fragStartDNA <- fragStartDNA + frame.shift
-			fragStopDNA <- fragStopDNA + frame.shift
-		}
-
-		# OK, we have all the details we need to draw this chromatogram fragment.
-		# save it up so we can draw them all at once
-		tmp <- list( "ID"=thisFragID, "AA_START"=fragStartAA, "AA_STOP"=fragStopAA, "DNA_START"=fragStartDNA, 
-				"DNA_STOP"=fragStopDNA, "SEQ"=fragString, "TRACE_M"=traceM, "PEAK_M"=peakPosM, 
-				"PEAK_WIDTH"=peak.width)
-		nChromo <- nChromo + 1
-		chromoList[[ nChromo]] <- tmp
-
-		cat( "\nDebug:  ", i, thisFragID, "RevComp=", needRevComp, "best=", best, "Score=", bestScore, "PerAA=", scorePerAA,
-				fragStartAA, fragStopAA)
-	}
-	cat( "  N_Found: ", nChromo)
-	return( chromoList)
-}
-
-
-plotChromatogramSet <- function( chromoSet, isolateName, seq, type=c("DNA","AA"), lwd=2, cex=1, font=2) {
-
-	# given a set of sub-regions in chromatograms, show them all in one plot
-	nChromo <- length( chromoSet)
-	if ( nChromo < 1) return()
-
-	par( mfrow=c( (nChromo+1), 1))
-	par( mai=c(0.5, 0.5, 0.4, 0.2))
-
-	acgtBases <- c('A','C','G','T')
-	acgtColors <- c('red','blue','orange','green')
-
-	cat( "  Sizing..")
-	consensusID <- consensusSize <- 1
-	for ( i in 1:nChromo) {
-		tmp <- chromoSet[[i]]
-		thisFragID <- tmp$ID
-		startAA <- tmp$AA_START
-		stopAA <- tmp$AA_STOP
-		startDNA <- tmp$DNA_START
-		stopDNA <- tmp$DNA_STOP
-		fragString <- tmp$SEQ
-		traceM <- tmp$TRACE_M
-		peakPosM <- tmp$PEAK_M
-		half.peak.width <- round( tmp$PEAK_WIDTH/2)
-
-		# the region we want is always DNA, plus a half peak width
-		leftPos <- max( peakPosM[ startDNA, 1]-half.peak.width, 1)
-		rightPos <- min( peakPosM[ stopDNA, 1]+half.peak.width, nrow(traceM))
-		smallTraceM <- traceM[ leftPos:rightPos, ]
-		smallPeakM <- peakPosM[ startDNA:stopDNA, ]
-
-		# find the first one that is "full size", to set our limits, etc.
-		if ( nrow(smallTraceM) > consensusSize) {
-			# let's try to build a consensus chromatogram
-			consensusTraceM <- smallTraceM
-			rownames(consensusTraceM) <- leftPos : rightPos
-			colnames(consensusTraceM) <- c("A","C","G","T")
-			consensusSize <- nrow(smallTraceM)
-			consensusPeakM <- smallPeakM
-			consensusOffset <- leftPos
-			consensusFirstPeak <- smallPeakM[1,1]
-			consensusID <- i
-			consensusLeftPos <- leftPos
-			consensusRightPos <- rightPos
-		}
-	}
-
-	cat( "  Plotting..")
-	for ( i in 1:nChromo) {
-		tmp <- chromoSet[[i]]
-		thisFragID <- tmp$ID
-		startAA <- tmp$AA_START
-		stopAA <- tmp$AA_STOP
-		startDNA <- tmp$DNA_START
-		stopDNA <- tmp$DNA_STOP
-		fragString <- tmp$SEQ
-		traceM <- tmp$TRACE_M
-		peakPosM <- tmp$PEAK_M
-		half.peak.width <- round( tmp$PEAK_WIDTH/2)
-
-		# the region we want is always DNA, plus a half peak width
-		leftPos <- max( peakPosM[ startDNA, 1]-half.peak.width, 1)
-		rightPos <- min( peakPosM[ stopDNA, 1]+half.peak.width, nrow(traceM))
-		smallTraceM <- traceM[ leftPos:rightPos, ]
-		smallPeakM <- peakPosM[ startDNA:stopDNA, ]
-
-		# let's try to build a consensus chromatogram
-		padleft <- padright <- FALSE
-		peakCenterOffset <- 0
-		if ( i != consensusID) {
-			thisSize <- nrow(smallTraceM)
-
-			# there is a chance that this chunk is not full length
-			if ( nchar(fragString) < nchar(seq)) {
-				pa <- pairwiseAlignment( fragString, seq, type="global-local")
-				pattStart <- start( pattern( pa))
-				subjStart <- start( subject( pa))
-				if ( pattStart == 1 && subjStart > 1) {
-					# we need to pad-fill at the left
-					padleft <- TRUE
-				} else {
-					padright <- TRUE
-				}
-				nExtra <- consensusSize - nrow( smallTraceM)
-				extraTraceM <- matrix( 0, nrow=nExtra, ncol=4)
-				if (padleft) {
-					smallTraceM <- rbind( extraTraceM, smallTraceM)
-					leftPos <- leftPos
-					rightPos <- rightPos + nExtra
-					peakCenterOffset <- nrow( extraTraceM)
-				} else {
-					smallTraceM <- rbind( smallTraceM, extraTraceM)
-					rightPos <- rightPos + nExtra
-				}
-			}
-
-			tmpTraceM <- matrix( NA, nrow=consensusSize, ncol=4)
-			scaleFactor <- nrow(smallTraceM) / consensusSize
-			linearShift <- (smallPeakM[1,1] - leftPos) - (consensusFirstPeak - consensusOffset)
-			cat( "\nDebug: scale, shift: ", scaleFactor, linearShift)
-			tmpRowPtr <- round( 1:consensusSize * scaleFactor)
-			tmpRowPtr <- tmpRowPtr + linearShift
-			tmpRowPtr[ tmpRowPtr < 1] <- NA
-			tmpRowPtr[ tmpRowPtr > consensusSize] <- NA
-			for ( j in 1:4) tmpTraceM[ , j] <- smallTraceM[ tmpRowPtr, j]
-			tmpTraceM[ is.na(tmpTraceM)] <- 0
-			consensusTraceM <- consensusTraceM + tmpTraceM
-		}
-
-		plot( 1,1, type="n", main=thisFragID, xlim=c(leftPos,rightPos), ylim=c(0,max(smallTraceM)), ylab=NA, xlab=NA,
-				xaxt="n", xaxs="i", las=2)
-		for ( j in 1:4) {
-			x <- leftPos : rightPos
-			y <- smallTraceM[ ,j]
-			lines( x, y, col=acgtColors[j], lwd=lwd)
-		}
-		peakCenters <- smallPeakM[ , 1]
-		peakCentersOut <- smallPeakM[ , 1] + peakCenterOffset
-		callBase <- acgtBases[ apply( traceM[ peakCenters, ], MARGIN=1, which.max)]
-		colorBase <- acgtColors[ match( callBase, acgtBases)]
-		for (k in 1:length(callBase)) axis( side=1, at=peakCentersOut[k], label=callBase[k], col.axis=colorBase[k], 
-				col.ticks=colorBase[k], font=font, cex.axis=cex)
-
-		callAA <- DNAVtoAAV( callBase)
-		aaCenters <- peakCentersOut[ seq(2, length(peakCenters),by=3)]
-		for ( k in 1:length(callAA)) axis( side=1, at=aaCenters[k], label=callAA[k], col=1, cex=1.4*cex, 
-				font=font, line=1, tick=F)
-
-	}
-
-	# lastly show that consensus
-	plot( 1,1, type="n", main="Consensus Chromatogram", xlim=c(1,consensusSize), ylim=c(0,max(consensusTraceM, na.rm=T)), 
-			ylab=NA, xlab=NA, xaxt="n", xaxs="i", las=2)
-	for ( j in 1:4) {
-		x <- 1 : consensusSize
-		y <- consensusTraceM[ ,j]
-		lines( x, y, col=acgtColors[j], lwd=lwd)
-	}
-	peakCenters <- consensusPeakM[ , 1] - consensusOffset + 1
-	callBase <- acgtBases[ apply( consensusTraceM[ peakCenters, ], MARGIN=1, which.max)]
-	colorBase <- acgtColors[ match( callBase, acgtBases)]
-	for (k in 1:length(callBase)) axis( side=1, at=peakCenters[k], label=callBase[k], col.axis=colorBase[k], 
-			col.ticks=colorBase[k], font=font, cex.axis=cex)
-
-	callAA <- DNAVtoAAV( callBase)
-	aaCenters <- peakCenters[ seq(2, length(peakCenters),by=3)]
-	for ( k in 1:length(callAA)) axis( side=1, at=aaCenters[k], label=callAA[k], col=1, cex=1.4*cex, 
-			font=font, line=1, tick=F)
-
-	# package up the consensus
-	consensusTracePct <- consensusTraceM
-	rowSums <- apply( consensusTraceM, 1, sum, na.rm=T)
-	for (j in 1:4) consensusTracePct[ ,j] <- round( consensusTracePct[ ,j] * 100 / rowSums, digits=0)
-	traceAns <- as.data.frame( consensusTracePct)
-	traceAns$PeakCall <- ""
-	traceAns$PeakCall[ peakCenters] <- callBase
-
-	out <- list( "TracePcts"=traceAns, "DNA"=paste( callBase, collapse=""), "AA"=paste( callAA, collapse=""))
-	out
-}
-
-
-`cleanChromatogramDNA` <- function( chromoObj, referenceDNA, referenceAA=NULL, nSkip=20, verbose=TRUE) {
+`cleanChromatogramDNA` <- function( chromoObj, referenceDNA, referenceAA=NULL, nSkip=1, verbose=TRUE) {
 
 	# we find cases where Sanger sequencing is inserting duplicate bases, which throw off reading frame
 	# try to find and correct, using a reference DNA and perhaps AA sequence.
@@ -874,23 +581,33 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=c("DNA","AA")
 	if (isRevComp) {
 		outObj <- revCompChromatogram( outObj)
 	}
+	traceM <- outObj$TraceM
 	peakPos <- outObj$PeakPosition
+	peakConf <- outObj$PeakConfidence
 	dna <- outObj$DNA_Calls[1]
 
 	# step 2: try to re-call "N" bases manually, but ignore the edges
 	hasNcall <- which( names(peakPos) == "N")
 	NP <- length(peakPos)
 	hasNcall <- setdiff( hasNcall, c( 1:nSkip, (NP-nSkip+1):NP))
-	if ( length( hasNcall)) {
-		for (k in hasNcall) {
+	if ( NhasN <- length( hasNcall)) {
+		hasNnew <- hasNstr <- vector( length=NhasN)
+		for (ik in 1:NhasN) {
+			k <- hasNcall[ ik]
 			baseAns <- baseCallOnePeak( peakPos[k], traceM)
-			newBase <- names(baseAns)[1]
+			hasNnew[ik] <- newBase <- names(baseAns)[1]
+			hasNstr[ik] <- paste( names(baseAns), as.numeric(baseAns), sep=":", collapse="; ")
 			if ( newBase != "N") {
 				substr( dna, k, k) <- newBase
 				names(peakPos)[k] <- newBase
+				names(peakConf)[k] <- newBase
 				fixedNs <- TRUE
 			}
 		}
+		hasN.details <- data.frame( "Peak"=hasNcall, "OldBase"="N", "NewBase"=hasNnew, "Base.Percents"=hasNstr, 
+					stringsAsFactors=F)
+	} else {
+		hasN.details <- NULL
 	}
 
 	# step 3: repeatedly see if we find a 1-2bp gap
@@ -898,9 +615,9 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=c("DNA","AA")
 	SAV_DNA_CLEAN <<- ans
 	dnaNow <- ans$DNA
 	details <- ans$CleaningDetails
+	outPeaks <- peakPos
+	outConf <- peakConf
 	if ( ! is.null( details)) {
-		outPeaks <- peakPos
-		outConf <- outObj$PeakConfidence
 		# the details show where bases got added/removed...
 		# we can push these changes into the chromatogram
 		for ( k in 1:nrow(details)) {
@@ -966,8 +683,8 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=c("DNA","AA")
 	}
 
 	# append the cleaning details
-	if ( ! is.null( details)) {
-		out$CleaningDetails <- details
+	if ( !is.null( details) || !is.null( hasN.details)) {
+		out$CleaningDetails <- list( "Fixed.N.Calls"=hasN.details, "Fixed.IndelGaps"=details)
 	}
 	out
 }
@@ -1184,6 +901,8 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=c("DNA","AA")
 		# instead use the base call for the peak to get the one correct column
 		myBase <- names(peaks)[i]
 		peakCount[i] <- cm[ match(myBase, names(cm))]
+		# 'N' calls would break this, so catch
+		if ( is.na( peakCount[i])) peakCount[i] <- max( cm)
 	}
 	
 	# prevent divide by zero
@@ -1236,11 +955,11 @@ plotChromatogramSet <- function( chromoSet, isolateName, seq, type=c("DNA","AA")
 		refStop <- refStop - pattStart + 1
 	}
 	
-	out <- list( "SeqName"=names(bestSeq), "Score"=bestScore, "UnitScore"=unitScore, "RefStart"=refStart, 
-			"RefStop"=refStop, "Sequence"=bestSeq)
+	out <- list( "SequenceName"=names(bestSeq), "ReferenceName"=names(reference), "Score"=bestScore, 
+			"UnitScore"=unitScore, "RefStart"=refStart, "RefStop"=refStop, "Sequence"=bestSeq)
 
 	# lastly, put the type into some of the column naems
-	names(out)[2:6] <- paste( type, names(out)[2:6], sep=".")
+	names(out)[3:7] <- paste( type, names(out)[3:7], sep=".")
 	out
 }
 
