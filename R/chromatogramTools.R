@@ -63,6 +63,22 @@
 	if ( rightTail < nrow(traceM)) {
 		traceM <- traceM[ 1:rightTail, ]
 	}
+
+	# there could also be rare cases where the trace matrix does not contain all the peaks.
+	# this should never happen, but check and fix if it does
+	NTR <- nrow( traceM)
+	maxPeakLoc <- NTR - floor( avgPeakSeparation/2)
+	if ( any( peakPos > maxPeakLoc)) {
+		# throw away those peaks
+		drops <- which( peakPos > maxPeakLoc)
+		peakPos <- peakPos[ -drops]
+		# this means we need to truncate the DNA calls too
+		if ( nchar(dna.seq) > length(peakPos)) {
+			dna.seq <- substr( dna.seq, 1, length(peakPos))
+			seqData <- chromatogramSequences( dna.seq)
+		}
+	}
+
 	colnames(traceM) <- c( "A", "C", "G", "T")
 	rownames(traceM) <- 1:nrow(traceM)
 	
@@ -533,6 +549,10 @@
 		# raw confidence is 0..1, scale to 0..100
 		confY <- peakConf * 100 * yScale
 		lines( confX, confY, lty=3, lwd=1, col='black')
+		# and the moving average too
+		names(confY) <- confX
+		moveAvg <- movingAverage( confY, window=11)
+		lines( confX, moveAvg, lty=1, lwd=1, col='black')
 	}
 }
 
@@ -612,7 +632,6 @@
 
 	# step 3: repeatedly see if we find a 1-2bp gap
 	ans <- DNAtoCleanChromatogramDNA( dna, referenceDNA=referenceDNA, referenceAA=referenceAA, verbose=verbose)
-	SAV_DNA_CLEAN <<- ans
 	dnaNow <- ans$DNA
 	details <- ans$CleaningDetails
 	outPeaks <- peakPos
@@ -999,4 +1018,73 @@
 	names( aaConf) <- strsplit( chromoObj$AA_Calls[who], split="")[[1]]
 	return( aaConf)
 }
-		
+
+
+`cropChromatogramByConfidence` <- function( chromoObj, min.confidence=60, windowSize=11, verbose=TRUE) {
+
+	# grab the raw data that we start from
+	traceM <- chromoObj$TraceM
+	peakPos <- chromoObj$PeakPosition
+	peakConf <- chromoObj$PeakConfidence
+	NP <- length( peakConf)
+	if ( NP <= windowSize) {
+		if (verbose) cat( "  Crop Warning:  sequence too short, cropped to 'empty'.")
+		return( NULL)
+	}
+
+	# apply a smoothing window to the raw confidence
+	confV <- as.numeric( peakConf)
+	names(confV) <- peakPos
+	smoothConf <- movingAverage( confV, window=windowSize)
+
+	# the cutoff may be given on 0 to one, or zero to 100
+	# but the raw data is always zero to one
+	if ( min.confidence > 1) min.confidence <- min.confidence / 100
+
+	# make sure the center -- which should be high confidence -- is
+	centerPts <- round( c( NP*0.45, NP*0.55))
+	if ( diff( centerPts) < 30) centerPts <- round( c( NP*0.4, NP*0.6))
+	if ( diff( centerPts) < 30) centerPts <- round( c( NP*0.35, NP*0.65))
+	middleConf <- mean( smoothConf[ centerPts[1] : centerPts[2]], na.rm=T)
+	if ( middleConf <= min.confidence) {
+		if (verbose) cat( "  Crop Warning:  center confidence too low, cropped to 'empty'.")
+		return( NULL)
+	}
+
+	# find the last place in the front half that is below the confidence cutoff
+	# and the first place in the back half
+	badLeft <- which( smoothConf[ 1 : centerPts[1]] < min.confidence)
+	badRight <- which( smoothConf[ centerPts[2] : NP] < min.confidence)
+	if ( length( badLeft)) {
+		keepLeft <- max( badLeft)
+	} else {
+		keepLeft <- 1
+	}
+	if ( length( badRight)) {
+		keepRight <- min( badRight) + centerPts[2] - 1
+	} else {
+		keepRight <- NP
+	}
+	keep <- keepLeft : keepRight
+
+	# grap those parts for each piece
+	outPeaks <- peakPos[ keep]
+	outConfs <- peakConf[ keep]
+	NP2 <- length( outPeaks)
+	halfPeak <- floor( median( diff( peakPos)) / 2)
+	firstTrace <- max( outPeaks[1] - halfPeak, 1)
+	lastTrace <- min( outPeaks[NP2] + halfPeak, nrow(traceM))
+	outTrace <- traceM[ firstTrace:lastTrace, ]
+
+	# now reset all the peak pointers
+	rownames(outTrace) <- 1:nrow(outTrace)
+	outPeaks <- outPeaks - firstTrace + 1
+
+	# OK, the cleaned DNA string becomes the truth now
+	dnaOut <- paste( names( outPeaks), collapse="")
+	seqData <- chromatogramSequences( dnaOut)
+	out <- list( "TraceM"=outTrace, "PeakPosition"=outPeaks, "PeakConfidence"=outConfs,
+			"DNA_Calls"=seqData$DNA, "AA_Calls"=seqData$AA, "Filename"=chromoObj$Filename)
+	out
+}
+
