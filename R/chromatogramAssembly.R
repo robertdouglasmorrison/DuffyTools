@@ -44,6 +44,8 @@
 			use <- setdiff( use, ichr)
 		}
 	}
+	# a chance that no chromatograms are useable
+	if ( ! length(use)) return( NULL)
 	
 	# Step 2: load the reference DNA sequence.  We could be given 2+ different references, 
 	# so we may need to find the one best reference for this isolate sample
@@ -55,8 +57,8 @@
 	refAA <- translateChromatogramSequence( refDNA, mode="string", badAA="")
 	refStats <- refAns$ScoreDetails
 	if (verbose && !is.null( refStats)) {
-		cat( "\nSelection Scoring of Best Reference:\n")
-		print( refStats)
+		cat( "\nTop Scoring Best References:\n")
+		print( head( refStats, 10))
 	}
 
 	# Step 3:  now with the best reference DNA known, we may want to clean the chromatograms for 
@@ -147,8 +149,9 @@
 	# don't always use all, some may be terrible
 	# and if absolutely none passed, send back an empty result now
 	if ( length( use) <= nBridge) {
-		out <- list( "ReferenceName"=refName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), "ConsensusAA"="",
-			"ConfidenceAA"=integer(0), "ConsensusDNA"="", "ConfidenceDNA"=integer(0), 
+		out <- list( "ReferenceName"="FAIL", "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), "ConsensusAA"="",
+			"ConfidenceAA"=integer(0), "EditDistanceAA"=nchar(refAA), 
+			"ConsensusDNA"="", "ConfidenceDNA"=integer(0), "EditDistanceDNA"=nchar(refDNA),
 			"FragmentDetails"=seqDF, "BaseMatrix"=NULL, "ConfidenceMatrix"=NULL)
 		return(out)
 	}
@@ -198,8 +201,17 @@
 	seqDF <- seqDF[ ord, ]
 	rownames(seqDF) <- 1:nrow(seqDF)
 
-	out <- list( "ReferenceName"=refName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), "ConsensusAA"=finalAA,
-			"ConfidenceAA"=finalAAconf, "ConsensusDNA"=finalDNAstr, "ConfidenceDNA"=finalDNAconf, 
+	# also calculate the edit distance, but don't penalize the AA for 'no data' regions
+	edDNA <- adist( as.character(refDNA), finalDNAstr)[1]
+	edAA <- adist( refAA, finalAA)[1]
+	nNdna <- sum( gregexpr( " ", finalDNAstr, fixed=T)[[1]] > 0)
+	nXaa <- sum( gregexpr( "X", finalAA, fixed=T)[[1]] > 0)
+	edDNA <- edDNA - nNdna
+	edAA <- edAA - nXaa
+
+	out <- list( "ReferenceName"=refName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), 
+			"ConsensusAA"=finalAA, "ConfidenceAA"=finalAAconf, "EditDistanceAA"=edAA, 
+			"ConsensusDNA"=finalDNAstr, "ConfidenceDNA"=finalDNAconf, "EditDistanceDNA"=edDNA,
 			"FragmentDetails"=seqDF, "BaseMatrix"=baseM, "ConfidenceMatrix"=confM)
 	if ( verbose) cat( "\nDone.")
 	return( out)
@@ -255,7 +267,7 @@
 	# package up the answer
 	outSeq <- refFA$seq[ best]
 	names(outSeq) <- refFA$desc[ best]
-	outScores <- sort( avgScore, decreasing=T)
+	outScores <- base::sort( avgScore, decreasing=T)
 	out <- list( "ReferenceSequence"=outSeq, "ScoreDetails"=outScores)
 	return(out)
 }
@@ -393,6 +405,8 @@
 	if ( ! is.null( wts)) wts <- as.integer( wts)
 
 	# step along, and count up how many votes for each
+	SORT <- base::sort
+	TABLE <- base::table
 	for ( i in 1:refLen) {
 		myBases <- baseM[ , i]
 		myConfs <- as.integer( confM[ , i])
@@ -407,8 +421,8 @@
 		}
 		# no votes at all is empty, skip
 		if ( ! length(myVotes)) next
-		bestBase <- names( sort( table( myVotes), decreasing=T))[1]
-		bestConf <- round( mean( myConfs[ myBases == bestBase]))
+		bestBase <- names( SORT( TABLE( myVotes), decreasing=T))[1]
+		bestConf <- round( mean.default( myConfs[ myBases == bestBase]))
 		outBases[i] <- bestBase
 		outConfs[i] <- bestConf
 	}
