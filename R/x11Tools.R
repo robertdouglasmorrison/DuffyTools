@@ -5,6 +5,9 @@
 
 	curDevName <- names( dev.cur())
 
+	# Support for X11 is not needed when running inside a Rstudio session
+	if ( is.Rstudio()) return( curDevName)
+
 	if ( regexpr( "X11", curDevName) < 1) {
 		# current device is not X11
 		X11( type=type, bg=bg, width=width, height=height, ...)

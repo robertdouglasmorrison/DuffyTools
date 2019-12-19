@@ -184,6 +184,7 @@
 
 	# Step 8:  we can make the AA scores and locations for all the fragments
 	trimmedAA <- gsub( " ", "", fragAA)
+	trimmedAA[ nchar(trimmedAA) == 0] <- "X"
 	data( BLOSUM62)
 	pa <- pairwiseAlignment( trimmedAA, refAA, type="local", scoreOnly=F, substitutionMatrix=BLOSUM62)
 	aaScores <- score(pa)
@@ -195,7 +196,7 @@
 	seqDF$AA.RefStop[use]  <- aaStops
 	seqDF$AA.AvgConfidence[use] <- round( sapply( fragAAconf, mean, na.rm=T))
 	seqDF$AA.Sequence[use] <- fragAA
-	# put these all into seqeunce order
+	# put these all into sequence order
 	aaMidpt <- (seqDF$AA.RefStart + seqDF$AA.RefStop) / 2
 	ord <- order( aaMidpt)
 	seqDF <- seqDF[ ord, ]
@@ -206,8 +207,10 @@
 	edAA <- adist( refAA, finalAA)[1]
 	nNdna <- sum( gregexpr( " ", finalDNAstr, fixed=T)[[1]] > 0)
 	nXaa <- sum( gregexpr( "X", finalAA, fixed=T)[[1]] > 0)
-	edDNA <- edDNA - nNdna
-	edAA <- edAA - nXaa
+	edDNA <- max( edDNA - nNdna, 0)
+	edAA <- max( edAA - nXaa, 0)
+	# there is a tiny chance that the final AA call is all 'no call' Xs.
+	if ( grepl( "^X+$", finalAA)) edAA <- nchar(finalAA)
 
 	out <- list( "ReferenceName"=refName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), 
 			"ConsensusAA"=finalAA, "ConfidenceAA"=finalAAconf, "EditDistanceAA"=edAA, 
@@ -241,7 +244,13 @@
 	nChromo <- length( chromoSet)
 	
 	# if there are many chromatograms, only do a random subsample of them
-	toDo <- if (nChromo <= 10) 1:nChromo else sample( nChromo, size=10)
+	if (nChromo > 10) {
+		# see how big they all are, and use the bigger/longer ones
+		nBaseEach <- sapply( chromoSet, function(x) return( length( x$PeakPosition)))
+		toDo <- order( nBaseEach, decreasing=T)[1:10]
+	} else {
+		toDo <- 1:nChromo
+	}
 	
 	# set up storage to evaluate how well they match
 	scoreM <- matrix( 0, nrow=length(toDo), ncol=nRef)
@@ -482,19 +491,19 @@
 		dnaStr <- paste( dnaV, collapse="")
 
 		# in spite of all best efforts, we can't garauntee that everything stays perfectly in frame
-		# so use more than one way to call it
-		aaStr.plain <- DNAtoAA( dnaStr, clipAtStop=F, readingFrame=1:3)
-		if ( is.null( referenceAA)) {
-			aaStr.best <- DNAtoBestPeptide( dnaStr, readingFrames=1:3, tieBreakMode="evalue")
-		} else {
-			aaStr.best <- DNAtoBestPeptide( dnaStr, readingFrames=1:3, tieBreakMode="reference", 
-							reference=referenceAA)
-		}
+		# so use the most robust method
+		# aaStr.plain <- DNAtoAA( dnaStr, clipAtStop=F, readingFrame=1:3)
+		aaStr.best <- DNAtoFrameShiftingPeptides( dnaStr, referenceAA=referenceAA, details=F)
 		# keep the full length that is most like what we expect
-		dm <- adist( aaStr.plain, aaStr.best)
-		aaStr <- aaStr.plain[ which.min( dm)]
-
+		# dm <- adist( aaStr.plain, aaStr.best)
+		# aaStr <- aaStr.plain[ which.min( dm)]
+		aaStr <- aaStr.best
 		aaStr <- gsub( "?", badAA, aaStr, fixed=T)
+
+		# the frame shifting tool uses 'X' for dead/missing data
+		if ( badAA != "X") aaStr <- gsub( "X", badAA, aaStr, fixed=T)
+
+		# done
 		out[i] <- aaStr
 	}
 	return( out)

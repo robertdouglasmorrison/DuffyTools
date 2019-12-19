@@ -108,7 +108,7 @@ UNION <- base::union
 }
 
 
-`DNAtoFrameShiftingPeptides` <- function( dnaSet, min.aa.length=10, referenceAA=NULL) {
+`DNAtoFrameShiftingPeptides` <- function( dnaSet, min.aa.length=10, referenceAA=NULL, details=TRUE) {
 
 	dnaIn <- as.character( dnaSet)
 	nIn <- length( dnaIn)
@@ -116,7 +116,7 @@ UNION <- base::union
 
 	for ( i in 1:nIn) {
 		dna <- dnaIn[ i]
-		outFrame <- outPeptide <- outLength <- outDnaStart <- outDnaStop <- vector()
+		outFrame <- outPeptide <- outLength <- outDnaStart <- outDnaStop <- outAaStart <- outAaStop <- vector()
 		N <- 0
 		# repeatedly find the best peptide remaining in the DNA string
 		repeat {
@@ -163,16 +163,20 @@ UNION <- base::union
 			outLength[N] <- bestLen
 	
 			# where was this peptide in the DNA, 'regexpr' has a limit on size of pattern
-			if ( nchar( bestPep) < 999) {
-				where <- regexpr( bestPep, pepStrings[bestFrame])[1]
-			} else {
+			#if ( nchar( bestPep) < 999) {
+			#	where <- regexpr( bestPep, pepStrings[bestFrame])[1]
+			#} else {
 				where <- start( subject( pairwiseAlignment( bestPep, pepStrings[bestFrame], 
 						type="global-local")))
-			}
+			#}
 			dnaStart <- (where-1) * 3 + bestFrame
 			dnaStop <- dnaStart + (bestLen * 3) - 1
+			aaStart <- where
+			aaStop <- aaStart + bestLen - 1
 			outDnaStart[N] <- dnaStart
 			outDnaStop[N] <- dnaStop
+			outAaStart[N] <- aaStart
+			outAaStop[N] <- aaStop
 	
 			# mask it out and go around again
 			polyN <- PASTE( rep.int( "N", (dnaStop-dnaStart+1)), collapse="")
@@ -180,11 +184,25 @@ UNION <- base::union
 		}
 	
 		out <- data.frame( "Peptide"=outPeptide, "Frame"=outFrame, "AA_Length"=outLength, 
-				"DNA_Start"=outDnaStart, "DNA_Stop"=outDnaStop, stringsAsFactors=F)
+				"DNA_Start"=outDnaStart, "DNA_Stop"=outDnaStop, 
+				"AA_Start"=outAaStart, "AA_Stop"=outAaStop, stringsAsFactors=F)
 		if ( nrow(out)) {
 			ord <- ORDER( out$DNA_Start, decreasing=F)
 			out <- out[ ord, ]
 			rownames(out) <- 1:nrow(out)
+		}
+
+		# default mode is the return the data frame of all peptide details.  Alternatively, reconstruct
+		# the one AA sequence
+		if ( ! details) {
+			nAA <- ceiling( nchar(dna)/3)
+			aaOut <- paste( rep.int( "X", nAA), collapse="")
+			if ( nrow(out)) {
+				for ( k in 1:nrow(out)) {
+					substr( aaOut, out$AA_Start[k], out$AA_Stop[k]) <- out$Peptide[k]
+				}
+			}
+			out <- aaOut
 		}
 		outList[[i]] <- out
 	}
