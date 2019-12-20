@@ -150,8 +150,8 @@
 	# and if absolutely none passed, send back an empty result now
 	if ( length( use) <= nBridge) {
 		out <- list( "ReferenceName"="FAIL", "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), "ConsensusAA"="",
-			"ConfidenceAA"=integer(0), "EditDistanceAA"=nchar(refAA), 
-			"ConsensusDNA"="", "ConfidenceDNA"=integer(0), "EditDistanceDNA"=nchar(refDNA),
+			"ConfidenceAA"=integer(0), "EditDistanceAA"=NA,
+			"ConsensusDNA"="", "ConfidenceDNA"=integer(0), "EditDistanceDNA"=NA,
 			"FragmentDetails"=seqDF, "BaseMatrix"=NULL, "ConfidenceMatrix"=NULL)
 		return(out)
 	}
@@ -194,7 +194,7 @@
 	seqDF$AA.UnitScore[use] <- round( aaScores / nchar( trimmedAA), digits=3)
 	seqDF$AA.RefStart[use] <- aaStarts
 	seqDF$AA.RefStop[use]  <- aaStops
-	seqDF$AA.AvgConfidence[use] <- round( sapply( fragAAconf, mean, na.rm=T))
+	seqDF$AA.AvgConfidence[use] <- round( sapply( fragAAconf, function(x) if ( length(x)) mean(x,na.rm=T) else 0))
 	seqDF$AA.Sequence[use] <- fragAA
 	# put these all into sequence order
 	aaMidpt <- (seqDF$AA.RefStart + seqDF$AA.RefStop) / 2
@@ -210,7 +210,7 @@
 	edDNA <- max( edDNA - nNdna, 0)
 	edAA <- max( edAA - nXaa, 0)
 	# there is a tiny chance that the final AA call is all 'no call' Xs.
-	if ( grepl( "^X+$", finalAA)) edAA <- nchar(finalAA)
+	if ( grepl( "^X+$", finalAA)) edAA <- NA
 
 	out <- list( "ReferenceName"=refName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), 
 			"ConsensusAA"=finalAA, "ConfidenceAA"=finalAAconf, "EditDistanceAA"=edAA, 

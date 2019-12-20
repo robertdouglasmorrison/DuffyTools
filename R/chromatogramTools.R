@@ -713,6 +713,9 @@
 
 	# lower level tool to do the cleaning...
 	require( Biostrings)
+	DNA_SUBM <- nucleotideSubstitutionMatrix()
+	data( BLOSUM62)
+	AA_SUBM <- BLOSUM62
 
 	ORDER <- base::order
 	PASTE <- base::paste
@@ -735,7 +738,7 @@
 	nFix <- 0
 
 	repeat {
-		pa <- pairwiseAlignment( dnaNow, referenceDNA, type="local", scoreOnly=F)
+		pa <- pairwiseAlignment( dnaNow, referenceDNA, type="local", scoreOnly=F, substitutionMatrix=DNA_SUBM)
 		dnaStart <- start( pattern( pa))
 		dnaStr <- as.character( alignedPattern( pa))
 		refStart <- start( subject( pa))
@@ -785,12 +788,12 @@
 
 			# is this better?
 			if ( is.null( referenceAA)) {
-				scoreNew <- pairwiseAlignment( dnaNew, referenceDNA, type="local", scoreOnly=T)
+				scoreNew <- pairwiseAlignment( dnaNew, referenceDNA, type="local", scoreOnly=T, substitutionMatrix=DNA_SUBM)
 			} else {
 				aaNow <- DNAtoBestPeptide(dnaNow, readingFrames=1:3, tieBreakMode="reference", reference=referenceAA)
 				aaNew <- DNAtoBestPeptide(dnaNew, readingFrames=1:3, tieBreakMode="reference", reference=referenceAA)
-				scoreNow <- pairwiseAlignment( aaNow, referenceAA, type="local", scoreOnly=T)
-				scoreNew <- pairwiseAlignment( aaNew, referenceAA, type="local", scoreOnly=T)
+				scoreNow <- pairwiseAlignment( aaNow, referenceAA, type="local", scoreOnly=T, substitutionMatrix=AA_SUBM)
+				scoreNew <- pairwiseAlignment( aaNew, referenceAA, type="local", scoreOnly=T, substitutionMatrix=AA_SUBM)
 			}
 			extraBase <- SUBSTR( dnaNow, dnaLocation, dnaLocation)
 			oldContext <- SUBSTR( dnaNow, dnaLocation-1, dnaLocation+1)
@@ -832,12 +835,12 @@
 
 			# is this better?
 			if ( is.null( referenceAA)) {
-				scoreNew <- pairwiseAlignment( dnaNew, referenceDNA, type="local", scoreOnly=T)
+				scoreNew <- pairwiseAlignment( dnaNew, referenceDNA, type="local", scoreOnly=T, substitutionMatrix=DNA_SUBM)
 			} else {
 				aaNow <- DNAtoBestPeptide(dnaNow, readingFrames=1:3, tieBreakMode="reference", reference=referenceAA)
 				aaNew <- DNAtoBestPeptide(dnaNew, readingFrames=1:3, tieBreakMode="reference", reference=referenceAA)
-				scoreNow <- pairwiseAlignment( aaNow, referenceAA, type="local", scoreOnly=T)
-				scoreNew <- pairwiseAlignment( aaNew, referenceAA, type="local", scoreOnly=T)
+				scoreNow <- pairwiseAlignment( aaNow, referenceAA, type="local", scoreOnly=T, substitutionMatrix=AA_SUBM)
+				scoreNew <- pairwiseAlignment( aaNew, referenceAA, type="local", scoreOnly=T, substitutionMatrix=AA_SUBM)
 			}
 			oldContext <- SUBSTR( dnaNow, dnaLocation-1, dnaLocation)
 			newContext <- PASTE( SUBSTR(oldContext,1,1), extraRefBase, SUBSTR(oldContext,2,2), sep="")
