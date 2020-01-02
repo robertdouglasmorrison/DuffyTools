@@ -191,3 +191,89 @@ readALN <- function( file, verbose=TRUE) {
 	# ready to write out
 	writeFasta( as.Fasta( desc, strs), outfile, line.width=line.width)
 }
+
+
+`plotALN` <- function( aln, type=c("fill","dots"), cex.letter=1, cex.label=1, y.label.length=NULL, 
+			codonMap=getCodonMap(), ref.row=1, range=NULL, ...) {
+
+	# we may be given the top level ALN object or just the aligment matrix
+	# or even just the filename
+	if ( length(aln) == 1 && is.character(aln) && file.exists(aln)) {
+		aln <- readALN( aln, verbose=F)
+	}
+	if ( "alignment" %in% names(aln)) {
+		aln <- aln$alignment
+	}
+
+	# OK, we have one matrix of characters from a MSA
+	# allow subsetting on a range of locations
+	if( ! is.null( range)) {
+		low <- max( 1, min(range))
+		high <- min( ncol(aln), max(range))
+		aln <- aln[ , low:high]
+	}
+	aln <- toupper(aln)
+	nch <- ncol(aln)
+	niso <- nrow(aln)
+	plot( 1,1, type="n", xlim=c(0,nch+1), ylim=c(1,niso), xlab="Amino Acid Location", ylab=NA, yaxt="n", 
+			xaxs="i", ...)
+
+	# allow a few types of plot images
+	type <- match.arg( type)
+	if ( type == "fill") {
+		boxes <- TRUE
+		showLetters <- "all"
+		letterColor <- "black"
+	} else if (type == "dots") {
+		boxes <- FALSE
+		showLetters <- "alternate"
+		letterColor <- "black"
+		if (ref.row < 1) ref.row <- 1
+		if (ref.row > niso) ref.row <- niso
+	}
+
+	cexScaleX <- 20 / niso
+	cexScaleY <- 100 / nch
+	cex <- min( cexScaleX, cexScaleY)
+
+	# draw the alignment letters
+	for( i in 1:niso) {
+		x <- 1:nch
+		y <- rep.int( niso - i + 1, length(x))
+		ch <- aln[ i, ]
+		where <- match( substr(ch,1,1), codonMap$AA, nomatch=0)
+		if ( boxes) { 
+			use <- which( where > 0)
+			fill <- codonMap$Color[where]
+			rect( x[use]-0.5, y[use]-0.5, x[use]+0.5, y[use]+0.5, col=fill, border=fill)
+		}
+		if ( showLetters == "all") {
+			text( x, y, ch, col=letterColor, font=2, cex=cex*cex.letter)
+		} else if (showLetters == "alternate") {
+			chToShow <- rep.int( ".", nch)
+			if ( i == ref.row) chToShow <- ch
+			toShow <- which( ch != aln[ ref.row, ])
+			chToShow[ toShow] <- ch[ toShow]
+			# ?? for now let's leave all changed letters as black -- easier to see
+			letterColor <- rep.int( "black", nch)
+			toColor <- intersect( toShow, which( where > 0))
+			letterColor[ toColor] <- codonMap$Color[where[toColor]]
+
+			# let's use bold for what's different, but not for the dots
+			isDot <- which( chToShow == ".")
+			notDot <- setdiff( 1:nch, isDot)
+			if ( length(isDot)) {
+				text( x[isDot], y[isDot], chToShow[isDot], col=letterColor[isDot], font=1, cex=cex*cex.letter, adj=c(0.5,0))
+			}
+			if ( length(notDot)) {
+				text( x[notDot], y[notDot], chToShow[notDot], col=letterColor[notDot], font=2, cex=cex*cex.letter, adj=c(0.5,0))
+			}
+		}
+	}
+
+	# draw the names.  Recall that we draw fist at the top...
+	ylabs <- rev( rownames(aln))
+	if ( ! is.null( y.label.length)) ylabs <- substr( ylabs, 1, y.label.length)
+	axis( side=2, at=1:niso, label=ylabs, cex.axis=cex*cex.label, las=2)
+
+}

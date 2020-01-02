@@ -19,6 +19,11 @@
 	if ( is.null( chromoSet)) return( NULL)
 	use <- 1:nChromo
 	if ( verbose) cat( "\nGiven as input", nChromo, "chromatograms.")
+
+	# Step 0.5:  fix any 'N' calls in the raw data
+	for ( i in 1:nChromo) {
+		chromoSet[[i]] <- fixChromatogramNcalls( chromoSet[[i]], verbose=verbose)
+	}
 	
 	# Step 1: crop off low confidence edges
 	if ( crop) {
@@ -149,7 +154,7 @@
 	# don't always use all, some may be terrible
 	# and if absolutely none passed, send back an empty result now
 	if ( length( use) <= nBridge) {
-		out <- list( "ReferenceName"="FAIL", "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), "ConsensusAA"="",
+		out <- list( "ReferenceName"="FAIL: No Usable Chromatograms", "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), "ConsensusAA"="",
 			"ConfidenceAA"=integer(0), "EditDistanceAA"=NA,
 			"ConsensusDNA"="", "ConfidenceDNA"=integer(0), "EditDistanceDNA"=NA,
 			"FragmentDetails"=seqDF, "BaseMatrix"=NULL, "ConfidenceMatrix"=NULL)
@@ -163,11 +168,15 @@
 	baseM <- matrixAns$BaseMatrix
 	confM <- matrixAns$ConfidenceMatrix
 
+	# Step 5.5:  apply a window smoothing to each confidence row, to better reflect the local quality
+	# 		around each peak, before we use it for voting
+	voteConfM <- voteSmoothConfidenceMatrix( confM, windowSize=11)
+
 	# Step 6:  now, use the confidence scores as the voting criteria, to extact the one final consensus
 	#          we can use the DNA scores as relative weights
 	if ( verbose) cat( "\nExtract Final Consensus DNA..")
 	fragWts <- round( seqDF$DNA.UnitScore[use] * 10)
-	consensusSeqAns <- extractChromatogramConsensusSequence( baseM, confM, wts=fragWts)
+	consensusSeqAns <- extractChromatogramConsensusSequence( baseM, voteConfM, wts=fragWts)
 	finalDNAseq <- consensusSeqAns$sequence
 	finalDNAstr <- paste( finalDNAseq, collapse="")
 	finalDNAconf <- consensusSeqAns$confidence
@@ -395,6 +404,30 @@
 	# Done!...
 	out <- list( "BaseMatrix"=baseM, "ConfidenceMatrix"=confM)
 	out
+}
+
+
+`voteSmoothConfidenceMatrix` <- function( confM, windowSize=11) {
+
+	# each row of the confidence matrix is from one chromatogram.  Transform the raw confidence
+	# by moving avgerage to better reflect the confidence of the region around each peak
+	voteM <- confM
+	NR <- nrow(confM)
+	nams <- 1:ncol(confM)
+
+	for ( i in 1:NR) {
+		confV <- confM[ i, ]
+		names(confV) <- nams
+
+		# apply a smoothing window to the raw confidence
+		smoothV <- movingAverage( confV, window=windowSize)
+
+		# for voting, we want to use the worse of the actual or the smoothed confidence
+		# to suppress the outliers that are great and not reward the bad peaks near by
+		voteV <- pmin( confV, smoothV)
+		voteM[ i, ] <- voteV
+	}
+	voteM
 }
 
 

@@ -188,7 +188,7 @@
 `baseCallOnePeak` <- function( peakSite, traceM, min.pct=0.10, extra.width=1) {
 
 	# use the data in a tiny window, not just the 1 point
-	intenV <- apply( traceM[ (peakSite-extra.width):(peakSite+extra.width), ], MARGIN=2, sum)
+	intenV <- apply( traceM[ (peakSite-extra.width):(peakSite+extra.width), , drop=FALSE], MARGIN=2, sum)
 	intenPcts <- intenV / sum(intenV)
 	# good to call if at least some % of total intensity
 	good <- which( intenPcts >= min.pct)
@@ -217,6 +217,67 @@
 	names(out) <- paste( 1:NP, names(peaks), sep="_")
 
 	return( out)
+}
+
+
+`fixChromatogramNcalls` <- function( chromoObj, verbose=FALSE) {
+
+	# brute force fix any 'N' calls to be whatever is highest
+	traceM <- chromoObj$TraceM
+	peaks <- chromoObj$PeakPosition
+	dna <- chromoObj$DNA_Calls[1]
+	NP <- length( peaks)
+
+	# re-call each N site, and update if we get a valid call
+	isN <- which( names(peaks) == "N")
+	if ( length( isN)) {
+		nFixed <- 0
+		for ( i in isN) {
+			thisPeakPos <- peaks[i]
+			thisBase <- names(peaks)[i]
+			ans <- baseCallOnePeak( thisPeakPos, traceM=traceM, min.pct=0.1, extra.width=0)
+			newBase <- names(ans)[1]
+			if ( newBase != thisBase) {
+				names(peaks)[i] <- newBase
+				substr( dna, i, i) <- newBase
+				nFixed <- nFixed + 1
+			}
+		}
+		if (verbose) cat( "\nFixed 'N' base calls: ", basename(chromoObj$Filename), " \tWas:", 
+				length(isN), " \tNow:", (length(isN)-nFixed))
+	}
+
+	# use the new data to rebuild what we need
+	seqData <- chromatogramSequences( dna)
+
+	# with better base calls, re-calculate confidence scores for each peak
+	peakConfidence <- calcChromatogramPeakConfidence( traceM, peaks)
+
+	out <- list( "TraceM"=traceM, "PeakPosition"=peaks, "PeakConfidence"=peakConfidence, 
+				"DNA_Calls"=seqData$DNA, "AA_Calls"=seqData$AA, "Filename"=chromoObj$Filename)
+	out
+}
+
+
+`baseCallVerify` <- function( chromoObj) {
+
+	# the peak calls 'SHOULD' match the Trace Matrix...
+	# verify that explicitly and report the percentage agreement
+	traceM <- chromoObj$TraceM
+	peaks <- chromoObj$PeakPosition
+	NP <- length( peaks)
+
+	# see which base is the highest at the peak centerpoints
+	centerM <- traceM[ as.numeric(peaks), ]
+	centerBase <- colnames(traceM)[ apply( centerM, MARGIN=1, which.max)]
+	calledBase <- as.character( names(peaks))
+
+	nMatch <- sum( centerBase == calledBase)
+	nNotMatch <- sum( centerBase != calledBase)
+	pctMatch <- round( nMatch * 100 / NP, digits=2)
+	pctNotMatch <- round( nNotMatch * 100 / NP, digits=2)
+	matchTbl <- table( centerBase, calledBase)
+	return( list( "PctMatch"=pctMatch, "PctNotMatch"=pctNotMatch, "MatchTable"=matchTbl))
 }
 
 
@@ -750,8 +811,11 @@
 		# do we see any context that looks like a 1bp gap?
 		# use a fixed size flank of 9bp
 		N_FLANK <- 9
-		dnaGapAns <- as.numeric( gregexpr( "[ACGTN]{9}\\-[ACGTN]{9}", dnaStr)[[1]])
-		refGapAns <- as.numeric( gregexpr( "[ACGTN]{9}\\-[ACGTN]{9}", refStr)[[1]])
+		#dnaGapAns <- as.numeric( gregexpr( "[ACGTN]{9}\\-[ACGTN]{9}", dnaStr)[[1]])
+		#refGapAns <- as.numeric( gregexpr( "[ACGTN]{9}\\-[ACGTN]{9}", refStr)[[1]])
+		# let's not try to fix anything too close to 'N' calls...
+		dnaGapAns <- as.numeric( gregexpr( "[ACGT]{9}\\-[ACGT]{9}", dnaStr)[[1]])
+		refGapAns <- as.numeric( gregexpr( "[ACGT]{9}\\-[ACGT]{9}", refStr)[[1]])
 
 		# don't revisit any sites already done
 		if ( length( maskBases)) {
@@ -896,7 +960,7 @@
 # calculate the confidence of all peak calls
 # by looking at the proportion of intensity that the top base explains
 # returns a value in 0 to 1 range
-`calcChromatogramPeakConfidence` <- function( traceM, peaks) {
+`calcChromatogramPeakConfidence` <- function( traceM, peaks, windowSize=11) {
 
 	# deduce how far apart peaks are, to estimate how many points around the center top to include
 	avgPeakSep <- median( diff( peaks))
@@ -905,7 +969,7 @@
 	# given how many peaks to look at, set up storage for our answers
 	NTR <- nrow( traceM)
 	NP <- length( peaks)
-	peakDepth <- peakMax <- peakCount <- rep.int( NA, NP)
+	peakDepth <- peakCount <- rep.int( NA, NP)
 	
 	# visit each peak, and look at that fraction of the trace matrix
 	for (i in 1:NP) {
@@ -917,14 +981,14 @@
 		# see how deep and how consistent
 		cm <- apply( smlTM, MARGIN=2, sum, na.rm=T)
 		peakDepth[i] <- sum( cm)
-		peakMax[i] <- max( cm)
 
 		# the calls are not "always" the biggext value, although they should be.
 		# instead use the base call for the peak to get the one correct column
 		myBase <- names(peaks)[i]
 		peakCount[i] <- cm[ match(myBase, names(cm))]
 		# 'N' calls would break this, so catch
-		if ( is.na( peakCount[i])) peakCount[i] <- max( cm)
+		# but since 'N' is a terrible base call, reflect that in the peak's count
+		if ( is.na( peakCount[i])) peakCount[i] <- ( max(cm) * 0.25)   # max( cm)
 	}
 	
 	# prevent divide by zero
@@ -934,9 +998,33 @@
 	# certainty is a function of Counts depth
 	certainty <- 1.0 - (2 ^ -peakDepth)
 
-	# confidence is the product of the dominant percentage times the certainty
+	# we want/need to add another metric:   when a peak's height is way out of line with it's neighbors,
+	# that is a sign of local trouble.  Use a smoothing window to assess what's expected, and punish if too
+	# far outside that range.   We do need a minimum size to calc this...
+	if ( NP > windowSize * 2) {
+		tempCount <- peakCount
+		names(tempCount) <- 1:NP
+		smoothCount <- movingAverage( tempCount, window=windowSize)
+		# turn the actual peak size into a ratio vs the average
+		smoothCount[ smoothCount < 1] <- 1
+		peakRatio <- peakCount / smoothCount
+		# we expect as 'normal' peaks that are within 2x of average, like from mixed populations
+		peakRatio[ peakRatio >= 0.5 & peakRatio <= 2.0] <- 1.0
+		# for all other's, thurn this net ratio into a penalty on zero to one
+		isBig <- which( peakRatio > 1.0)
+		if ( length(isBig)) peakRatio[isBig] <- ( 1.0 / peakRatio[isBig])
+		# lastly turn those zero to 0.5 values scaled up to one
+		isSmall <- which( peakRatio <= 0.5)
+		if ( length(isSmall)) peakRatio[isSmall] <- peakRatio[isSmall] * 2
+	} else {
+		peakRatio <- rep.int( 1, NP)
+	}
+
+	# confidence is the product of the dominant percentage times the certainty, 
+	# with the new peak height ratio term too
+
 	# always on the interval 0..1
-	conf <- peakPct * certainty
+	conf <- peakPct * certainty * peakRatio
 	names(conf) <- names( peaks)
 	conf
 }
