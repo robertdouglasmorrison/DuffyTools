@@ -611,9 +611,11 @@
 		confY <- peakConf * 100 * yScale
 		lines( confX, confY, lty=3, lwd=1, col='black')
 		# and the moving average too
-		names(confY) <- confX
-		moveAvg <- movingAverage( confY, window=11)
-		lines( confX, moveAvg, lty=1, lwd=1, col='black')
+		if ( length(confY) >= 15) {
+			names(confY) <- confX
+			moveAvg <- movingAverage( confY, window=11)
+			lines( confX, moveAvg, lty=1, lwd=1, col='black')
+		}
 	}
 }
 
@@ -1124,9 +1126,11 @@
 	}
 
 	# apply a smoothing window to the raw confidence
-	confV <- as.numeric( peakConf)
-	names(confV) <- peakPos
-	smoothConf <- movingAverage( confV, window=windowSize)
+	smoothConf <- confV <- as.numeric( peakConf)
+	if ( length(confV) >= windowSize * 2) {
+		names(confV) <- peakPos
+		smoothConf <- movingAverage( confV, window=windowSize)
+	}
 
 	# the cutoff may be given on 0 to one, or zero to 100
 	# but the raw data is always zero to one

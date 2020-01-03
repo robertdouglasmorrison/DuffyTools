@@ -142,16 +142,21 @@ UNION <- base::union
 				bestLen <- bigLength[ bestFrame]
 			} else {
 				bestLen <- -9999
+				bestScore <- -9999
 				data( BLOSUM62)
+				# best if found be similarity score to reference, not by length!
 				for (f in 1:3) {
 					pa <- pairwiseAlignment( pepTerms[[f]], referenceAA, type="global-local", scoreOnly=T,
 								substitutionMatrix=BLOSUM62)
 					best <- WHICH.MAX( pa)
 					myPep <- pepTerms[[f]][best]
-					if ( (myLen <- nchar(myPep)) > bestLen) {
+					myLen <- nchar(myPep)
+					myScore <- pa[best]
+					if ( myScore > bestScore) {
 						bestFrame <- f
 						bestPep <- myPep
 						bestLen <- myLen
+						bestScore <- myScore
 					}
 				}
 			}

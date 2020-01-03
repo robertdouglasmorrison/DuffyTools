@@ -59,7 +59,10 @@
 	refAns <- selectBestChromatogramReference( chromoSet[use], refFA)
 	refDNA <- refAns$ReferenceSequence
 	refName <- names(refDNA)[1]
-	refAA <- translateChromatogramSequence( refDNA, mode="string", badAA="")
+	#refAA <- translateChromatogramSequence( refDNA, mode="string", badAA="")
+	# by rule, the Reference DNA is always in frame as cDNA, so just use frame 1
+	refAA <- DNAtoAA( refDNA, clipAtStop=FALSE, readingFrame=1)
+
 	refStats <- refAns$ScoreDetails
 	if (verbose && !is.null( refStats)) {
 		cat( "\nTop Scoring Best References:\n")
