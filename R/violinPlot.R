@@ -1,6 +1,6 @@
 # violinPlot.R -- wrapper around the ggplot geom_violin plot function
 
-violinPlot <- function( df, aes, ..., horiz=FALSE, boxwid=NULL,
+violinPlot <- function( df, aes, ..., horiz=FALSE, boxwid=NULL, facet=NULL,
 			main="", xlab="X", ylab="Y", log="") {
 
 	require( ggplot2)
@@ -9,8 +9,14 @@ violinPlot <- function( df, aes, ..., horiz=FALSE, boxwid=NULL,
 
 	if (horiz) p <- p + coord_flip()
 
+	if ( ! is.null( facet)) {
+		p <- p + facet_wrap( paste( "~", as.character(facet)), scales="free_x")
+	}
+
 	# add boxplot?
-	if ( ! is.null(boxwid)) p <- p + geom_boxplot( width=boxwid)
+	if ( ! is.null(boxwid)) {
+		p <- p + geom_boxplot( width=boxwid)
+	}
 
 	# any X,Y log scaling?
 	if ( regexpr( 'Y', toupper(log)) > 0) p <- p + scale_y_log10()

@@ -87,11 +87,10 @@ UNION <- base::union
 }
 
 
-`chooseReadingFrame` <- function( aaSet, allFrames=aaSet) {
+`chooseReadingFrame` <- function( aaSet, allFrames=aaSet, verbose=FALSE) {
 
-	aaLevels <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
-			"M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
-			"X", "Y", "Z", "*", "?")
+	aaLevels <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", 
+			"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "*", "?")
 
 	# get the overall distribution of aa, knowing that 5 of the 6 reading frames are not the right one
 	aaChars <- STRSPLIT( aaSet, split="")
@@ -103,6 +102,13 @@ UNION <- base::union
 			thisDist <- table( factor( x, levels=aaLevels))
 			return( cor.test( totalDist, thisDist)$p.value)
 		})
+
+	if (verbose) {
+		names(pvals) <- paste( "Frame", 1:length(aaSet), sep="")
+		ord <- order( pvals, decreasing=T)
+		cat( "\nReading Frame P-values:\n")
+		print( pvals[ord])
+	}
 
 	return( WHICH.MAX( as.numeric(pvals)))
 }

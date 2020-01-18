@@ -370,10 +370,10 @@
 }
 
 
-`subsetChromatogram` <- function( chromoObj, seq=NULL, range=NULL) {
+`subsetChromatogram` <- function( chromoObj, seq=NULL, range=NULL, min.unit.score=NULL) {
 
 	if ( ! is.null( seq)) {
-		return( subsetChromatogramBySequence( chromoObj, seq=seq))
+		return( subsetChromatogramBySequence( chromoObj, seq=seq, min.unit.score=min.unit.score))
 	} else if ( ! is.null( range)) {
 		return( subsetChromatogramByRange( chromoObj, range=range))
 	} else {
@@ -383,7 +383,7 @@
 }
 
 
-`subsetChromatogramBySequence` <- function( chromoObj, seq) {
+`subsetChromatogramBySequence` <- function( chromoObj, seq, min.unit.score=NULL) {
 
 	# get the data we need 
 	traceM <- chromoObj$TraceM
@@ -421,6 +421,7 @@
 	# get the exact limits on both DNA and AA, regardless of which one we were given
 	if ( max(dnaScores) > max(aaScores)) {
 		best <- which.max( dnaScores)
+		bestScore <- dnaScores[ best]
 		bestDNA <- chromoDNA[ best]
 		pa <- pairwiseAlignment( bestDNA, subSeq, type="local-global", substitutionMatrix=DNA_MATRIX, scoreOnly=F)
 		startDNA <- start( pattern( pa))
@@ -429,6 +430,7 @@
 		AAoffset <- 1
 	} else {
 		best <- which.max( aaScores)
+		bestScore <- aaScores[ best]
 		bestAA <- chromoAA[ best]
 		pa <- pairwiseAlignment( bestAA, subSeq, type="local-global", substitutionMatrix=BLOSUM62, scoreOnly=F)
 		startAA <- start( pattern( pa))
@@ -437,6 +439,12 @@
 		startDNA <- startAA*3 - 2
 		needChromoRevComp <- (best > 3)
 		AAoffset <- if (best < 4) best else best - 3
+	}
+
+	# see if we should return 'not found'
+	if ( ! is.null( min.unit.score)) {
+		unitScore <- bestScore / nchar( subSeq)
+		if ( unitScore < min.unit.score) return( NULL)
 	}
 
 	# did we need to do a RevComp?
@@ -520,7 +528,8 @@
 
 `plotChromatogram` <- function( chromoObj, label="", seq=NULL, range=NULL, 
 				lwd=2, lty=1, cex=1, font=2, add=FALSE, forceYmax=NULL, 
-				showAA=TRUE, showTraceRowNumbers=FALSE, showConfidence=FALSE) {
+				showAA=TRUE, showTraceRowNumbers=FALSE, showConfidence=FALSE,
+				min.unit.score=NULL) {
 
 	# given a chromatogram object, show the whole thing
 	acgtBases <- c('A','C','G','T','N','-')
@@ -534,7 +543,9 @@
 
 	# were we given a request for a smaller region?
 	if ( ! is.null( seq)) {
-		chromoObj <- subsetChromatogramBySequence(chromoObj, seq=seq)
+		chromoObj <- subsetChromatogramBySequence(chromoObj, seq=seq, min.unit.score=min.unit.score)
+		# allow the subsequence request to return silently with no plot if not good sequence found
+		if ( is.null( chromoObj)) return( NULL)
 	} else if ( ! is.null( range)) {
 		chromoObj <- subsetChromatogramByRange(chromoObj, range=range)
 	}
@@ -621,11 +632,13 @@
 
 
 `plotMultipleChromatograms` <- function( chromoSet, label="", seq=NULL, showAA=TRUE, 
-					showTraceRowNumbers=FALSE, showConfidence=FALSE, ...) {
+					showTraceRowNumbers=FALSE, showConfidence=FALSE, 
+					min.unit.score=NULL, max.to.show=4, ...) {
 
 	# set up to draw more than one
 	nChromo <- length( chromoSet)
-	par( mfrow=c( nChromo, 1))
+	nShow <- min( nChromo, max.to.show)
+	par( mfrow=c( nShow, 1))
 	par( mai=c(0.8, 0.8, 0.7, 0.4))
 
 	for ( i in 1:nChromo) {
@@ -633,7 +646,7 @@
 		chromoLabel <- paste( label, names(chromoSet)[i], sep="  ")
 		plotChromatogram( chromoObj, label=chromoLabel, seq=seq, showAA=showAA,
 				showTraceRowNumbers=showTraceRowNumbers, showConfidence=showConfidence, 
-				...)
+				min.unit.score=min.unit.score, ...)
 	}
 }
 
