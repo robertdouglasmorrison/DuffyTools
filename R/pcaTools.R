@@ -3,8 +3,8 @@
 `fileSet.PCAplot` <- function( files, fids, geneColumn = "GENE_ID", 
 				intensityColumn = "RPKM_M", sep = "\\t", useLog = FALSE, 
 				d1=1, d2=2, main="", col=rainbow( length(fids), end=0.8), 
-				pt.cex=2, pch=21, label.cex=0.9, na.mode=c("drop","zero"), verbose=FALSE, 
-				plotOrder=1:length(files), ...) {
+				pt.cex=2, pch=21, label.cex=0.9, na.mode=c("drop","zero"), 
+				xZoom=NULL, yZoom=NULL, verbose=FALSE, plotOrder=1:length(files), ...) {
 
 	m <- expressionFileSetToMatrix( files, fids, geneColumn=geneColumn, 
 					intensityColumn=intensityColumn, verbose=verbose)
@@ -14,7 +14,7 @@
 
 	out <- matrix.PCAplot( m, main=main, col=col, d1=d1, d2=d2, pt.cex=pt.cex, 
 				label.cex=label.cex, pch=pch, na.mode=na.mode, 
-				plotOrder=plotOrder, ...)
+				xZoom=xZoom, yZoom=yZoom, plotOrder=plotOrder, ...)
 
 	return( out)
 }
@@ -22,7 +22,7 @@
 
 `matrix.PCAplot` <- function( m, main="", col=rainbow( ncol(m), end=0.8), d1=1, d2=2,
 				pt.cex=2, pch=21, label.cex=0.9, na.mode=c("drop","zero"), 
-				plotOrder=1:ncol(m), ...) {
+				plotOrder=1:ncol(m), xZoom=NULL, yZoom=NULL, ...) {
 
 	# drop any NA rows
 	hasNA <- apply( m, 1, function(x) any( is.na( x)))
@@ -48,8 +48,10 @@
 	mainText <- paste( "PCA Plot:    ", main)
 	xLim <- range( xValues)
 	xLim <- xLim + diff(xLim)*c(-0.15,0.15)
+	if ( ! is.null( xZoom)) xLim <- c( max( xLim[1],xZoom[1]), min( xLim[2],xZoom[2]))
 	yLim <- range( yValues)
 	yLim <- yLim + diff(yLim)*c(-0.1,0.1)
+	if ( ! is.null( yZoom)) yLim <- c( max( yLim[1],yZoom[1]), min( yLim[2],yZoom[2]))
 
 	# do a tiny jitter in case perfect overlap
 	xShow <- jitter( xValues, factor=1.0)

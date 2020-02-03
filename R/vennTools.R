@@ -37,6 +37,7 @@
 				value1Column="RPKM_M", value2Column=value1Column, 
 				minValue1=1, minValue2=minValue1, extraColumns=NULL,
 				minCount=NULL, maxCount=NULL, keepIntergenics=FALSE, 
+				geneUniverse=NULL, 
 				label="Your label goes here...", cex=2, col1='blue', col2='red') {
 
 	checkX11()
@@ -76,7 +77,7 @@
 	smlDF2 <- gatherWantedSubset( df2, gene2Column, value2Column, minValue2, minCount=minCount, maxCount=maxCount)
 	genes1 <- smlDF1[[gene1Column]]
 	genes2 <- smlDF2[[gene2Column]]
-	geneUniverse <- union( df1[[gene1Column]], df2[[gene2Column]])
+	if ( is.null( geneUniverse)) geneUniverse <- union( df1[[gene1Column]], df2[[gene2Column]])
 	N_TotalGenes <- length( geneUniverse)
 
 	# combine and resolve
@@ -94,6 +95,7 @@
 	only2 <- setdiff( genes2, both)
 	Nonly1 <- length( only1)
 	Nonly2 <- length( only2)
+	cat( "\nSet 1 = ", fid1, " \tSet 2 = ", fid2)
 	cat( "\nN_Genes in union:      ",  Neither)
 	cat( "\nN_Genes in common:     ",  Nboth)
 	cat( "\nN_Genes only in set 1: ",  Nonly1)
