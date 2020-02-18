@@ -2,7 +2,7 @@
 
 `fileSet.PCAplot` <- function( files, fids, geneColumn = "GENE_ID", 
 				intensityColumn = "RPKM_M", sep = "\\t", useLog = FALSE, 
-				d1=1, d2=2, main="", col=rainbow( length(fids), end=0.8), 
+				d1=1, d2=2, d3=3, main="", col=rainbow( length(fids), end=0.8), 
 				pt.cex=2, pch=21, label.cex=0.9, na.mode=c("drop","zero"), 
 				xZoom=NULL, yZoom=NULL, verbose=FALSE, plotOrder=1:length(files), ...) {
 
@@ -12,7 +12,7 @@
 	if ( useLog) m <- log2( m + 1)
 	na.mode <- match.arg( na.mode)
 
-	out <- matrix.PCAplot( m, main=main, col=col, d1=d1, d2=d2, pt.cex=pt.cex, 
+	out <- matrix.PCAplot( m, main=main, col=col, d1=d1, d2=d2, d3=d3, pt.cex=pt.cex, 
 				label.cex=label.cex, pch=pch, na.mode=na.mode, 
 				xZoom=xZoom, yZoom=yZoom, plotOrder=plotOrder, ...)
 
@@ -20,7 +20,7 @@
 }
 
 
-`matrix.PCAplot` <- function( m, main="", col=rainbow( ncol(m), end=0.8), d1=1, d2=2,
+`matrix.PCAplot` <- function( m, main="", col=rainbow( ncol(m), end=0.8), d1=1, d2=2, d3=3,
 				pt.cex=2, pch=21, label.cex=0.9, na.mode=c("drop","zero"), 
 				plotOrder=1:ncol(m), xZoom=NULL, yZoom=NULL, ...) {
 
@@ -44,6 +44,9 @@
 
 	xValues <- pca$rotation[,d1]
 	yValues <- pca$rotation[,d2]
+	zValues <- pca$rotation[,d3]
+
+	xReturned <- pca$x
 
 	mainText <- paste( "PCA Plot:    ", main)
 	xLim <- range( xValues)
@@ -67,10 +70,28 @@
 	if ( any( label.cex > 0)) thigmophobe.labels( xShow, yShow, lab=lbls, cex=label.cex)
 	dev.flush()
 
-	out <- data.frame( "SampleID"=colnames(m), "PC_X.Value"=xValues, 
-				"PC_Y.Value"=yValues, "Color"=col, 
+	out1 <- data.frame( "SampleID"=colnames(m), "PC_X.Value"=xValues, 
+				"PC_Y.Value"=yValues, "PC_Z.Value"=zValues, "Color"=col, 
 				row.names=1:ncol(m), stringsAsFactors=F)
-	return( out)
+
+	# also make info about the row inputs
+	# try using just the first K PC
+	k <- if ( ncol(xReturned) > 4) 4 else ncol(xReturned)
+	rDev <- apply( xReturned[ ,1:k], 1, function(x) sum( abs(x)))
+	rPctDev <- round( rDev * 100 / sum( rDev), digits=3)
+	nams <- names( rDev)
+	if ( is.null(nams)) nams <- as.character( 1:length(rDev))
+	ord <- order( rPctDev, decreasing=T)
+	rPctDev <- rPctDev[ ord]
+	nams <- nams[ ord]
+	keep <- which( rPctDev > 0.10)
+	if ( length(keep) < 5) keep <- 1:min( 5, length(nams))
+	if ( length(keep) > 50) keep <- keep[ 1:50]
+	
+	out2 <- data.frame( "ROW_ID"=nams[keep], "PCT_DEV"=rPctDev[keep], stringsAsFactors=F)
+	if (nrow(out2)) rownames(out2) <- 1:nrow(out2)
+
+	return( list( "Column.Info"=out1, "Row.Info"=out2))
 }
 
 

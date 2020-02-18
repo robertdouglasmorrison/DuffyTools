@@ -279,7 +279,7 @@
 	}
 
 	if (verbose) cat( "\nMerging: \n  ", cmdText)
-	system( cmdText)
+	catch.system( cmdText)
 	if (verbose) cat( "\nDone.\n")
 }
 
@@ -525,7 +525,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 	trapStdErr <- if (verbose) "" else " 2>/dev/null"
 	cmdLine <- paste( cmdLine1, "|", cmdLine2, trapStdErr)
 	if (verbose) cat( "Command Line: ", cmdLine, "\n")
-	system( cmdLine)
+	catch.system( cmdLine)
 
 	if (verbose) cat( "  Done.\n")
 	return( )
@@ -1028,7 +1028,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 	}
 	f2 <- paste( f, "gz", sep=".")
 	cmdline <- paste( "gzip", f, sep=" ")
-	system( cmdline)
+	catch.system( cmdline)
 	info2 <- file.info( f2)
 
 	size1 <- info1$size

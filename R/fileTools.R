@@ -72,14 +72,14 @@ function(files) {
 			# names the same == do nothing
 			if ( fset[1] == outfile) return
 			if (renameOK) {
-				system( paste( "mv  ", fset[1], " ", outfile))
+				catch.system( paste( "mv  ", fset[1], " ", outfile))
 			} else {
-				system( paste( "cp  ", fset[1], " ", outfile))
+				catch.system( paste( "cp  ", fset[1], " ", outfile))
 			}
 			return()
 		}
 
-		system( paste( "cat ", paste( fset, collapse=" "), "  > ", outfile))
+		catch.system( paste( "cat ", paste( fset, collapse=" "), "  > ", outfile))
 		return()
 	}
 
@@ -221,6 +221,6 @@ function(files) {
 `removeTempFolder` <- function( path) {
 
 	cmdline <- paste( "rm -fr ", path)
-	system( cmdline)
+	catch.system( cmdline)
 	return()
 }

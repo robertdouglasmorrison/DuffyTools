@@ -33,10 +33,10 @@
 
 	# call it!
 	if (verbose) {
-		system( cmdLine)
+		catch.system( cmdLine)
 	} else {
 		sink( "MAFFT.log.txt")
-		system( cmdLine, ignore.stdout=FALSE, ignore.stderr=TRUE)
+		catch.system( cmdLine, ignore.stdout=FALSE, ignore.stderr=TRUE)
 		sink()
 	}
 	if ( ! file.exists( outFile)) {

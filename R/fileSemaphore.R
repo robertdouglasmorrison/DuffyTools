@@ -16,7 +16,7 @@
 	lockArgs <- base::paste( "-", sleeptime, " -r ", retries, " -l ", timeout, " ", sep="")
 	cmd <- base::paste( "lockfile ", lockArgs, lockFilename)
 
-	ans <- system( command=cmd, intern=FALSE)
+	ans <- catch.system( command=cmd, intern=FALSE)
 
 	return( ans == 0)
 }
@@ -27,7 +27,7 @@
 	return(TRUE)
 	lockFilename <- base::paste( filename, "LOCK", sep=".")
 
-	system( command=base::paste( "rm -f ", lockFilename))
+	catch.system( command=base::paste( "rm -f ", lockFilename))
 
 	return( TRUE)
 }

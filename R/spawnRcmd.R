@@ -45,7 +45,7 @@
 	}
 
 	# run it!
-	system( command=commandLine, wait=FALSE, ignore.stderr=FALSE)
+	catch.system( command=commandLine, wait=FALSE, ignore.stderr=FALSE)
 
 	return()
 }

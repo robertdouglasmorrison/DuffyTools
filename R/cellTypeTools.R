@@ -131,6 +131,7 @@
 	givenNames <- names( givenTbl)
 	allTbl <- table( cellTypeUniverse)
 	allPcts <- allTbl * 100 / sum(allTbl)
+	allExpect <- allPcts * length(cellTypes) / 100
 	allNames <- names( allTbl)
 	
 	# we will only consider the names in the Universe
@@ -142,11 +143,12 @@
 	whereA <- match( both, allNames, nomatch=0)
 	Acnt <- ifelse( is.na(whereA), 0, allTbl[whereA])
 	Apct <- ifelse( is.na(whereA), 0, allPcts[whereA])
+	ExpCnt <- ifelse( is.na(whereA), 0, allExpect[whereA])
 
 	# enrichment is how much more in our set than the entire table
 	enrich <- Gpct / Apct
 	
-	# the probalities are for each cell type,  calculate them
+	# the probabilities are for each cell type,  calculate them
 	N_All <- length( cellTypeUniverse)
 	N_Given <- length( cellTypes)
 	pvals <- vector( length=length(both))
@@ -176,6 +178,7 @@
 	enrich <- round( enrich, digits=3)
 	Apct <- round( Apct, digits=2)
 	Gpct <- round( Gpct, digits=2)
+	ExpCnt <- round( ExpCnt, digits=1)
 	signif <- rep.int( "", length(pvals))
 	signif[ pvals < 0.1] <- "."
 	signif[ pvals < 0.05] <- "*"
@@ -183,8 +186,9 @@
 	signif[ pvals < 0.001] <- "***"
 	pvals <- as.numeric( formatC( pvals, format="e", digits=2))
 
-	out <- data.frame( both, enrich, pvals, Acnt, Apct, Gcnt, Gpct, stringsAsFactors=FALSE)
-	colnames( out) <- c( "CellType", "Enrichment", "P_Value", "N_Total", "Pct_Total", "N_Given", "Pct_Given")
+	out <- data.frame( both, enrich, pvals, Acnt, Apct, Gcnt, Gpct, ExpCnt, stringsAsFactors=FALSE)
+	colnames( out) <- c( "CellType", "Enrichment", "P_Value", "N_Total", "Pct_Total", "N_Given", 
+				"Pct_Given", "N_Expect")
 	out$OverUnder <- ifelse( enrich >= 1, "Over", "Under")
 	out$OverUnder[ enrich >= 0.99 & enrich <= 1.01] <- ""
 	out$Signif <- signif

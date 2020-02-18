@@ -21,7 +21,7 @@
 	file.delete( outFile)
 
 	# call it!
-	system( cmdLine)
+	catch.system( cmdLine)
 	if ( ! file.exists( outFile)) {
 		cat( "\nError:  No result made by CLUSTAL")
 		return(NULL)

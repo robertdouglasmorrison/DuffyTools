@@ -41,7 +41,7 @@
 
 	# call BLAST
 	if (verbose) cat( "\nCalling BLAST: \nCommand line:  ", cmdline, "\n")
-	system( cmdline)
+	catch.system( cmdline)
 	if (verbose) cat( "\nDone.\nWrote file: ", outfile, "\n")
 	return()
 }
@@ -111,7 +111,7 @@
 
 	cmdline <- paste( useprogram, " -in ", fastafile, " -dbtype ", dbtype, 
 			" -out ", outname, " ", blastArgs)
-	system( cmdline)
+	catch.system( cmdline)
 }
 
 
