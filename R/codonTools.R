@@ -436,7 +436,8 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 				newNbases <- min( nCodingBases, length(snpDNA))
 				newNaa <- floor( newNbases/3)
 				nAAused <- 0
-				for ( j in seq( 2, newNbases, by=3)) {
+				if ( newNbases > 1) {
+				    for ( j in seq( 2, newNbases, by=3)) {
 					# account for the padding around the cum sum vector
 					ndna <- base::diff( baseCumSum[ c(j-1,j+2)])
 					naa <- round( ndna/3)
@@ -450,6 +451,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 						if ( thisStrand == "-") newstr2[j] <- myReverse( newstr2[j])
 						nAAused <- nAAused + naa
 					}
+				    }
 				}
 				whodiff <- WHICH( newstr2 != newstr)
 				for ( ic in whodiff) {
