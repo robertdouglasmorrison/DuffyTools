@@ -471,7 +471,7 @@
 			out <- data.frame( "Component"=rownames(pcts), "N1"=length(isGrp1), "N2"=length(isGrp2), 
 					"Avg1"=round(v1,digits=2), "Avg2"=round(v2,digits=2), 
 					"Log2Fold"=round(fold,digits=3), "P.value"=round(pval,digits=5), 
-					stringsAsFactors=F)
+					"PI.value"=round( piValue(fold,pval), digits=3), stringsAsFactors=F)
 			colnames(out)[2:3] <- paste( "N", c( label1, label2), sep="_")
 			colnames(out)[4:5] <- paste( "Avg", c( label1, label2), sep="_")
 			ord <- diffExpressRankOrder( out$Log2Fold, out$P.value, wt.fold=wt.fold, wt.pvalue=wt.pvalue)

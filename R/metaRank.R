@@ -8,7 +8,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 			keepIntergenics=FALSE, missingGenes=c("drop", "fill", "na"), 
 			missingValue=0, naDropPercent=0.5, nFDRsimulations=0,
 			diffExpressPvalueCorrection=FALSE, 
-			direction=c("UP","DOWN"), verbose=TRUE) {
+			direction=c("UP","DOWN"), cleanHyperlinks=FALSE, verbose=TRUE) {
 
 	missingGenes <- match.arg( missingGenes)
 	direction <- match.arg( direction)
@@ -37,6 +37,10 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 			nonGenes <- subset( getCurrentGeneMap(), REAL_G == FALSE)$GENE_ID
 			drops <- which( tmp[[ geneColumn]] %in% nonGenes)
 			if ( length(drops) > 0) tmp <- tmp[ -isNG, ]
+		}
+		# optionally strip out hyperlinks, like in GeneSet PathName usages...
+		if (cleanHyperlinks) {
+			tmp[[ geneColumn]] <- cleanGeneSetModuleNames( tmp[[ geneColumn]], wrapParentheses=F)
 		}
 
 		# by default, all the files are assumed to be already sorted in "Up-regulated" order
@@ -93,7 +97,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 			pvalM[ where > 0, i] <- thisDF[[ pvalColumn[1]]][where]
 			pvalM[ isMissing, i] <- missingPval
 		}
-		hasPROD <- ( productColumn %in% colnames(thisDF))
+		hasPROD <- ( !is.na(productColumn) && (productColumn %in% colnames(thisDF)))
 		if ( hasPROD) {
 			allProds[ where > 0] <- ifelse( allProds[where > 0] == "", 
 							thisDF[[ productColumn]][where], allProds[ where > 0])
@@ -188,9 +192,13 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		avgPval <- rep.int( NA, nrow(pvalM))
 	}
 
-	out <- data.frame( allG, allProds, avgFold, avgPval, avgRank, rankM, 
-			stringsAsFactors=FALSE)
-	colnames(out) <- c( geneColumn, productColumn, valueColumn, "AVG_PVALUE", "AVG_RANK", colnames( rankM))
+	if ( ! is.na( productColumn)) {
+		out <- data.frame( allG, allProds, avgFold, avgPval, avgRank, rankM, stringsAsFactors=FALSE)
+		colnames(out) <- c( geneColumn, productColumn, valueColumn, "AVG_PVALUE", "AVG_RANK", colnames( rankM))
+	} else {
+		out <- data.frame( allG, avgFold, avgPval, avgRank, rankM, stringsAsFactors=FALSE)
+		colnames(out) <- c( geneColumn, valueColumn, "AVG_PVALUE", "AVG_RANK", colnames( rankM))
+	}
 
 	# do the final ordering by Average Rank
 	if ( pvalueColumn != "") {
@@ -266,7 +274,8 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 			rank.average.FUN=sqrtmean, value.average.FUN=mean,
 			missingGenes=c("drop", "fill", "na"), missingValue=0,
 			naDropPercent=0.5, diffExpressPvalueCorrection=FALSE, 
-			direction="UP", nFDRsimulations=0, verbose=TRUE) {
+			direction="UP", nFDRsimulations=0, cleanHyperlinks=FALSE, 
+			verbose=TRUE) {
 
 	missingGenes <- match.arg( missingGenes)
 
@@ -287,6 +296,10 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 		if ( ! geneColumn %in% colnames(tmp)) {
 			cat( "\nGeneID column not found.   DataFrame: ", i, "\t", names(df.list)[i])
 			next
+		}
+		# optionally strip out hyperlinks, like in GeneSet PathName usages...
+		if (cleanHyperlinks) {
+			tmp[[ geneColumn]] <- cleanGeneSetModuleNames( tmp[[ geneColumn]], wrapParentheses=F)
 		}
 		nDF <- nDF + 1
 		allDF[[ nDF]] <- tmp
@@ -309,7 +322,7 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 
 	for( i in 1:nDF) {
 		thisDF <- allDF[[i]]
-		hasPROD <- ( productColumn %in% colnames(thisDF))
+		hasPROD <- ( !is.na(productColumn) && (productColumn %in% colnames(thisDF)))
 		theseGenes <- thisDF[[geneColumn]]
 		where <- match( allG, theseGenes, nomatch=0)
 		rankM[ where > 0, i] <- where[ where > 0]
@@ -408,9 +421,13 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 	avgFold <- apply( foldM, MARGIN=1, FUN=value.average.FUN, na.rm=T)
 	#avgPval <- apply( pvalM, MARGIN=1, FUN=logmean, na.rm=T)
 	avgPval <- apply( pvalM, MARGIN=1, FUN=p.combine)
-	out <- data.frame( allG, allProds, avgFold, avgRank, avgPval, rankM, 
-			stringsAsFactors=FALSE)
-	colnames(out) <- c( geneColumn, productColumn, valueColumn, "AVG_RANK", "AVG_PVALUE", colnames( rankM))
+	if ( ! is.na(productColumn)) {
+		out <- data.frame( allG, allProds, avgFold, avgRank, avgPval, rankM, stringsAsFactors=FALSE)
+		colnames(out) <- c( geneColumn, productColumn, valueColumn, "AVG_RANK", "AVG_PVALUE", colnames( rankM))
+	} else {
+		out <- data.frame( allG, avgFold, avgRank, avgPval, rankM, stringsAsFactors=FALSE)
+		colnames(out) <- c( geneColumn, valueColumn, "AVG_RANK", "AVG_PVALUE", colnames( rankM))
+	}
 
 	# do the final ordering by Average Rank
 	ord <- order( out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])

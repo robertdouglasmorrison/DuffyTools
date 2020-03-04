@@ -80,6 +80,8 @@
 
 	# 1. strip out any hyperlink anchors
 	out <- sub( " ?<a.+/a>", "", out)
+	# 1.5 strip out any hypertext 'blank space'
+	out <- sub( " ?\\&nbsp;", "", out)
 
 	# 2.  any () get a second line and may get clipped
 	if (wrapParentheses) {
@@ -627,8 +629,8 @@ geneSetFitDataFrame <- function( tbl, geneSets=defaultGeneSets(), speciesID=getC
 	cat( "\nCalling 'stepAIC()' to find the best linear model..")
 	require( MASS)
 	SAVEformula <<- formula <- reformulate( termlabels=colnames(geneCalls), response="obsFolds", intercept=FALSE)
-	lmAns1 <- lm( formula, data=as.data.frame(geneCalls))
-	SAVEans <<- lmAns2 <- stepAIC( lmAns1, trace=0)
+	SAVEans1 <<- lmAns1 <- lm( formula, data=as.data.frame(geneCalls))
+	SAVEans2 <<- lmAns2 <- stepAIC( lmAns1, trace=0)
 	cat( "  Done.")
 
 	# extract the coefficients

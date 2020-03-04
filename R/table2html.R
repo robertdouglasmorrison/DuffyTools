@@ -28,6 +28,8 @@
 	  		for ( j in 1:length( linkColumnNames)) {
 				gTextName <- x[[ linkColumnNames[j] ]]
 				gTargetName <- x[[ linkTargetColumnNames[j] ]]
+				# quietly ignore if those names are not in the file
+				if ( ! (linkColumnNames[j] %in% colnames(x))) next
 				# we are making it easier to have a link say/show one thing (Name) 
 				# but hyperlink contentID (Target) is from another column
 				plotLinks <- makeGenePlotLinks( gTargetName, path=linkPaths[j], type="html", 

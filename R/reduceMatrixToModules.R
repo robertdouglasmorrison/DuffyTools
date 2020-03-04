@@ -50,8 +50,9 @@ reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rown
 	}
 	Cptrs <- lapply( Cgroups, function(x) match( x, Cnames))
 
-	outV <- outP <- outN <- matrix( NA, nrow=NR, ncol=NC)
-	colnames(outN) <- colnames(outV) <- colnames(outP) <- CgroupNames
+	# as of 2020, adding in a PI Value result as well
+	outV <- outP <- outN <- outPI <- matrix( NA, nrow=NR, ncol=NC)
+	colnames(outN) <- colnames(outV) <- colnames(outP) <- colnames(outPI) <- CgroupNames
 	#rownames(outN) <- rownames(outV) <- rownames(outP) <- RgroupNames
 	outNames <- RgroupNames
 	nGenes <- sapply( Rptrs, length)
@@ -107,6 +108,7 @@ reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rown
 	if( length( drops) > 0) {
 		outV <- outV[ -drops, ]
 		outP <- outP[ -drops, ]
+		outPI <- outPI[ -drops, ]
 		outN <- outN[ -drops, ]
 		outNames <- outNames[ -drops]
 		nGenes <- nGenes[ -drops]
@@ -115,17 +117,11 @@ reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rown
 
 	# we may have been asked to force a trait to be the baseline, i.e. hardwire to zero
 	# now done ahead of time, to be in effect when we measure P values
-	#if ( ! is.null( baselineTrait)) {
-	#	baselineColumn <- match( baselineTrait, colnames(outV), nomatch=0)
-	#	if ( baselineColumn == 0) {
-	#		cat( "\nError in 'ReduceMatrixToModules()':  baseline trait not a valid choice.")
-	#		cat( "\nGiven: ", baselineTrait, "  \tChoices: ", colnames(outV))
-	#		stop()
-	#	}
-	#	cat( "\nLinear shift to fix as baseline trait:  ", baselineTrait)
-	#	shiftV <- outV[ ,baselineColumn]
-	#	for (k in 1:nrow(outV)) outV[ k, ] <- outV[ k, ] - shiftV[k]
-	#}
 
-	return( list( "moduleNames"=outNames, "matrix"=outV, "p.value"=outP, "geneCounts"=nGenes))
+	# given all the M values and P-values, make those PI values
+	for ( j in 1:ncol(outV)) {
+		outPI[ , j] <- piValue( outV[,j], outP[,j])
+	}
+
+	return( list( "moduleNames"=outNames, "matrix"=outV, "p.value"=outP, "pi.value"=outPI, "geneCounts"=nGenes))
 }

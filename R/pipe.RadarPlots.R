@@ -67,6 +67,8 @@
 		write.table( ans, csvFile, sep=",", quote=T, row.names=F)
 
 		nOut <- min( Nshow, nrow(ans))
+		# if the full set is just a bit larger, go ahead and keep them all?...
+		if ( Nshow * 1.25 > nrow(ans)) nOut <- nrow(ans)
 		out <- ans[ 1:nOut, ]
 
 	} else {
@@ -105,10 +107,13 @@
 			write.table( ans, csvFile, sep=",", quote=T, row.names=F)
 
 			nOut <- min( Nshow, nrow(ans))
+			# if the full set is just a bit larger, go ahead and keep them all?...
+			if ( Nshow * 1.25 > nrow(ans)) nOut <- nrow(ans)
 			smallOut <- ans[ 1:nOut, ]
 			out[[k]] <- smallOut
 		}
 		names( out) <- geneSets
+		cat( "\nDone Radar Plots for", length(geneSets), "GeneSets.\n")
 	}
 
 	# make a single combined .CSV file of all the gene sets together
@@ -123,7 +128,7 @@
 				groupColumn="Group", colorColumn="Color", 
 				legend.prefix=NULL, legend.order=NULL, legend.cex=1.0,
 				geneSet=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
-				reload=FALSE, Nshow=36, 
+				reload=FALSE, Nshow=24, 
 				start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
 				radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, main=NULL, 
 				wrapParentheses=TRUE, ...)
@@ -203,6 +208,7 @@
 				sample.names=colnames(radarMA), baselineTrait=baselineGroup)
 	mShow <- radarMOD <- radarAns$matrix
 	pShow <- radarPvalue <- radarAns$p.value
+	piShow <- radarPIvalue <- radarAns$pi.value
 	validModuleNames <- radarAns$moduleNames
 	nGenes <- radarAns$geneCounts
 
@@ -212,17 +218,24 @@
 
 	# trim down to less groups if we need to
 	Nshow <- min( Nshow, nrow( radarMOD))
+	# if the full set is just a bit larger, go ahead and keep them all?...
+	if ( Nshow * 1.25 > nrow(radarMOD)) Nshow <- nrow(radarMOD)
 
 	# use both Pvalue and magnitudes
 	magnitudes <- diff( apply( radarMOD, 1, range))
 	bestPs <- apply( radarPvalue, 1, min)
 	ord <- diffExpressRankOrder( magnitudes, bestPs, wt.fold=1, wt.pvalue=1)
+	# also adding in piValues too, as a third score/rank metric 
+	bestPIvals <- piValue( magnitudes, bestPs)
 	mShow <- radarMOD[ ord[1:Nshow], ]
 	pShow <- radarPvalue[ ord[1:Nshow], ]
+	piShow <- radarPIvalue[ ord[1:Nshow], ]
 	mOut <- radarMOD[ ord, ]
 	pOut <- radarPvalue[ ord, ]
+	piOut <- radarPIvalue[ ord, ]
 	magniOut <- magnitudes[ ord]
 	bestPout <- bestPs[ ord]
+	bestPIout <- bestPIvals[ ord]
 	validModuleNames <- validModuleNames[ ord[ 1:Nshow]]
 	fullPathNames <- fullPathNames[ ord]
 	nGenes <- nGenes[ ord]
@@ -231,6 +244,7 @@
 	ord <- order( sub( "M.+: +", "", validModuleNames), sub( "(^M[0-9]+\\.[0-9]+:)(.+)", "\\1", validModuleNames))
 	mShow <- mShow[ ord, ]
 	pShow <- pShow[ ord, ]
+	piShow <- piShow[ ord, ]
 	validModuleNames <- validModuleNames[ ord]
 
 	# plot it now
@@ -274,15 +288,21 @@
 	# let's not keep the HTML links...
 	fullPathNames <- cleanGeneSetModuleNames( fullPathNames, wrap=F)
 	out <- data.frame( "PathName"=fullPathNames, "N_Genes"=nGenes, "DeltaFold"=round( magniOut, digits=3),
-				"BestPvalue"=formatC( bestPout, format="e", digits=2), round(mOut,digits=3), 
-				formatC( pOut,format="e",digits=2), stringsAsFactors=F)
-	colnames(out) <- c( "PathName", "N_Genes", "DeltaFold", "BestPvalue", 
-				paste( "Fold", colnames(mOut), sep="_"), paste( "Pvalue", colnames(mOut), sep="_"))
+				"BestPvalue"=formatC( bestPout, format="e", digits=2), 
+				"BestPIvalue"=round( bestPIout, digits=3), 
+				round( mOut, digits=3), 
+				formatC( pOut, format="e", digits=2), 
+				round( piOut, digits=3), stringsAsFactors=F)
+	colnames(out) <- c( "PathName", "N_Genes", "DeltaFold", "BestPvalue", "BestPIvalue",
+				paste( "Fold", colnames(mOut), sep="_"), paste( "Pvalue", colnames(mOut), sep="_"),
+				paste( "PIvalue", colnames(mOut), sep="_"))
 	rownames(out) <- 1:nrow(out)
 
-	# reorder to get the 2 values per group together
-	outOrd <- c( 1:4)
-	for ( k in 1:ncol(mOut)) outOrd <- c( outOrd, (k+4), (ncol(mOut)+k+4))
+	# reorder to get the 2 (now 3!) values per group together
+	#outOrd <- c( 1:4)
+	#for ( k in 1:ncol(mOut)) outOrd <- c( outOrd, (k+4), (ncol(mOut)+k+4))
+	outOrd <- c( 1:5)
+	for ( k in 1:ncol(mOut)) outOrd <- c( outOrd, (k+5), (ncol(mOut)+k+5), (ncol(mOut)*2+k+5))
 	out <- out[ , outOrd]
 
 	return(out)
@@ -359,6 +379,8 @@
 
 		# trim down to less groups if we need to
 		Nshow <- min( Nshow, nrow( radarMOD))
+		# if the full set is just a bit larger, go ahead and keep them all?...
+		if ( Nshow * 1.25 > nrow(radarMOD)) Nshow <- nrow(radarMOD)
 
 		# use both Pvalue and magnitudes
 		magnitudes <- diff( apply( radarMOD, 1, range))
@@ -485,8 +507,20 @@
 	out <- out[ ord, ]
 	if ( nrow(out)) rownames(out) <- 1:nrow(out)
 
+	# Note about Pi Values:   their scaling is relative to each set's distribution of P values
+	# to be most fair after combining, we should recalculate them
+	if ( "BestPIvalue" %in% colnames(out)) {
+		out$BestPIvalue <- piValue( out$DeltaFold, out$BestPvalue)
+		myFoldCols <- grep( "^Fold_", colnames(out))
+		for (k in myFoldCols) {
+			# triplets of Fold, Pval, PIval
+			out[[k+2]] <- piValue( out[[k]], out[[k+1]])
+		}
+	}
+
 	outfile <- file.path( radarPath, "Radar.All.CombinedGeneSets.csv")
 	write.table( out, outfile, sep=",", quote=T, row.names=F)
 
 	return( out)
 }
+

@@ -136,15 +136,17 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		pvalOut <- rep.int( 1, length(gnames))
 		pvalOut[ gPtr > 0] <- deseqOut$pval[ gPtr]
 		pvalOut[ is.na( pvalOut)] <- 1
+		pivalOut <- piValue( foldOut, pvalOut)
 	
 		# round to sensible digits of resolution
 		foldOut <- round( foldOut, digits=4)
+		pivalOut <- round( pivalOut, digits=4)
 		v1 <- round( v1, digits=4)
 		v2 <- round( v2, digits=4)
 
-		out <- data.frame( gnames, gprod, foldOut, pvalOut, v2, v1,
+		out <- data.frame( gnames, gprod, foldOut, pvalOut, pivalOut, v2, v1,
 				stringsAsFactors=F)
-		colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", 
+		colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", "PIVALUE",
 				targetGroup, notTargetGroup)
 
 	}  # old DESeq package
@@ -177,6 +179,7 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		gprod <- gene2ProductAllSpecies( gnames)
 		foldOut <- resDF$log2FoldChange
 		pvalOut <- resDF$pvalue
+		pivalOut <- piValue( foldOut, pvalOut)
 
 		# calc the average per group, using the normalized count data
 		mNorm <- counts( ddsAns, normalized=TRUE)
@@ -185,12 +188,13 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 
 		# round to sensible digits of resolution
 		foldOut <- round( foldOut, digits=4)
+		pivalOut <- round( pivalOut, digits=4)
 		v1 <- round( v1, digits=2)
 		v2 <- round( v2, digits=2)
 
-		out <- data.frame( gnames, gprod, foldOut, pvalOut, v2, v1,
+		out <- data.frame( gnames, gprod, foldOut, pvalOut, pivalOut, v2, v1,
 				stringsAsFactors=F)
-		colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", 
+		colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", "PIVALUE",
 				targetGroup, notTargetGroup)
 	}
 

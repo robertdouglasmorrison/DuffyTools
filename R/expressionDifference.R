@@ -35,6 +35,7 @@
 		ord <- diffExpressRankOrder( sml$LOG2_FOLD, sml$P_VALUE)
 		sml <- sml[ ord, ]
 		rownames(sml) <- 1:nrow(sml)
+		sml$PI_VALUE <- piValue( sml$LOG2_FOLD, sml$P_VALUE)
 
 		nout <- nout + 1
 		out[[nout]] <- sml

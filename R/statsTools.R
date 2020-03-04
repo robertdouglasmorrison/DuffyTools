@@ -20,4 +20,4 @@ cv <- function( x, y=NULL, na.rm=FALSE) {
 
 	return( mySD / myMean)
 }
-		
+

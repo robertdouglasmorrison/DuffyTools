@@ -211,26 +211,27 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 		gNames <- names( ans$mean)
 		pathGenes <- sapply( ans$pathway, function(x) paste( sort( unique( gNames[x])), collapse=";"))
 		pathFold <- round( as.numeric( ans$path.mean), digits=3)
+		pival <- round( piValue( pathFold, pval), digits=3)
 	
 		# we gave QuSage the short names, put the longer full names back
 		where <- match( pathName, shortNames)
 		pathName <- longNames[ where]
 		if ( addCellTypes) {
 			cellType <- getGeneSetCellType( pathName)
-			nKeep <- 7
+			nKeep <- 8
 			out <- data.frame( "PATHWAY"=pathName, "CellType"=cellType, "LOG2FOLD"=pathFold, 
-					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "N_GENES"=pathSize, 
+					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "PIVALUE"=pival, "N_GENES"=pathSize, 
 					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
 		} else if ( addCellTypes) {
 			lifeCycle <- getGeneSetLifeCycle( pathName)
-			nKeep <- 7
+			nKeep <- 8
 			out <- data.frame( "PATHWAY"=pathName, "LifeCycle"=lifeCycle, "LOG2FOLD"=pathFold, 
-					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "N_GENES"=pathSize, 
+					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "PIVALUE"=pival, "N_GENES"=pathSize, 
 					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
 		} else {
-			nKeep <- 6
+			nKeep <- 7
 			out <- data.frame( "PATHWAY"=pathName, "LOG2FOLD"=pathFold, 
-					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "N_GENES"=pathSize, 
+					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "PIVALUE"=pival, "N_GENES"=pathSize, 
 					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
 		}
 		ord <- diffExpressRankOrder( out$LOG2FOLD, out$PVALUE, wt.pvalue=2)
@@ -242,7 +243,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 		cat( "\nUsing previously calculated QuSage results..")
 		outfile <- file.path( path, paste( group1, prefix, "UP.QuSage", descriptor, "csv", sep="."))
 		out <- read.csv( outfile, as.is=T)
-		nKeep <- if (addCellTypes) 7 else 6
+		nKeep <- if (addCellTypes) 8 else 7
 	}
 
 	otherGrpString <- paste( setdiff( sort( unique( labels)), group1), collapse=" + ")

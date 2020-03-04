@@ -4,6 +4,7 @@
 
 `pipe.MetaGeneSets` <- function( sampleIDset, folderName="", speciesID=getCurrentSpecies(), annotationFile="Annotation.txt",
 				optionsFile="Options.txt", results.path=NULL,  groupColumn="Group", colorColumn="Color", 
+				geneSets=defaultGeneSets(speciesID), 
 				NgeneSets=500, verbose=TRUE, label="", nFDRsimulations=0,
 				doGeneSets=TRUE, doMissing=TRUE, baselineGroup=NULL, ...) {
 
@@ -52,7 +53,7 @@
 		pipe.RadarPlots( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
 				groupColumn=groupColumn, colorColumn=colorColumn, baselineGroup=baselineGroup,
-				main=paste( "Comparison:  ",folderName), ...)
+				geneSets=geneSets, main=paste( "Comparison:  ",folderName), ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
 		radarFolder <- grep( "/RadarPlots", subFolders, value=T)[1]
@@ -63,7 +64,8 @@
 	if ( doGeneSets || (!hasDensity && doMissing)) {
 		pipe.GeneSetDensity( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
-				groupColumn=groupColumn, colorColumn=colorColumn, doFDR=F, NgeneSets=NgeneSets, ...)
+				groupColumn=groupColumn, colorColumn=colorColumn, doFDR=F, NgeneSets=NgeneSets, 
+				geneSets=geneSets, ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
 		densityFolder <- grep( "/CombinedGeneSets", subFolders, value=T)[1]
@@ -74,7 +76,7 @@
 	if ( doGeneSets || (!hasEnrich && doMissing)) {
 		pipe.GeneSetEnrichment( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
-				groupColumn=groupColumn, ...)
+				geneSets=geneSets, groupColumn=groupColumn, ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
 		enrichFolder <- grep( "/Enrichment", subFolders, value=T)[1]
@@ -85,7 +87,7 @@
 	if ( doGeneSets || (!hasQuSage && doMissing)) {
 		pipe.QuSage( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
-				groupColumn=groupColumn, ...)
+				geneSets=geneSets, groupColumn=groupColumn, ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
 		qusageFolder <- grep( "/QuSage", subFolders, value=T)[1]
