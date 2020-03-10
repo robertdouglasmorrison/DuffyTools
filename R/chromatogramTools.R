@@ -564,7 +564,8 @@
 	xLimits <- c( 1, NT)
 	AAtoShow <- ""
 	AAoffset <- 1
-	if ( is.logical(showAA) && showAA) AAtoShow <- chromoObj$AA_Calls[AAoffset]
+	showAllAA <- ( is.character(showAA) && showAA =="all")
+	if ( showAllAA || (is.logical(showAA) && showAA)) AAtoShow <- chromoObj$AA_Calls[AAoffset]
 	if ( "BestAAframe" %in% colnames(chromoObj)) {
 		AAoffset <- as.integer( chromoObj$BestAAframe)
  		AAtoShow <- chromoObj$AA_Calls[AAoffset]
@@ -602,10 +603,25 @@
 					font=2, lwd.ticks=0, cex.axis=cex*1.4)
 		}
 	}
+	if ( showAllAA) {
+		frameToDo <- setdiff( 1:3, AAoffset)
+		lineNow <- 2.0
+		for (frame in frameToDo) {
+			AAtoShow <- chromoObj$AA_Calls[frame]
+			aaCall <- strsplit( AAtoShow, split="")[[1]]
+			NAA <- min( length(aaCall), round(NB/3))
+			for (k in 1:NAA) {
+				kk <- (k-1) * 3 + 1 + frame
+				axis( side=1, at=peakPos[kk], label=aaCall[k], line=lineNow, col.axis='black', col.ticks=NA, 
+					font=1, lwd.ticks=0, cex.axis=cex*1.0)
+			}
+			lineNow <- lineNow + 0.75
+		}
+	}
 
 	if ( showTraceRowNumbers) {
 		traceRowValues <- as.numeric( rownames(traceM)[ firstTracePoint:lastTracePoint])
-		myAtValues <- pretty( traceRowValues)
+		myAtValues <- pretty( traceRowValues, n=9)
 		myAts <- myAtValues - traceRowValues[1] + 1
 		axis( side=3, at=myAts, labels=myAtValues, padj=1)
 	}
@@ -648,6 +664,45 @@
 				showTraceRowNumbers=showTraceRowNumbers, showConfidence=showConfidence, 
 				min.unit.score=min.unit.score, ...)
 	}
+}
+
+
+`plotFullChromatogramAsPDF` <- function( chromoFile, label=basename(chromoFile), reference.seq=NULL, 
+				cex=1, forceYmax=NULL, showAA="all", showTraceRowNumbers=TRUE, 
+				showConfidence=TRUE, plot.path=dirname(chromoFile), ...) {
+
+	# given a chromatogram object, show the whole thing
+	chromoObj <- loadChromatogram( chromoFile)
+	if ( is.null(chromoObj)) return(NULL)
+
+	# PDF will be put where the raw data is
+	pdfFile <- sub( ".ab1$", ".pdf", basename(chromoFile))
+	pdfFile <- file.path( plot.path, pdfFile)
+
+	# use the length of the raw data to set the device
+	nTraceRows <-nrow( chromoObj$TraceM)
+	plotWidth <- round( nTraceRows/95)
+	plotHeight <- 6
+
+	# since the raw data usually has big spikes, clip Y a bit
+	if ( is.null( forceYmax)) {
+		peakPts <- chromoObj$PeakPosition
+		hts <- apply( chromoObj$TraceM[ peakPts, ], MARGIN=1, max, na.rm=T)
+		forceYmax <- quantile( hts, 0.96)
+	}
+	
+	# build a informative label
+	label <- paste( label, "     ", "DNA_Len=", nchar(chromoObj$DNA_Calls[1]), "   AA_Len=", 
+			nchar(chromoObj$AA_Calls[1]), "   Avg_Confidence=", 
+			round(mean(chromoObj$PeakConfidence)*100,digits=1))
+
+	pdf( pdfFile, width=plotWidth, height=plotHeight)
+
+	plotChromatogram( chromoObj, label=label, seq=reference.seq, showAA=showAA,
+			showTraceRowNumbers=showTraceRowNumbers, showConfidence=showConfidence, 
+			forceYmax=forceYmax, ...)
+
+	dev.off()
 }
 
 

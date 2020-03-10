@@ -30,14 +30,24 @@
 
 
 	# some are Bioconductor...
-	source( "http://bioconductor.org/biocLite.R")
-
 	BIOC_Set <- c( "Biostrings", "DESeq", "DESeq2", "edgeR", "siggenes", "ROC", "sangerseqR", "qusage")
+
+	# as of R3.5, Bioconductor uses a newer method
+	useBiocLite <- ( version$major == "2" || ( version$major == "3" && as.numeric( version$minor) < 5))
+	if ( useBiocLite) {
+		source( "http://bioconductor.org/biocLite.R")
+	} else {
+		if ( ! requireNamespace( "BiocManager", quietly=T)) install.packages( "BiocManager")
+	}
 
 	for ( pack in BIOC_Set) {
 		if ( ! ( pack %in% packages)) {
 			cat( "\nPackage '", pack, "' not installed yet.   Loading from Bioconductor..\n", sep="")
-			biocLite( pack, suppressUpdates=TRUE, suppressAutoUpdate=TRUE)
+			if ( useBiocLite) {
+				biocLite( pack, suppressUpdates=TRUE, suppressAutoUpdate=TRUE)
+			} else {
+				BiocManager::install( pack, suppressUpdates=TRUE, suppressAutoUpdate=TRUE)
+			}
 			success <- require( pack, character.only=TRUE)
 			if ( success) {
 				Nadd <- Nadd + 1
