@@ -252,6 +252,9 @@
 	addTarget( "CMV", "CMV", "CMV")
 	addTarget( "BCG", "BCG", "BCG")
 
+	# Pichia for cell production systems
+	addTarget( "Kphaf", "Kphaf", "Kphaf")
+
 	setCurrentTarget( "HsPf")
 	cat( "  Done.\n")
 	return()
