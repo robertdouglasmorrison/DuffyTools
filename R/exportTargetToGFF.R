@@ -54,7 +54,7 @@
 			} else {
 				ord <- order( emap$END, decreasing=TRUE)
 			}
-			if ( any( ord != 1:N)) emap <- emap[ ord, ]
+			if ( any( ord != 1:Nexons)) emap <- emap[ ord, ]
 		}
 		pos <- as.integer( emap$POSITION)
 		end <- as.integer( emap$END)
@@ -68,9 +68,9 @@
 		myPhase <- rep.int( 0, Ncds)
 		if ( Ncds > 1) {
 			cumbp <- cumsum( nbp)
-			isMod1 <- which( cumbp[1:(N-1)] %% 3 == 1)
+			isMod1 <- which( cumbp[1:(Ncds-1)] %% 3 == 1)
 			myPhase[ isMod1 + 1] <- 2
-			isMod2 <- which( cumbp[1:(N-1)] %% 3 == 2)
+			isMod2 <- which( cumbp[1:(Ncds-1)] %% 3 == 2)
 			myPhase[ isMod2 + 1] <- 1
 		}
 		attribs <- paste( "ID=", cdsid, ";Parent=", mRNAid, sep="")
