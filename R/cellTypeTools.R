@@ -264,11 +264,23 @@
 }
 
 
-cellTypeExpression <- function( m, mode=c("sqrtmean","log2")) {
+`cellTypeExpression` <- function( m, mode=c("sqrtmean","log2"), min.expression=0, verbose=TRUE) {
 
 	# given a matrix of gene expression, reduce it to a matrix of cell type expression
-	gids <- shortGeneName( rownames(m), keep=1)
+	if ( is.null( rownames(m))) stop( "Matrix must have genes as rownames.")
 
+	# drop genes with very low expression?
+	if ( min.expression > 0) {
+		if (verbose) cat( "\nDropping gene rows with expression < ", min.expression)
+		bigV <- apply( m, 1, max, na.rm=T)
+		drops <- which( bigV < min.expression)
+		if ( length( drops)) {
+			m <- m[ -drops, ]
+			if (verbose) cat( "\nN_Genes dropped: ", length(drops))
+		}
+	}
+	
+	gids <- shortGeneName( rownames(m), keep=1)
 	cids <- gene2CellType( gids)
 	cellTypes <- sort( unique( cids))
 	NCT <- length( cellTypes)
@@ -300,3 +312,109 @@ cellTypeExpression <- function( m, mode=c("sqrtmean","log2")) {
 
 	return( out)
 }
+
+
+`cellTypeHeatmap` <- function( m, nColors=50, min.expression=0, verbose=FALSE, ...) {
+
+	# given a matrix of gene expression, make a heatmap that reduces it to a matrix of 
+	# cell types by samples
+
+	# step 1:  reduce the matrix of genes to a matrix of cell type expression values
+	cellM <- cellTypeExpression( m, min.expression=min.expression, verbose=verbose)
+	cellIDs <- rownames(cellM)
+
+	heatColors <- heatMapColors( nColors, palette="red-white-blue", rampExponent=1, plotRamp=F)
+
+	# step 2:  turn that into heatmap data, and show it
+	# convert  expression to M-values
+	cellM2 <- expressionMatrixToMvalue( cellM)
+
+	# and pass it to the heatmap tool
+	ans <- heatmap( cellM2, heatColors=heatColors, ...)
+	return( invisible( ans))
+}
+
+
+`cellTypeGeneHeatmap` <- function( m, nColors=50, nGenesPerCellType=c("100","250","500","1000"), excludeCellTypePattern=NULL,
+					includeCellTypePattern=NULL, speciesID=getCurrentSpecies(), verbose=T, ...) {
+
+	# given a matrix of gene expression, keep only the top N genes from the selected cell types,
+	# and pass that subset on to the heatmap tool.
+	if ( is.null( rownames(m))) stop( "Matrix must have genes as rownames.")
+	rownames(m) <- shortGeneName( rownames(m), keep=1)
+
+	# step 1:  get the cell type data, and down-select the gene sets to use
+	if ( getCurrentSpecies() != speciesID) setCurrentSpecies( speciesID)
+	dataSetName <- paste( getCurrentSpeciesFilePrefix(), "HumanImmuneSubsets", sep=".")
+	allGeneSets <- NULL
+	data( list=dataSetName, envir=environment())
+	if ( is.null( allGeneSets)) {
+		cat( "\nFailed to load needed cell type dataset: ", dataSetName, "\nUnable to plot...")
+		return(NULL)
+	}
+	geneSetNames <- names(allGeneSets)
+
+	# keep just the right sized sets
+	nGenesPerCellType <- match.arg( nGenesPerCellType)
+	keep <- grep( paste( "top", as.character(nGenesPerCellType), "genes", sep=" "), geneSetNames)
+	geneSetNames <- geneSetNames[ keep]
+	# then the gene set name include/exclude patterns
+	if ( ! is.null( excludeCellTypePattern)) {
+		drops <- grep( excludeCellTypePattern, geneSetNames)
+		if ( length(drops)) geneSetNames <- geneSetNames[ -drops]
+	}
+	if ( ! is.null( includeCellTypePattern)) {
+		keep <- grep( includeCellTypePattern, geneSetNames)
+		geneSetNames <- geneSetNames[ keep]
+	}
+	NGS <- length(geneSetNames)
+	if (verbose) cat( "\nFinal set of Cell Type Gene Sets: ", NGS, "\n", geneSetNames)
+	if ( ! NGS) {
+		cat( "\nNo Cell Type subsets selected..")
+		return(NULL)
+	}
+
+	# find the genes for each of these gene sets
+	geneSetGenes <- vector( mode="list", length=NGS)
+	for ( i in 1:NGS) {
+		whereGS <- match( geneSetNames[i], names(allGeneSets))
+		myGenes <- allGeneSets[[ whereGS]]
+		whereM <- match( myGenes, rownames(m), nomatch=0)
+		geneSetGenes[[i]] <- whereM[ whereM > 0]
+		# make sure we see genes...
+		if ( all( whereM == 0)) cat( "\nWarning: no genes found for: ", geneSetNames[i], "  Check current species.")
+	}
+	nGenesPerSet <- sapply( geneSetGenes, length)
+
+	# step 2:  with the down seletion done, ready to make the matrix of genes we want
+	allGenePtrs <- unlist( geneSetGenes)
+	mGeneSetGenes <- m[ allGenePtrs, ]
+
+	# step 3:  get ready to send it to the heatmap tool
+	heatColors <- heatMapColors( nColors, palette="red-white-blue", rampExponent=1, plotRamp=F)
+
+	# convert gene expression to M-values
+	M2 <- expressionMatrixToMvalue( mGeneSetGenes, verbose=verbose)
+
+	# create some side bar coloring
+	cellColors <- rainbow( NGS, end=0.85)
+	rowColors <- rep( cellColors, times=nGenesPerSet)
+	#cellColors <- rainbow( length(allGeneSets), end=0.85)
+	#rowColors <- rep( cellColors[ match(geneSetNames, names(allGeneSets))], times=nGenesPerSet)
+	# try to put each cell type name in the center of that band
+	rowNames <- rep.int( NA, nrow(M2))
+	useGeneSetNames <- sub( ": top.+", "", geneSetNames)
+	yBig <- cumsum( nGenesPerSet)
+	yHalf <- round( nGenesPerSet/2)
+	rowNames[ yBig - yHalf] <- useGeneSetNames
+	# and put them in alphabetical order, top to bottom
+	M2 <- M2[ rev( 1:nrow(M2)), ]
+	rowColors <- rev( rowColors)
+	rowNames <- rev( rowNames)
+
+	# and pass it to the heatmap tool
+	ans <- heatmap( M2, heatColors=heatColors, Rowv=NA, RowSideColors=rowColors, 
+			labRow=rowNames, cexRow=(0.2+1/log10(max(NGS,3))), verbose=verbose, ...)
+	return( invisible( ans))
+}
+

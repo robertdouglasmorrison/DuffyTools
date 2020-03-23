@@ -1,7 +1,7 @@
 # expressionMatrixToMvalule.R -- turn abundance into log 2 fold change
 
 
-`expressionMatrixToMvalue` <- function( x, average.FUN=median, minIntensity=0, small.offset=1) {
+`expressionMatrixToMvalue` <- function( x, average.FUN=median, minIntensity=0, small.offset=1, verbose=T) {
 
 
 	x <- as.matrix(x)
@@ -12,7 +12,7 @@
 	}
 	if ( minIntensity < 0) minIntensity <- 0
 	if (any( x <= minIntensity)) {
-		cat( "Clipping low abundance values at: ", minIntensity)
+		if (verbose) cat( "Clipping low abundance values at: ", minIntensity)
 		x[ x < minIntensity] <- minIntensity
 	}
 
