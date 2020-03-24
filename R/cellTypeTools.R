@@ -335,8 +335,9 @@
 }
 
 
-`cellTypeGeneHeatmap` <- function( m, nColors=50, nGenesPerCellType=c("100","250","500","1000"), excludeCellTypePattern=NULL,
-					includeCellTypePattern=NULL, speciesID=getCurrentSpecies(), verbose=T, ...) {
+`cellTypeGeneHeatmap` <- function( m, nColors=50, nGenesPerCellType=c("25","50","100","250","500","1000"), 
+					excludeCellTypePattern=NULL, includeCellTypePattern=NULL, 
+					speciesID=getCurrentSpecies(), verbose=T, ...) {
 
 	# given a matrix of gene expression, keep only the top N genes from the selected cell types,
 	# and pass that subset on to the heatmap tool.
