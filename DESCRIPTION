@@ -6,5 +6,5 @@ Date: 2019-11-20
 Author: Bob Morrison <bob.morrison@sbri.org>
 Maintainer: Bob Morrison <bob.morrison@sbri.org>
 Description: Useful tools and genome annotations for processing Plasmodium and mammalian host genomic data sets
-Depends: R (>= 2.4.0)
+Depends: R (>= 3.5.0)
 License: GPL (>= 2)

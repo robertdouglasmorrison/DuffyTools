@@ -57,6 +57,9 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		cat( "\nApplied a 1 to ", length(rowTweak), " rows with minimum read count of ", avgCnt)
 	}
 
+	# Fold Change is based on read counts, not RPKM, so make a proxy for minimum read depth
+	minimumREADS <- minimumRPKM * 10
+
 	# there are now 2 versions of DESeq -- see which we have
 	current <- installed.packages()
 	packages <- current[ ,"Package"]
@@ -132,7 +135,8 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		v1 <- v2 <- foldOut <- rep.int( 0, length(gnames))
 		v1[ gPtr > 0] <- deseqOut$baseMeanA[ gPtr]
 		v2[ gPtr > 0] <- deseqOut$baseMeanB[ gPtr]
-		foldOut <- log2( (v2+minimumRPKM) / (v1+minimumRPKM))
+		# use our floor of minimum reads to prevent divide by zero
+		foldOut <- log2( (v2+minimumREADS) / (v1+minimumREADS))
 		pvalOut <- rep.int( 1, length(gnames))
 		pvalOut[ gPtr > 0] <- deseqOut$pval[ gPtr]
 		pvalOut[ is.na( pvalOut)] <- 1
@@ -179,12 +183,23 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		gprod <- gene2ProductAllSpecies( gnames)
 		foldOut <- resDF$log2FoldChange
 		pvalOut <- resDF$pvalue
-		pivalOut <- piValue( foldOut, pvalOut)
 
 		# calc the average per group, using the normalized count data
 		mNorm <- counts( ddsAns, normalized=TRUE)
 		v2 <- apply( mNorm[ , which( cl == mine), drop=FALSE], MARGIN=1, FUN=average.FUN)
 		v1 <- apply( mNorm[ , which( cl == other), drop=FALSE], MARGIN=1, FUN=average.FUN)
+
+		# the fold change reported when read count is near zero is unrealistic
+		# recalculate FC from first principals whenever read count is too low
+		lowReads <- pmin( v1, v2)
+		needRedo <- which( lowReads < 100)
+		if ( length( needRedo)) {
+			newFold <- log2( (v2[needRedo]+minimumREADS) / (v1[needRedo]+minimumREADS))
+			foldOut[needRedo] <- newFold
+		}
+
+		# now we can assess the PI values
+		pivalOut <- piValue( foldOut, pvalOut)
 
 		# round to sensible digits of resolution
 		foldOut <- round( foldOut, digits=4)
@@ -204,6 +219,7 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		out$AVG_EXTRA1 <- avgExtra1
 		out$AVG_EXTRA2 <- avgExtra2
 	}
+
 	# final order by both fold and P-value
 	ord <- diffExpressRankOrder( out$LOG2FOLD, out$PVALUE, wt.folds, wt.pvalues)
 	out <- out[ ord, ]

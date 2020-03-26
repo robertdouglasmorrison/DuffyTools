@@ -6,9 +6,8 @@
 
 
 EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(groupSet)[1], geneColumn="GENE_ID", 
-			intensityColumn="READS_M", keepIntergenics=FALSE, 
-			missingGenes="fill", extraColumn=NULL,
-			average.FUN=sqrtmean, wt.folds=1, wt.pvalues=1, wt.dists=1, 
+			intensityColumn="READS_M", keepIntergenics=FALSE, missingGenes="fill", extraColumn=NULL,
+			average.FUN=sqrtmean, minimumRPKM=1, wt.folds=1, wt.pvalues=1, wt.dists=1, 
 			...) {
 
 	# turn the set of transcript files into one matrix
@@ -81,7 +80,6 @@ EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 	fout <- edgeRout[ , 1]
 	pout <- edgeRout[ , 3]
 	qout <- edgeRout[ , 4]
-	piout <- piValue( fout, pout)
 	gnames <- rownames( edgeRout)
 	where <- match( gnames, rownames(m), nomatch=0)
 	mTmp <- m[ where, ]
@@ -89,6 +87,19 @@ EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 	# calc the average for each group, and put it into 'this group' order
 	avgM <- t( apply( mTmp, MARGIN=1, function(x) tapply(x, grpFac, FUN=average.FUN)))
 	if ( colnames(avgM)[1] != targetGroup) avgM <- avgM[ ,c(2,1)]
+
+	# the fold change is based on read counts, not RPKM, so we need a different way to 
+	# prevent divide by zero and falsely exagerated FC
+	minimumREADS <- minimumRPKM * 10
+	lowReads <- apply( avgM, 1, min)
+	needRedo <- which( lowReads < 100)
+	if ( length( needRedo)) {
+		newFold <- log2( (avgM[ needRedo, 1]+minimumREADS) / (avgM[ needRedo, 2]+minimumREADS))
+		fout[ needRedo] <- newFold
+	}
+
+	# now we can assess PI values
+	piout <- piValue( fout, pout)
 
 	gprod <- gene2ProductAllSpecies( gnames)
 	if ( any( gprod == "")) {
