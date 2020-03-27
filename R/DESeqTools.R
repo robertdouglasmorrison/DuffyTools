@@ -192,7 +192,7 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		# the fold change reported when read count is near zero is unrealistic
 		# recalculate FC from first principals whenever read count is too low
 		lowReads <- pmin( v1, v2)
-		needRedo <- which( lowReads < 100)
+		needRedo <- which( lowReads < (minimumREADS*5))
 		if ( length( needRedo)) {
 			newFold <- log2( (v2[needRedo]+minimumREADS) / (v1[needRedo]+minimumREADS))
 			foldOut[needRedo] <- newFold

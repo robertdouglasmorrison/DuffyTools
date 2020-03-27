@@ -91,7 +91,7 @@ EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 	# prevent divide by zero and falsely exagerated FC
 	minimumREADS <- minimumRPKM * 10
 	lowReads <- apply( avgM, 1, min)
-	needRedo <- which( lowReads < 100)
+	needRedo <- which( lowReads < (minimumREADS*5))
 	if ( length( needRedo)) {
 		newFold <- log2( (avgM[ needRedo, 1]+minimumREADS) / (avgM[ needRedo, 2]+minimumREADS))
 		fout[ needRedo] <- newFold
