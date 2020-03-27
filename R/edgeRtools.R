@@ -7,8 +7,7 @@
 
 EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(groupSet)[1], geneColumn="GENE_ID", 
 			intensityColumn="READS_M", keepIntergenics=FALSE, missingGenes="fill", extraColumn=NULL,
-			average.FUN=sqrtmean, minimumRPKM=1, wt.folds=1, wt.pvalues=1, wt.dists=1, 
-			...) {
+			average.FUN=sqrtmean, minimumRPKM=1, wt.folds=1, wt.pvalues=1, ...) {
 
 	# turn the set of transcript files into one matrix
 	if ( is.null(m)) {
@@ -126,8 +125,7 @@ EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		out$AVG_EXTRA2 <- avgExtra2
 	}
 	
-	# the fold change data is biased by raw read counts, ignore it!!
-	ord <- diffExpressRankOrder( out$LOG2FOLD, out$PVALUE, wt.folds=0, wt.pvalues)
+	ord <- diffExpressRankOrder( out$LOG2FOLD, out$PVALUE, wt.folds, wt.pvalues)
 	out <- out[ ord, ]
 	rownames(out) <- 1:nrow(out)
 
