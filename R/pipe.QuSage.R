@@ -5,7 +5,7 @@
 				tool=c( "MetaResults", "DESeq", "EdgeR", "RankProduct", "RoundRobin", "SAM"),
 				m=NULL, contrast=NULL, useLog=TRUE,
 				groupColumn="Group", geneSets=defaultGeneSets(speciesID), descriptor="CombinedGeneSets", 
-				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 5 else 2, 
+				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 4 else 2, 
 				min.rpkm=1, min.variance=1, offset=2,
 				addCellTypes=(speciesID %in% MAMMAL_SPECIES), addLifeCycle=(speciesID %in% PARASITE_SPECIES), 
 				doQuSage= TRUE, verbose=TRUE, n.points=2^12, ...)

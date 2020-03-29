@@ -794,6 +794,7 @@
 	}
 
 	# for( j in 1:length( pathnames)) {
+	if ( is.na( PLOT.FUN)) return()
 	for( j in whoToPlot) {
 		if ( ngenes[j] < 2) next
 
