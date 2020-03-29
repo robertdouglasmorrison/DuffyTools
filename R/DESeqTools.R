@@ -8,7 +8,8 @@
 DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(groupSet)[1], geneColumn="GENE_ID", 
 			intensityColumn="READS_M", keepIntergenics=FALSE, 
 			minimumRPKM=1, missingGenes="fill", extraColumn=NULL,
-			average.FUN=sqrtmean, wt.folds=1, wt.pvalues=1, fitType="local", ...) {
+			average.FUN=sqrtmean, wt.folds=1, wt.pvalues=1, fitType="local", 
+			adjust.lowReadCounts=TRUE, ...) {
 
 	# turn the set of transcript files into one matrix
 	if ( is.null(m)) {
@@ -190,12 +191,11 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		v1 <- apply( mNorm[ , which( cl == other), drop=FALSE], MARGIN=1, FUN=average.FUN)
 
 		# the fold change reported when read count is near zero is unrealistic
-		# recalculate FC from first principals whenever read count is too low
-		lowReads <- pmin( v1, v2)
-		needRedo <- which( lowReads < (minimumREADS*5))
-		if ( length( needRedo)) {
-			newFold <- log2( (v2[needRedo]+minimumREADS) / (v1[needRedo]+minimumREADS))
-			foldOut[needRedo] <- newFold
+		# use a graduated correction when read counts go too low
+		if (adjust.lowReadCounts) {
+			adjustAns <- lowReadCountAdjustment( foldOut, pvalOut, v2, v1)
+			foldOut <- adjustAns$fold.change
+			pvalOut <- adjustAns$p.value
 		}
 
 		# now we can assess the PI values
@@ -226,5 +226,32 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 	rownames(out) <- 1:nrow(out)
 
 	return( out)
+}
+
+
+`lowReadCountAdjustment` <- function( fold, pval, reads1, reads2, minimumRPKM=1) {
+
+	# the fold change reported by tools like DESeq and EdgeR when read counts are near zero 
+	# are unrealistic.  Often genes that are below the threshold of what we consider expressed
+	# report extremely high fold change and extremely low P-values.  Mostly since the variance of
+	# a bunch of zeros is artificially low.
+
+	# try to compensate
+
+	# step 1a:  we always add a small linear offset in the log2 fold calculation to prevent divide by zero
+	minimumREADS <- minimumRPKM * 10
+	conservativeFold <- log2( (reads1+minimumREADS) / (reads2+minimumREADS))
+	
+	# step1b: whichever fold change is more conservative, use that one
+	foldOut <- ifelse( abs(fold) < abs(conservativeFold), fold, conservativeFold)
+	
+	# Step 2a: see how much the fold change got reduced, and adjust the p-value accordingly.
+	foldRatio <- abs( foldOut / fold)
+	foldRatio[ foldRatio > 1.0] <- 1.0
+
+	# step 2b:  apply adjustment that backs off the P-value smoothly
+	pvalOut <- pval ^ sqrt(foldRatio)
+
+	return( list( "fold.change"=foldOut, "p.value"=pvalOut))
 }
 

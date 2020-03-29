@@ -7,7 +7,8 @@
 
 EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(groupSet)[1], geneColumn="GENE_ID", 
 			intensityColumn="READS_M", keepIntergenics=FALSE, missingGenes="fill", extraColumn=NULL,
-			average.FUN=sqrtmean, minimumRPKM=1, wt.folds=1, wt.pvalues=1, ...) {
+			average.FUN=sqrtmean, minimumRPKM=1, wt.folds=1, wt.pvalues=1, 
+			adjust.lowReadCounts=TRUE, ...) {
 
 	# turn the set of transcript files into one matrix
 	if ( is.null(m)) {
@@ -89,12 +90,10 @@ EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 
 	# the fold change is based on read counts, not RPKM, so we need a different way to 
 	# prevent divide by zero and falsely exagerated FC
-	minimumREADS <- minimumRPKM * 10
-	lowReads <- apply( avgM, 1, min)
-	needRedo <- which( lowReads < (minimumREADS*5))
-	if ( length( needRedo)) {
-		newFold <- log2( (avgM[ needRedo, 1]+minimumREADS) / (avgM[ needRedo, 2]+minimumREADS))
-		fout[ needRedo] <- newFold
+	if ( adjust.lowReadCounts) {
+		adjustAns <- lowReadCountAdjustment( fout, pout, avgM[,1], avgM[,2])
+		fout <- adjustAns$fold.change
+		pout <- adjustAns$p.value
 	}
 
 	# now we can assess PI values
