@@ -769,6 +769,9 @@
 				whoToPlot=1:length(allGeneSets), deList=NULL, yMin=0.0005, PLOT.FUN=NULL,
 				subsetInHTML=NULL) {
 
+	# small chance we were asked to not draw anything...
+	if ( !is.null(PLOT.FUN) && is.na(PLOT.FUN)) return()
+
 	pathnames <- names( allGeneSets)
 	ngenes <- sapply( allGeneSets, length)
 	firstGood <- which( ngenes > 1)[1]
@@ -794,7 +797,6 @@
 	}
 
 	# for( j in 1:length( pathnames)) {
-	if ( is.na( PLOT.FUN)) return()
 	for( j in whoToPlot) {
 		if ( ngenes[j] < 2) next
 
