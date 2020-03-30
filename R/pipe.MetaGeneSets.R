@@ -296,7 +296,7 @@
 		otherGrpTxt <- setdiff( myGrps, grp)
 		if ( length(otherGrpTxt) > 1) otherGrpTxt <- paste( "{", paste( otherGrpTxt, collapse=" + "), "}")
 		title <- paste( "MetaGeneSets: &nbsp; GeneSets ", direction, " Regulated in group: &nbsp; ", grp, 
-				" &nbsp; vs &nbsp; ", otherGrpTxt)
+				" &nbsp; vs &nbsp; ", otherGrpTxt, "<br> Comparison Folder: &nbsp; ", folderName)
 		metaResultsToHTML( out, htmlout, addSpeciesToHtmlTitle(title), maxRows=N, linkColumnName=NA)
 
 		# write the cell type enrichment on just these top N gene sets...
