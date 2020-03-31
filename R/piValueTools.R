@@ -9,8 +9,12 @@
 `piValue` <- function( log2fold, pvalue, max.correction=4) {
 
 	# trap zeros that go undefined
+	if ( is.null(pvalue)) return( log2fold)
+	if ( ! length(pvalue)) return( log2fold)
 	pvalue[ pvalue < 1e-100] <- 1e-100
 	pvalue[ pvalue > 0.99] <- 0.99
+	pvalue[ is.nan(pvalue)] <- 0.99
+	pvalue[ is.na(pvalue)] <- 0.99
 
 	# do the minus log 10 step
 	log10p <- -log10( pvalue)
