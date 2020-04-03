@@ -44,8 +44,9 @@ CodonEnv <- new.env( hash=TRUE, parent=emptyenv())
 AliasEnv <- new.env( hash=TRUE, parent=emptyenv())
 
 
-# LifeCycle tools
+# LifeCycle & CellType tools
 LifeCycleEnv <- new.env( hash=TRUE, parent=emptyenv())
+CellTypeEnv <- new.env( hash=TRUE, parent=emptyenv())
 
 
 # Ortholog tools

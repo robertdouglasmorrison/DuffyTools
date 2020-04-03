@@ -1,6 +1,9 @@
 # cellTypeTools.R -- tools for working with our immune cell subset datasets, as per Gene Sets, etc.
 #			we will/have combinded human and mouse data
 
+# circa 2020:   cloning all the LifeCycle data analysis & deconstruction tools to
+#				apply them to mammalian immune cell type datasets.  See down below.
+
 
 # clean up the cell type names a bit
 `cleanCellTypeName` <- function( cellTypes) {
@@ -417,5 +420,568 @@
 	ans <- heatmap( M2, heatColors=heatColors, Rowv=NA, RowSideColors=rowColors, 
 			labRow=rowNames, cexRow=(0.2+1/log10(max(NGS,3))), verbose=verbose, ...)
 	return( invisible( ans))
+}
+
+
+# porting of Life Cycle tools below here...
+
+`verifyCellTypeSetup` <- function() {
+
+	isReady <- exists( "VectorSpace", envir=CellTypeEnv)
+	isRightSpecies <- FALSE
+	if ( isReady) {
+		curSpecies <- get( "Species", envir=CellTypeEnv)
+		if( ! is.null( curSpecies)) isRightSpecies <- ( curSpecies == getCurrentSpecies())
+	}
+	if ( !isReady || !isRightSpecies) CellTypeSetup( dataset="ImmuneCell.TargetMatrix", unitVectorMode="absolute")
+	return()
+}
+
+
+`CellTypeSetup` <- function( dataset=c( "ImmuneCell.TargetMatrix", "Custom"), 
+				unitVectorMode=c("absolute","relative","none"), 
+				custom.file=NULL, custom.colors=NULL, preNormalize=TRUE, postNormalize=TRUE, 
+				doRMA=FALSE, min.value=0.01, min.spread=2.0, verbose=FALSE) {
+
+	dataset <- match.arg( dataset)
+	unitVectorMode <- match.arg( unitVectorMode)
+	ans <- NULL
+
+	cat( "\nSetting up CellType dataset:  ", dataset)
+
+	# get the data from the package
+	if ( dataset == "ImmuneCell.TargetMatrix") {
+	
+		# make the dataset name from the current species
+		prefix <- getCurrentSpeciesFilePrefix()
+		dataFileName <- paste( prefix, dataset, sep=".")
+		targetM <- targetColors <- NULL
+		data( list=dataFileName, package="DuffyTools", envir=environment())
+		if ( is.null( targetM)) {
+			cat( "\nFailed to load Cell Type data object: ", dataFileName)
+			return(NULL)
+		}
+		if ( exists( "immuneCellTargetColors")) targetColors <- immuneCellTargetColors
+
+		ans <- buildCellTypeVectorSpace( file=NULL, tbl=targetM, 
+			unitVectorMode=unitVectorMode, min.value=min.value, min.spread=min.spread, 
+			preNormalize=preNormalize, postNormalize=postNormalize,
+			doRMA=FALSE, verbose=verbose)
+		ans2 <- buildCellTypeVectorSpace( file=NULL, tbl=targetM, 
+			unitVectorMode="none", min.value=min.value, min.spread=NULL, 
+			preNormalize=preNormalize, postNormalize=postNormalize,
+			doRMA=FALSE, verbose=FALSE)
+	}
+
+	if ( dataset == "Custom") {
+
+		# pre read the file to make the dimensions construct
+		if ( ! file.exists( custom.file)) stop( paste( "Custom Cell Type Target Matrix file not found: ", custom.file))
+		tmp <- read.delim(custom.file, as.is=T)
+		# should verify it has rownames that are the geneIDs....
+
+		cat( "\nBuilding custom Cell Type dataset:   Dimensions:\n")
+		print( colnames(tmp))
+		cat( "\nFirst genes: \n")
+		print( head( tmp))
+
+		ans <- buildCellTypeVectorSpace( tbl=tmp, 
+			unitVectorMode=unitVectorMode, min.value=min.value, min.spread=min.spread, 
+			preNormalize=preNormalize, postNormalize=postNormalize,
+			doRMA=doRMA, verbose=verbose)
+		ans2 <- buildCellTypeVectorSpace( tbl=tmp,
+			unitVectorMode="none", min.value=min.value, min.spread=min.spread, 
+			preNormalize=preNormalize, postNormalize=postNormalize,
+			doRMA=doRMA, verbose=verbose)
+			
+		targetColors <- custom.colors
+	}
+
+	CellTypeEnv[[ "VectorSpace" ]] <- ans
+	CellTypeEnv[[ "IntensitySpace" ]] <- ans2
+	CellTypeEnv[[ "Species" ]] <- getCurrentSpecies()
+	if ( ! is.null( ans)) {
+		CellTypeEnv[[ "N_STAGES" ]] <- ncol(ans) - 2   # geneID, Product come first
+		CellTypeEnv[[ "STAGE_NAMES" ]] <- colnames(ans)[3:ncol(ans)]
+		if ( ! is.null( targetColors)) CellTypeEnv[[ "STAGE_COLORS"]] <- targetColors
+	}
+	cat( "\nDone.\n")
+}
+
+
+`getCellTypeMatrix` <- function( mode=c("IntensitySpace", "VectorSpace")) {
+
+	verifyCellTypeSetup()
+	mode <- match.arg( mode)
+
+	tbl <- CellTypeEnv[[ mode]]
+	genes <- tbl$GENE_ID
+
+	# get just the values, not the IDs and Products
+	m <- as.matrix( tbl[ ,3:ncol(tbl)])
+	rownames(m) <- genes
+	return(m)
+}
+
+
+`buildCellTypeVectorSpace` <- function( file="", tbl=NULL,
+					unitVectorMode=c( "absolute", "relative", "none"), 
+					min.value=0.01, min.spread=2, preNormalize=FALSE, 
+					postNormalize=TRUE, doRMA=TRUE, verbose=FALSE) {
+
+	unitVectorMode <- match.arg( unitVectorMode)
+
+	# get the original reference set of gene data
+	if ( is.null( tbl)) {
+		tbl <- read.delim( file, as.is=TRUE)
+	}
+
+	# gene IDs are the rownames, and dimension names are the column names
+	geneIDs <- shortGeneName( rownames(tbl), keep=1)
+	cellIDs <- colnames(tbl)
+
+	# no nned for any orthologging, each matrix is organism specific
+	thisSpecies <- getCurrentSpecies()
+
+	# extract just the wanted columns, impose a minimun intensity, and perhaps normalize the intensity columns
+	mIn <- as.matrix( tbl)
+	colnames( mIn) <- cellIDs
+	mIn[ is.na(mIn)] <- min.value
+	mIn[ mIn < min.value] <- min.value
+
+	# with microarrays, RMA is more appropriate, otherwise just plain quantile normalize
+	if ( preNormalize) {
+		if ( doRMA) {
+			mIn <- duffyRMA( mIn, verbose=verbose)
+		} else {
+			mIn <- duffyMagnitudeNormalize( mIn, verbose=verbose)
+		}
+	}
+
+	# there may be duplicate rows because of gene re-annotation or orthollogging...
+	# combine those by mean average
+	uGenes <- unique.default( geneIDs)
+	nUnique <- length( uGenes)
+	if ( nUnique < nrow(mIn)) {
+		mNew <- matrix( 0, nrow=nUnique, ncol=ncol(mIn))
+		colnames(mNew) <- colnames(mIn)
+		for ( i in 1:nUnique) {
+			who <- which( geneIDs == uGenes[i])
+			if ( length(who) == 1) {
+				mNew[ i, ] <- mIn[ who, ]
+			} else {
+				mNew[ i, ] <- apply( mIn[ who, ], MARGIN=2, FUN=sqrtmean)
+			}
+		}
+	} else {
+		mNew <- mIn
+	}
+
+	# with microarrays, RMA is more appropriate, otherwise just plain quantile normalize
+	if ( postNormalize) {
+		if ( doRMA) {
+			mNew <- duffyRMA( mNew, verbose=verbose)
+		} else {
+			mNew <- duffyMagnitudeNormalize( mNew, verbose=verbose)
+		}
+	}
+	
+	# now normalize each row to sum to unit vector (length=1)
+	if ( unitVectorMode != "none") {
+	    for( i in 1:nrow( mNew)) {
+		oneV <- mNew[ i, ]
+		# subtract the min so the proportions have at least one 0%
+		if ( unitVectorMode == "relative") oneV <- oneV - min(oneV)
+		oneV <- oneV / sum(oneV)
+		mNew[i, ] <- oneV
+	    }
+	}
+
+	if ( ! is.null( min.spread)) {
+		min.spread <- as.numeric( min.spread)
+		mins <- apply( mNew, MARGIN=1, min, na.rm=T)
+		maxs <- apply( mNew, MARGIN=1, max, na.rm=T)
+		spreads <- maxs / mins
+		drops <- which( spreads < min.spread)
+		if ( length(drops) > 0) {
+			mNew <- mNew[ -drops, ]
+			uGenes <- uGenes[ -drops]
+			cat( "\nDropping Genes with too little intensity change between dimensions: ", length(drops))
+		}
+	}
+
+	ans <- data.frame( "GENE_ID"=uGenes, "PRODUCT"=gene2Product( uGenes), mNew,
+			stringsAsFactors=FALSE)
+	rownames(ans) <- 1:nrow(ans)
+	return( ans)
+}
+ 
+
+`calcCellTypeProfile` <- function( genes, inten, dropGenes=vector()) {
+
+	verifyCellTypeSetup()
+
+	# get the cell type data...  there is 'geneID, product', and then the intensities...
+	vectorSpace <- CellTypeEnv[[ "VectorSpace"]]
+	unitVectors <- vectorSpace[ , 3:ncol(vectorSpace)]
+	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
+	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
+
+	# build up a tally of how much intensity goes to each cell type
+	# do it for all genes, and the make stage histogram from the marker genes
+	genes <- shortGeneName( genes, keep=1)
+	# allow omitting some GeneIDs...
+	if ( length( dropGenes)) {
+		droppers <- shortGeneName( dropGenes, keep=1)
+		toDrop <- which( genes %in% droppers)
+		if ( length( toDrop)) {
+			genes <- genes[ -toDrop]
+			inten <- inten[ -toDrop]
+		}
+	}
+
+	# the Vector Space table is now in the current species, no need to ortholog here!
+	where <- base::match( genes, vectorSpace$GENE_ID, nomatch=0)
+
+	# build the matrix of stage fractions for every gene we were given.
+	# switching to only use genes that are defined... others will not contribute
+	myFractions <- matrix( 0, nrow=length(genes), ncol=N_STAGES)
+	for( i in 1:N_STAGES) {
+		myFractions[ where > 0, i] <- unitVectors[ where, i]
+	}
+
+	# account for background intensity to put microarray and RNA, etc., on equal footing .. now done elsewhere.!
+	useInten <- inten
+
+	# spread these intensitys over those stages
+	myVectors <- myIntens <- matrix( 0, nrow=length(genes), ncol=N_STAGES)
+	rownames(myVectors) <- rownames(myIntens) <- genes
+	colnames(myVectors) <- colnames(myIntens) <- STAGE_NAMES
+	for( i in 1:N_STAGES) {
+		myVectors[ , i] <- useInten * myFractions[ , i]
+		myIntens[ , i] <- inten * myFractions[ , i]
+	}
+
+	# now do a summation by stage, and express as percentages...
+	allSums <- apply( myVectors, MARGIN=2, FUN=sum, na.rm=T)
+	bigSum <- sum( allSums)
+	ans <- allSums * 100 / bigSum
+
+	out <- list( "Profile"=ans, "IntensityVectors"=myIntens)
+	return( out)
+}
+
+
+`calcCellTypeProfileFromFile` <- function( f, geneColumn="GENE_ID", intensityColumn="RPKM_M", 
+					dropGenes=vector(), sep="\t") {
+
+	verifyCellTypeSetup()
+
+	# open that file and find the needed columns
+	tmp <- read.delim( f, as.is=T, sep=sep)
+	if ( nrow( tmp) < 1) return(NULL)
+
+	gset <- tmp[[ geneColumn]]
+	if ( is.null(gset)) {
+		cat( "calcCellTypeProfile:  gene name column not found.\nFile: ",f,
+			"\nTried: ", geneColumn)
+		return( NULL)
+	}
+
+	inten <- tmp[[ intensityColumn]]
+	if ( is.null(inten)) {
+		cat( "calcCellTypeProfile:  gene intensity column not found.\nFile: ",f,
+			"\nTried: ", intensityColumn)
+		return( NULL)
+	}
+
+	return( calcCellTypeProfile( gset, inten, dropGenes=dropGenes))
+}
+
+
+`plotCellTypeProfileFromFileSet` <- function( fnames, fids, fcolors=NULL, geneColumn="GENE_ID", 
+		intensityColumn="RPKM_M", yMax=NULL, legend.cex=0.8, max.labels=20,
+		dropGenes=vector(), label="your label goes here...", sep="\t") {
+
+	verifyCellTypeSetup()
+
+	# make sure we can read those files
+	filesOK <- file.exists( fnames)
+	if ( !all( filesOK)) {
+		cat( "\nCellTypeProfile:  Some transcript files not found:\n")
+		print( fnames[ !filesOK])
+		return(NULL)
+	}
+
+	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
+	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
+
+	# build the storage
+	nFiles <- length( fnames)
+	m <- matrix( nrow=nFiles, ncol=N_STAGES)
+	colnames(m) <- STAGE_NAMES
+	rownames(m) <- fids
+
+	# load each file in turn
+	cat( "\nLoading:  ")
+	for( i in 1:nFiles) {
+		cat( " ", basename(fnames[i]))
+		ans <- calcCellTypeProfileFromFile( fnames[i], geneColumn=geneColumn,
+				intensityColumn=intensityColumn, dropGenes=dropGenes, sep=sep)
+		m[ i, ] <- ans$Profile
+	}
+	cat( "\n")
+
+	# plot it
+	plotCellTypeProfiles(m, col=fcolors, label=label, yMax=yMax, 
+						legend.cex=legend.cex, max.labels=max.labels)
+
+	return( m)
+}
+
+
+`plotCellTypeProfileFromMatrix` <- function( geneSet, intenMatrix, fids=colnames(intenMatrix), 
+			fcolors=NULL, yMax=NULL, legend.cex=0.8, max.labels=20,
+			dropGenes=vector(), label="your label goes here...") {
+
+	verifyCellTypeSetup()
+
+	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
+	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
+
+	# build the storage
+	nColumns <- ncol( intenMatrix)
+	m <- matrix( nrow=nColumns, ncol=N_STAGES)
+	colnames(m) <- STAGE_NAMES
+	rownames(m) <- fids
+
+	# load each dataset in turn
+	for( i in 1:nColumns) {
+		ans <- calcCellTypeProfile( geneSet, intenMatrix[ ,i], dropGenes=dropGenes)
+		m[ i, ] <- ans$Profile
+	}
+
+	# plot it
+	plotCellTypeProfiles(m, col=fcolors, label=label, yMax=yMax, 
+						legend.cex=legend.cex, max.labels=max.labels)
+
+	return( m)
+}
+
+
+`plotCellTypeProfiles` <- function( m, col=NULL, yMax=NULL, label="", 
+				legend.cex=0.8, max.labels=20) {
+
+	N <- nrow(m)
+	NC <- ncol(m)
+
+	if ( all( is.na(m))) {
+		cat( "\nWarning:  no non-zero gene intensities !!")
+		cat( "\nPerhaps expression data does not match current species...")
+		return(NULL)
+	}
+
+	par( "mai"=c( 1.5, 0.95, 0.85, 0.2))
+	las <- 3
+	border <- par( "fg")
+	if ( is.null( col)) {
+		col=gray( seq( 0.2, 1.0, length.out=N))
+	} else {
+		if ( N >= 8) border <- NA
+	}
+
+	barSpace <- c( 0, N/4)
+
+	if ( is.null( yMax)) yMax <- max(m) * 1.15
+	mainText <- paste( "Cell Type Expression Profile Plot:\n", label)
+
+	mp <- barplot(m, beside=T, col=col, border=border, main=mainText, 
+		ylab="Percent of Total Gene Intensity", 
+		space=barSpace, las=las, font.lab=2, font.axis=2, cex.lab=1, cex.axis=1, cex.names=0.8,
+		ylim=c(0,yMax), xlim=c( N*0.1, (N*1.2)*(ncol(m)*1.2)))
+	
+	# limit the legend to a reasonable number
+	who <- 1:N
+	isSubset <- FALSE
+	if ( N > 12) legend.cex <- legend.cex * 0.95
+	if ( N > 18) legend.cex <- legend.cex * 0.95
+	if ( N > max.labels) {
+		who <- seq.int( 1, N, length.out=max.labels)
+		isSubset <- TRUE
+		legend.cex <- legend.cex * 0.95
+	}
+	ans <- legend( "topright", rownames(m)[who], fill=col[who], cex=legend.cex, bg="white")
+	if ( isSubset) mtext( "not all labeled", side=3, adj=1, cex=legend.cex*0.95)
+	dev.flush()
+}
+
+
+`plotCellTypeProfileUnitVectors` <- function( gSet, col=1, lwd=1, legend=NA, plot=TRUE, yMax=1,
+				legend.cex=1, label="", annotate=FALSE) {
+
+	verifyCellTypeSetup()
+
+	# get the life cycle data...  there is 'geneID, product', and then the intensities...
+	vectorSpace <- CellTypeEnv[[ "VectorSpace"]]
+	unitVectors <- vectorSpace[ , 3:ncol(vectorSpace)]
+	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
+	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
+
+	if (plot) {
+
+		par( "mai"=c( 1.5, 0.95, 0.85, 0.4))
+
+		plot( 1,1, type="n", main=paste( "Cell Type Profile:   Gene Unit Vectors\n",label),
+			xlim=c(0.5,N_STAGES+0.5), ylim=c(0,yMax), xaxt="n", xlab=NA,
+			ylab="Gene 'Projection' per Cell Type", las=3, font.axis=2, font.lab=2)
+		axis( 1, at=1:N_STAGES, label=STAGE_NAMES, las=3, font=2, cex.axis=0.8)
+	}
+
+	# draw the lines a bit nicer...as step steps...
+	colUse <- rep( col, length.out=length(gSet))
+	lwdUse <- rep( lwd, length.out=length(gSet))
+
+	gSet <- shortGeneName( gSet, keep=1)
+	where <- base::match( gSet, vectorSpace$GENE_ID, nomatch=NA)
+	who <- which( !is.na(where))
+
+	for ( k in who) {
+		y <- as.numeric( vectorSpace[ where[k], 3:ncol(vectorSpace)])
+		ans <- drawCellTypeProfileDensityLine( y, col=colUse[k], lwd=lwdUse[k])
+		xLocation <- ans$x
+		if ( annotate) {
+			useY <- which.max( y)
+			text( xLocation[useY], y[useY], gSet[k], col=colUse[k], pos=3, font=2, cex=1)
+		}
+	}
+	if ( ! is.na( legend)) {
+		legend( x=legend, legend=gSet[who], col=colUse[who], lwd=3, cex=legend.cex)
+	}
+	
+	# send back useful info
+	units <- vectorSpace[ where, ]
+	out <- list( "unitVectors"=units, "x"=xLocation)
+	return( out)
+}
+
+
+`plotCellTypeProfileIntensity` <- function( gSet, col=1, lwd=1, pt.cex=1, legend=NA, plot=TRUE, 
+				legend.cex=1, label="", minYmin=1, minYmax=NULL, threshold=NULL, annotate=FALSE) {
+
+	verifyCellTypeSetup()
+
+	# get the life cycle data...  there is 'geneID, product', and then the intensities...
+	intenSpace <- CellTypeEnv[[ "IntensitySpace"]]
+	intenVectors <- as.matrix( intenSpace[ , 3:ncol(intenSpace)])
+	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
+	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
+
+	gSet <- shortGeneName( gSet, keep=1)
+	where <- base::match( gSet, intenSpace$GENE_ID, nomatch=0)
+	if (sum(where > 0) < 1) {
+		cat( "\nNo Matching Genes found..")
+		return()
+	}
+
+	intenSpace <- intenSpace[ where, , drop=F]
+	intenVectors <- intenVectors[ where, , drop=F]
+	gSet <- gSet[ where > 0]
+	NG <- length(gSet)
+
+	bigValue <- max( intenVectors, na.rm=T)
+	if ( ! is.null( minYmax)) bigValue <-max( bigValue, minYmax, na.rm=T)
+	if ( ! is.null( threshold)) bigValue <- max( bigValue, threshold, na.rm=T)
+	yMax <- bigValue * 1.2
+	smallValue <- min( intenVectors, na.rm=T)
+	if ( ! is.null( threshold)) minYmin <- min( minYmin, threshold)
+	yMin <- min( smallValue, minYmin)
+	if ( yMin < 0.01) yMin <- 0.01
+
+	if (plot) {
+
+		par( "mai"=c( 1.5, 0.95, 0.85, 0.4))
+		mainText <- paste( "Cell Type Profile:    Gene Intensity Vectors\n",label)
+		if ( NG == 1) {
+			mainText <- paste( "Cell Type Profile:    Gene Intensity:    ", gSet)
+			mainText <- paste( mainText, "\n", gene2Product( gSet))
+		}
+
+		plot( 1,1, type="n", main=mainText, xlim=c(0.5,N_STAGES+0.5), ylim=c(yMin,yMax), 
+			log="", xaxt="n", xlab=NA, ylab="Gene Intensity per Stage  (RPKM)", las=3, font.axis=2, font.lab=2)
+		axis( 1, at=1:N_STAGES, label=STAGE_NAMES, las=3, font=2)
+	}
+
+	# draw the lines a bit nicer...as step steps...
+	colUse <- rep( col, length.out=length(gSet))
+	lwdUse <- rep( lwd, length.out=length(gSet))
+
+	if ( ! is.null( threshold)) {
+		lines( c(-2,20), rep.int(threshold,2), lwd=1, lty=3, col="brown")
+		text( c(0.3,0.3), c( threshold,threshold), c( "Expression", "Threshold"), col="brown", pos=c(3,1))
+	}
+
+	# when only one gene, color by stage instead
+	if ( NG == 1) {
+		colUse <- CellTypeEnv[[ "STAGE_COLORS"]]
+		y <- intenVectors[ 1, ]
+		y <- pmax( y, yMin)
+		ans <- drawCellTypeProfileIntensityLine( y, col=colUse, lwd=lwdUse[1], pt.cex=pt.cex, col2=1, useLog=F)
+		xLocation <- ans$x
+		if ( annotate) {
+			useY <- which.max( y)
+			text( xLocation[useY], y[useY], gSet[1], col=colUse[useY], pos=3, font=2, cex=1)
+		}
+	} else {
+	    for ( k in 1:length(gSet)) {
+			y <- intenVectors[ k, ]
+			y <- pmax( y, yMin)
+			ans <- drawCellTypeProfileIntensityLine( y, col=colUse[k], lwd=lwdUse[k], pt.cex=pt.cex, useLog=F)
+			xLocation <- ans$x
+			if ( annotate) {
+				useY <- which.max( y)
+				text( xLocation[useY], y[useY], gSet[k], col=colUse[k], pos=3, font=2, cex=1)
+			}
+	    }
+	}
+	if ( ! is.na( legend)) {
+		if ( NG == 1) colUse <- 1
+		legend( x=legend, legend=gSet, col=colUse, lwd=3, cex=legend.cex)
+	}
+	dev.flush()
+	
+	# send back useful info
+	out <- list( "intensityVectors"=intenVectors, "x"=xLocation)
+	return( out)
+}
+
+
+`drawCellTypeProfileDensityLine` <- function(y, col=1, lwd=1) {
+
+	yUse <- c( 0, rep( y, each=2), 0)
+	xmids <- seq( 0, length(y), by=1) + 0.5
+	xUse <- base::sort( c( xmids-0.05, xmids+0.05))
+	lines( xUse, yUse, type="l", col=col, lwd=lwd) 
+	return( invisible( list( "x"=(xmids+0.5))))
+}
+
+
+`drawCellTypeProfileIntensityLine` <- function(y, at=1:length(y), col=1, lwd=1, pt.cex=1, col2=col, useLog=FALSE) {
+
+	N <- length(y)
+	if (useLog) {
+		splineAns <- spline( at, log2(y+1), n=N*5)
+		xSpline <- splineAns$x
+		ySpline <- 2 ^ (splineAns$y) - 1
+		# spline in log space can look extreme...
+		minY <- min(y, na.rm=T) *.1
+		ySpline[ ySpline < minY] <- minY
+	} else {
+		splineAns <- spline( at, y, n=N*5)
+		xSpline <- splineAns$x
+		ySpline <- splineAns$y
+	}
+	lines( xSpline, ySpline, col=col2, lty=1, lwd=lwd)
+	points( at, y, pch=21, bg=col, cex=pt.cex)
+	return( invisible( list( "x"=at)))
 }
 
