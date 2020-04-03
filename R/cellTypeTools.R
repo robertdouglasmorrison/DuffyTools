@@ -801,7 +801,7 @@
 	if ( is.null( col)) {
 		col=gray( seq( 0.2, 1.0, length.out=N))
 	} else {
-		if ( N >= 8) border <- NA
+		if ( N*NC >= 160) border <- NA
 	}
 
 	barSpace <- c( 0, N/4)
