@@ -700,7 +700,7 @@
 
 
 `plotCellTypeProfileFromFileSet` <- function( fnames, fids, fcolors=NULL, geneColumn="GENE_ID", 
-		intensityColumn="RPKM_M", yMax=NULL, legend.cex=0.8, max.labels=20,
+		intensityColumn="RPKM_M", yMax=NULL, legend.cex=0.8, max.labels=20, mask.low.pct=NULL,
 		dropGenes=vector(), label="your label goes here...", sep="\t") {
 
 	verifyCellTypeSetup()
@@ -734,14 +734,14 @@
 
 	# plot it
 	plotCellTypeProfiles(m, col=fcolors, label=label, yMax=yMax, 
-						legend.cex=legend.cex, max.labels=max.labels)
+						legend.cex=legend.cex, max.labels=max.labels, mask.low.pct=mask.low.pct)
 
 	return( m)
 }
 
 
 `plotCellTypeProfileFromMatrix` <- function( geneSet, intenMatrix, fids=colnames(intenMatrix), 
-			fcolors=NULL, yMax=NULL, legend.cex=0.8, max.labels=20,
+			fcolors=NULL, yMax=NULL, legend.cex=0.8, max.labels=20, mask.low.pct=NULL,
 			dropGenes=vector(), label="your label goes here...") {
 
 	verifyCellTypeSetup()
@@ -763,14 +763,14 @@
 
 	# plot it
 	plotCellTypeProfiles(m, col=fcolors, label=label, yMax=yMax, 
-						legend.cex=legend.cex, max.labels=max.labels)
+						legend.cex=legend.cex, max.labels=max.labels, mask.low.pct=mask.low.pct)
 
 	return( m)
 }
 
 
 `plotCellTypeProfiles` <- function( m, col=NULL, yMax=NULL, label="", 
-				legend.cex=0.8, max.labels=20) {
+				legend.cex=0.8, max.labels=20, mask.low.pct=NULL) {
 
 	N <- nrow(m)
 	NC <- ncol(m)
@@ -779,6 +779,20 @@
 		cat( "\nWarning:  no non-zero gene intensities !!")
 		cat( "\nPerhaps expression data does not match current species...")
 		return(NULL)
+	}
+	
+	# allow masking of low percentage cell types to better use the plot region
+	if ( ! is.null( mask.low.pct)) {
+		cellMaxes <- apply( m, 2, max, na.rm=T)
+		drops <- which( cellMaxes < as.numeric( mask.low.pct))
+		if ( length( drops)) {
+		 	m <- m[ , -drops]
+		 	NC <- ncol(m)
+		 	if (NC < 2) {
+		 		cat( "\nMasked away too many cell types..")
+		 		return( NULL)
+		 	}
+		}
 	}
 
 	par( "mai"=c( 1.5, 0.95, 0.85, 0.2))
@@ -798,7 +812,7 @@
 	mp <- barplot(m, beside=T, col=col, border=border, main=mainText, 
 		ylab="Percent of Total Gene Intensity", 
 		space=barSpace, las=las, font.lab=2, font.axis=2, cex.lab=1, cex.axis=1, cex.names=0.8,
-		ylim=c(0,yMax), xlim=c( N*0.1, (N*1.2)*(ncol(m)*1.2)))
+		xaxs="i", ylim=c(0,yMax), xlim=c( 1, (N*1.2)*(ncol(m)*1.2)))
 	
 	# limit the legend to a reasonable number
 	who <- 1:N
