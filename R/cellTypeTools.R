@@ -1024,7 +1024,7 @@
 `fitCellTypeProfile` <- function( genes, inten, sid="Observed", col="orchid1", modelCol='brown',
 								dropGenes=vector(), 
 								max.iterations=100, rate=1, tolerance=0.5, fit.starts=NULL,
-								plot=TRUE, ...) {
+								plot=TRUE, sleep=0, ...) {
 
 	# grab the Cell Type data we will need:  the gene intensity in all cell types
 	verifyCellTypeSetup()
@@ -1088,6 +1088,8 @@
 			yShow <- apply( tmpM, 1, max) + (max(tmpM)*0.03)
 			toShow <- which( cellPercents > 0)
 			text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+			dev.flush()
+			if (sleep > 0) Sys.sleep( sleep)
 		}
 		
 		if ( rmsd <= tolerance) {
