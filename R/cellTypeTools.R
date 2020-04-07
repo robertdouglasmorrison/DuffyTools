@@ -1194,9 +1194,49 @@
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, plot=plot, ...)
 		m[ i, ] <- ans$CellProportions
+		if (plot) {
+			plotFile <- paste( "CellTypeProportions", fids[i], "png", sep=".")
+			dev.print( png, plotFile, width=1200)
+		}
 	}
 	cat( "\nDone.\n")
 
 	return( t(m))
+}
+
+
+`fitCellTypeProfileFromMatrix` <- function( m, fcolors=1:ncol(m),  dropGenes=vector(),
+								max.iterations=100, rate=1, tolerance=0.5, plot=TRUE, ...) {
+								
+	verifyCellTypeSetup()
+
+	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
+	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
+
+	# build the storage to hold the results
+	nSamples <- ncol(m)
+	fids <- colnames(m)
+	genes <- shortGeneName( rownames(m), keep=1)
+	mOut <- matrix( nrow=nSamples, ncol=N_STAGES)
+	colnames(mOut) <- STAGE_NAMES
+	rownames(mOut) <- fids
+
+	# load each in turn
+	cat( "\nFitting N_Samples: ", nSamples)
+	for( i in 1:nSamples) {
+		cat( "\n", fids[i])
+		ans <- fitCellTypeProfile( genes=genes, inten=m[,i], sid=fids[i], col=fcolors[i], 
+					dropGenes=dropGenes, 
+					max.iterations=max.iterations, rate=rate, 
+					tolerance=tolerance, plot=plot, ...)
+		mOut[ i, ] <- ans$CellProportions
+		if (plot) {
+			plotFile <- paste( "CellTypeProportions", fids[i], "png", sep=".")
+			dev.print( png, plotFile, width=1200)
+		}
+	}
+	cat( "\nDone.\n")
+
+	return( t(mOut))
 }
 
