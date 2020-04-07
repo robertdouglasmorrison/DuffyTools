@@ -700,7 +700,8 @@
 
 
 `plotCellTypeProfileFromFileSet` <- function( fnames, fids, fcolors=NULL, geneColumn="GENE_ID", 
-		intensityColumn="RPKM_M", yMax=NULL, legend.cex=0.8, max.labels=20, mask.low.pct=NULL,
+		intensityColumn="RPKM_M", yMax=NULL, legend.cex=0.8, max.labels=20, 
+		mask.low.pct=NULL, mask.low.diff=NULL, 
 		dropGenes=vector(), label="your label goes here...", sep="\t") {
 
 	verifyCellTypeSetup()
@@ -734,14 +735,16 @@
 
 	# plot it
 	plotCellTypeProfiles(m, col=fcolors, label=label, yMax=yMax, 
-						legend.cex=legend.cex, max.labels=max.labels, mask.low.pct=mask.low.pct)
+				legend.cex=legend.cex, max.labels=max.labels, mask.low.pct=mask.low.pct,
+				mask.low.diff=mask.low.diff)
 
-	return( m)
+	return( t(m))
 }
 
 
 `plotCellTypeProfileFromMatrix` <- function( geneSet, intenMatrix, fids=colnames(intenMatrix), 
-			fcolors=NULL, yMax=NULL, legend.cex=0.8, max.labels=20, mask.low.pct=NULL,
+			fcolors=NULL, yMax=NULL, legend.cex=0.8, max.labels=20, 
+			mask.low.pct=NULL, mask.low.diff=NULL, 
 			dropGenes=vector(), label="your label goes here...") {
 
 	verifyCellTypeSetup()
@@ -763,14 +766,15 @@
 
 	# plot it
 	plotCellTypeProfiles(m, col=fcolors, label=label, yMax=yMax, 
-						legend.cex=legend.cex, max.labels=max.labels, mask.low.pct=mask.low.pct)
+				legend.cex=legend.cex, max.labels=max.labels, mask.low.pct=mask.low.pct,
+				mask.low.diff=mask.low.diff)
 
-	return( m)
+	return( t(m))
 }
 
 
 `plotCellTypeProfiles` <- function( m, col=NULL, yMax=NULL, label="", 
-				legend.cex=0.8, max.labels=20, mask.low.pct=NULL) {
+				legend.cex=0.8, max.labels=20, mask.low.pct=NULL, mask.low.diff=NULL) {
 
 	N <- nrow(m)
 	NC <- ncol(m)
@@ -794,6 +798,18 @@
 		 	}
 		}
 	}
+	if ( ! is.null( mask.low.diff)) {
+		cellDiffs <- apply( m, 2, function(x) diff( range( x, na.rm=T)))
+		drops <- which( cellDiffs < as.numeric( mask.low.diff))
+		if ( length( drops)) {
+		 	m <- m[ , -drops]
+		 	NC <- ncol(m)
+		 	if (NC < 2) {
+		 		cat( "\nMasked away too many cell types..")
+		 		return( NULL)
+		 	}
+		}
+	}
 
 	par( "mai"=c( 1.5, 0.95, 0.85, 0.2))
 	las <- 3
@@ -801,7 +817,7 @@
 	if ( is.null( col)) {
 		col=gray( seq( 0.2, 1.0, length.out=N))
 	} else {
-		if ( N*NC >= 160) border <- NA
+		if ( N*NC >= 200) border <- NA
 	}
 
 	barSpace <- c( 0, N/4)
@@ -812,7 +828,7 @@
 	mp <- barplot(m, beside=T, col=col, border=border, main=mainText, 
 		ylab="Percent of Total Gene Intensity", 
 		space=barSpace, las=las, font.lab=2, font.axis=2, cex.lab=1, cex.axis=1, cex.names=0.8,
-		xaxs="i", ylim=c(0,yMax), xlim=c( 1, (N*1.2)*(ncol(m)*1.2)))
+		xaxs="i", ylim=c(0,yMax), xlim=c( -1, (N*1.2)*(ncol(m)*1.2)+2))
 	
 	# limit the legend to a reasonable number
 	who <- 1:N
@@ -827,6 +843,7 @@
 	ans <- legend( "topright", rownames(m)[who], fill=col[who], cex=legend.cex, bg="white")
 	if ( isSubset) mtext( "not all labeled", side=3, adj=1, cex=legend.cex*0.95)
 	dev.flush()
+	return( invisible( mp))
 }
 
 
@@ -997,5 +1014,189 @@
 	lines( xSpline, ySpline, col=col2, lty=1, lwd=lwd)
 	points( at, y, pch=21, bg=col, cex=pt.cex)
 	return( invisible( list( "x"=at)))
+}
+
+
+# Cell Type Fitting -   try to model a samples cell type profile as a linear combination of
+# 						cell type dimensions
+
+
+`fitCellTypeProfile` <- function( genes, inten, sid="Observed", col="orchid1", modelCol='brown',
+								dropGenes=vector(), 
+								max.iterations=100, rate=1, tolerance=0.5, fit.starts=NULL,
+								plot=TRUE, ...) {
+
+	# grab the Cell Type data we will need:  the gene intensity in all cell types
+	verifyCellTypeSetup()
+	intensitySpace <- CellTypeEnv[[ "IntensitySpace"]]
+	intensityVectors <- intensitySpace[ , 3:ncol(intensitySpace)]
+	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
+	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
+
+	# start with the calculated profile for this transcriptome
+	genes <- shortGeneName( genes, keep=1)
+	obsAns <- calcCellTypeProfile( genes, inten, dropGenes=dropGenes)
+	obsProfile <- obsAns$Profile
+	NG <- length( genes)
+	whereG <- match( genes, intensitySpace$GENE_ID, nomatch=0)
+	
+	# build up an initial model of how much intensity goes to each cell type
+	if ( is.null( fit.starts)) {
+		fit.starts <- rep.int( 1/N_STAGES, N_STAGES)
+	} else {
+		if ( length(fit.starts) != N_STAGES) stop( "Error:  'fit.starts' must be length of all cell types.")
+	}
+	
+	# Use the starting percentages and build a small 2x matrix to hold observed and model
+	model.pcts <- fit.starts
+	tmpM <- matrix( 0, nrow=N_STAGES, ncol=2)
+	colnames(tmpM) <- c( sid, "ModelFit")
+	rownames(tmpM) <- STAGE_NAMES
+	tmpM[ ,1] <- obsProfile
+	
+	# ready to iteratively compare the model to the observed. 
+	cat( "\n")
+	prevRMSD <- 100
+	for ( i in 1:max.iterations) {
+		
+		# make the latest model with the current ratios, making sure the percentages sum to exactly one
+		model.pcts <- model.pcts / sum( model.pcts)
+		modelInten <- rep.int( 0, NG)
+		for ( j in 1:N_STAGES) {
+			thisV <- intensityVectors[,j] * model.pcts[j]
+			modelInten[ whereG > 0] <- modelInten[ whereG > 0] + thisV[whereG]
+		}
+		
+		# calculate the profiles of this model
+		modelAns <- calcCellTypeProfile( genes, modelInten, dropGenes=dropGenes)
+		modelProfile <- modelAns$Profile
+		tmpM[ ,2] <- modelProfile
+
+		# assess the current deviation
+		deltas <- tmpM[,1] - tmpM[,2]
+		rmsd <- round( sqrt( sum( deltas^2)), digits=4)
+		cat( "\rIter: ", i, "   RMSD: ", rmsd)
+		
+		# plot it to show progress
+		if (plot) {
+			labelText <- paste( "Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", rmsd)
+			mp <- plotCellTypeProfiles( t(tmpM), col=c( col, modelCol), label=labelText, ...)
+
+			# try to show what we have now?...
+			cellPercents <- round( model.pcts * 100, digits=1)
+			xShow <- apply( mp, 2, mean)
+			yShow <- apply( tmpM, 1, max) + (max(tmpM)*0.03)
+			toShow <- which( cellPercents > 0)
+			text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+		}
+		
+		if ( rmsd <= tolerance) {
+			cat( "\nConverged..")
+			break
+		}
+		deltaRMSD <- prevRMSD - rmsd
+		if ( abs(deltaRMSD) < 1e-6) {
+			cat( "\nStalled..")
+			break
+		}
+		prevRMSD <- rmsd
+		
+		# now use the deltas to push the model percentages
+		# turn the 0-100 profiles back to 0-1 fractions, with the rate term
+		# try 1:  using a linear correction
+		dPcts <- deltas * rate / 100
+		model.pcts <- model.pcts + dPcts
+		# since the percents all need to sum to 1, try adding the tiny negative to all other cell types
+		# so the net model stays about centered
+		otherDpcts <- rep.int( 0, N_STAGES)
+		for ( k in 1:N_STAGES) {
+			myTinyPcts <- rep.int( dPcts[k]/N_STAGES, N_STAGES)
+			myTinyPcts[k] <- 0   # but nothing for myself
+			otherDpcts <- otherDpcts + myTinyPcts
+		}
+		model.pcts <- model.pcts - otherDpcts
+		# prevent negative contributions
+		# try 1 is just to zero them out...
+		model.pcts[ model.pcts < 0] <- 0
+		
+		# and go around again
+	}
+
+	# once we drop out, assemble the results
+	cellPercents <- round( model.pcts * 100, digits=2)
+	names(cellPercents) <- names(deltas) <- STAGE_NAMES
+		
+	out <- list( "Iterations"=i, "RMS_Deviation"=rmsd, "CellProportions"=cellPercents)
+	return( out)
+}
+
+
+`fitCellTypeProfileFromFile` <- function( f, sid="Observed", col="orchid1", 
+									geneColumn="GENE_ID", intensityColumn="RPKM_M", 
+									dropGenes=vector(), sep="\t",
+									max.iterations=100, rate=1, tolerance=0.5,
+									plot=TRUE, ...) {
+
+	verifyCellTypeSetup()
+
+	# open that file and find the needed columns
+	tmp <- read.delim( f, as.is=T, sep=sep)
+	if ( nrow( tmp) < 1) return(NULL)
+
+	gset <- tmp[[ geneColumn]]
+	if ( is.null(gset)) {
+		cat( "calcCellTypeProfile:  gene name column not found.\nFile: ",f,
+			"\nTried: ", geneColumn)
+		return( NULL)
+	}
+	inten <- tmp[[ intensityColumn]]
+	if ( is.null(inten)) {
+		cat( "calcCellTypeProfile:  gene intensity column not found.\nFile: ",f,
+			"\nTried: ", intensityColumn)
+		return( NULL)
+	}
+
+	return( fitCellTypeProfile( gset, inten, sid=sid, col=col, dropGenes=dropGenes, 
+								max.iterations=max.iterations, rate=rate, 
+								tolerance=tolerance, plot=plot, ...))
+}
+
+
+`fitCellTypeProfileFromFileSet` <- function( fnames, fids, fcolors=1:length(fids), geneColumn="GENE_ID", 
+								intensityColumn="RPKM_M", dropGenes=vector(), sep="\t",
+								max.iterations=100, rate=1, tolerance=0.5, plot=TRUE, ...) {
+								
+	verifyCellTypeSetup()
+
+	# make sure we can read those files
+	filesOK <- file.exists( fnames)
+	if ( !all( filesOK)) {
+		cat( "\nCellTypeProfile:  Some transcript files not found:\n")
+		print( fnames[ !filesOK])
+		return(NULL)
+	}
+
+	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
+	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
+
+	# build the storage to hold the results
+	nFiles <- length( fnames)
+	m <- matrix( nrow=nFiles, ncol=N_STAGES)
+	colnames(m) <- STAGE_NAMES
+	rownames(m) <- fids
+
+	# load each file in turn
+	cat( "\nFitting N_files: ", nFiles)
+	for( i in 1:nFiles) {
+		cat( "\n", basename(fnames[i]))
+		ans <- fitCellTypeProfileFromFile( fnames[i], sid=fids[i], col=fcolors[i], geneColumn=geneColumn,
+					intensityColumn=intensityColumn, dropGenes=dropGenes, sep=sep,
+					max.iterations=max.iterations, rate=rate, 
+					tolerance=tolerance, plot=plot, ...)
+		m[ i, ] <- ans$CellProportions
+	}
+	cat( "\nDone.\n")
+
+	return( t(m))
 }
 
