@@ -1024,7 +1024,7 @@
 `fitCellTypeProfile` <- function( genes, inten, sid="Observed", col="orchid1", modelCol='brown',
 								dropGenes=vector(), 
 								max.iterations=100, rate=1, tolerance=0.5, fit.starts=NULL,
-								plot=TRUE, sleep=0, ...) {
+								makePlots=c("all","final","none"), sleep=0.01, ...) {
 
 	# grab the Cell Type data we will need:  the gene intensity in all cell types
 	verifyCellTypeSetup()
@@ -1057,6 +1057,8 @@
 	# ready to iteratively compare the model to the observed. 
 	cat( "\n")
 	prevRMSD <- 100
+	makePlots <- match.arg( makePlots)
+
 	for ( i in 1:max.iterations) {
 		
 		# make the latest model with the current ratios, making sure the percentages sum to exactly one
@@ -1078,7 +1080,7 @@
 		cat( "\rIter: ", i, "   RMSD: ", rmsd)
 		
 		# plot it to show progress
-		if (plot) {
+		if (makePlots == "all") {
 			labelText <- paste( "Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", rmsd)
 			mp <- plotCellTypeProfiles( t(tmpM), col=c( col, modelCol), label=labelText, ...)
 
@@ -1123,6 +1125,17 @@
 		
 		# and go around again
 	}
+	if (makePlots == "final") {
+		labelText <- paste( "Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", rmsd)
+		mp <- plotCellTypeProfiles( t(tmpM), col=c( col, modelCol), label=labelText, ...)
+		# try to show what we have now?...
+		cellPercents <- round( model.pcts * 100, digits=1)
+		xShow <- apply( mp, 2, mean)
+		yShow <- apply( tmpM, 1, max) + (max(tmpM)*0.03)
+		toShow <- which( cellPercents > 0)
+		text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+		dev.flush()
+	}
 
 	# once we drop out, assemble the results
 	cellPercents <- round( model.pcts * 100, digits=2)
@@ -1134,10 +1147,10 @@
 
 
 `fitCellTypeProfileFromFile` <- function( f, sid="Observed", col="orchid1", 
-									geneColumn="GENE_ID", intensityColumn="RPKM_M", 
-									dropGenes=vector(), sep="\t",
-									max.iterations=100, rate=1, tolerance=0.5,
-									plot=TRUE, ...) {
+					geneColumn="GENE_ID", intensityColumn="RPKM_M", 
+					dropGenes=vector(), sep="\t",
+					max.iterations=100, rate=1, tolerance=0.5,
+					makePlots=c("all","final","none"), ...) {
 
 	verifyCellTypeSetup()
 
@@ -1158,15 +1171,17 @@
 		return( NULL)
 	}
 
+	makePlots <- match.arg( makePlots)
 	return( fitCellTypeProfile( gset, inten, sid=sid, col=col, dropGenes=dropGenes, 
-								max.iterations=max.iterations, rate=rate, 
-								tolerance=tolerance, plot=plot, ...))
+				max.iterations=max.iterations, rate=rate, 
+				tolerance=tolerance, makePlots=makePlots, ...))
 }
 
 
 `fitCellTypeProfileFromFileSet` <- function( fnames, fids, fcolors=1:length(fids), geneColumn="GENE_ID", 
-								intensityColumn="RPKM_M", dropGenes=vector(), sep="\t",
-								max.iterations=100, rate=1, tolerance=0.5, plot=TRUE, ...) {
+						intensityColumn="RPKM_M", dropGenes=vector(), sep="\t",
+						max.iterations=100, rate=1, tolerance=0.5, 
+						makePlots=c("all","final","none"), ...) {
 								
 	verifyCellTypeSetup()
 
@@ -1188,15 +1203,16 @@
 	rownames(m) <- fids
 
 	# load each file in turn
+	makePlots <- match.arg( makePlots)
 	cat( "\nFitting N_files: ", nFiles)
 	for( i in 1:nFiles) {
 		cat( "\n", basename(fnames[i]))
 		ans <- fitCellTypeProfileFromFile( fnames[i], sid=fids[i], col=fcolors[i], geneColumn=geneColumn,
 					intensityColumn=intensityColumn, dropGenes=dropGenes, sep=sep,
 					max.iterations=max.iterations, rate=rate, 
-					tolerance=tolerance, plot=plot, ...)
+					tolerance=tolerance, makePlots=makePlots, ...)
 		m[ i, ] <- ans$CellProportions
-		if (plot) {
+		if (makePlots != "none") {
 			plotFile <- paste( "CellTypeProportions", fids[i], "png", sep=".")
 			dev.print( png, plotFile, width=1200)
 		}
@@ -1208,8 +1224,9 @@
 
 
 `fitCellTypeProfileFromMatrix` <- function( m, fcolors=1:ncol(m),  dropGenes=vector(),
-								max.iterations=100, rate=1, tolerance=0.5, plot=TRUE, ...) {
-								
+						max.iterations=100, rate=1, tolerance=0.5, 
+						makePlots=c("all","final","none"), ...) {
+
 	verifyCellTypeSetup()
 
 	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
@@ -1224,15 +1241,16 @@
 	rownames(mOut) <- fids
 
 	# load each in turn
+	makePlots <- match.arg( makePlots)
 	cat( "\nFitting N_Samples: ", nSamples)
 	for( i in 1:nSamples) {
 		cat( "\n", fids[i])
 		ans <- fitCellTypeProfile( genes=genes, inten=m[,i], sid=fids[i], col=fcolors[i], 
 					dropGenes=dropGenes, 
 					max.iterations=max.iterations, rate=rate, 
-					tolerance=tolerance, plot=plot, ...)
+					tolerance=tolerance, makePlots=makePlots, ...)
 		mOut[ i, ] <- ans$CellProportions
-		if (plot) {
+		if (makePlots != "none") {
 			plotFile <- paste( "CellTypeProportions", fids[i], "png", sep=".")
 			dev.print( png, plotFile, width=1200)
 		}
