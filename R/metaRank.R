@@ -204,12 +204,15 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 	# do the FDR before sorting final row order
 	if ( nFDRsimulations > 0) {
 		simM <- rankM
-		randomAvgRank <- vector()
 		NR <- nrow(simM)
+		randomAvgRank <- vector( length=NR*nFDRsimulations)
+		nnow <- 0
 		if (verbose) cat( "  estimating FDR..")
 		for ( k in 1:nFDRsimulations) {
-			for ( i in 1:nfiles) simM[ , i] <- sample( NR)
-			randomAvgRank <- c( randomAvgRank, apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T))
+			for ( i in 1:nDF) simM[ , i] <- sample( NR)
+			randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
+			randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
+			nnow <- nnow + NR
 			if (verbose) cat( ".")
 		}
 		# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
@@ -218,7 +221,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		myLocs <- findInterval( avgRank * 1.00001, randomAvgRank)
 		myLocs <- ifelse( myLocs > 0, myLocs - 1, 0)
 		myEvalue <- myLocs / nFDRsimulations
-		myFPrate <- myEvalue / (1:nrow(out))
+		myFPrate <- myEvalue / (1:NR)
 		myFPrate <- ifelse( myFPrate > 1, 1, myFPrate)
 		out$FDR <- round( myFPrate, digits=4)
 	}
@@ -432,12 +435,15 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 	# do the FDR before sorting final row order
 	if ( nFDRsimulations > 0) {
 		simM <- rankM
-		randomAvgRank <- vector()
 		NR <- nrow(simM)
+		randomAvgRank <- vector( length=NR*nFDRsimulations)
+		nnow <- 0
 		if (verbose) cat( "  estimating FDR..")
 		for ( k in 1:nFDRsimulations) {
 			for ( i in 1:nDF) simM[ , i] <- sample( NR)
-			randomAvgRank <- c( randomAvgRank, apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T))
+			randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
+			randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
+			nnow <- nnow + NR
 			if (verbose) cat( ".")
 		}
 		# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
@@ -446,7 +452,7 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 		myLocs <- findInterval( avgRank * 1.00001, randomAvgRank)
 		myLocs <- ifelse( myLocs > 0, myLocs - 1, 0)
 		myEvalue <- myLocs / nFDRsimulations
-		myFPrate <- myEvalue / (1:nrow(out))
+		myFPrate <- myEvalue / (1:NR)
 		myFPrate <- ifelse( myFPrate > 1, 1, myFPrate)
 		out$FDR <- round( myFPrate, digits=4)
 	}
