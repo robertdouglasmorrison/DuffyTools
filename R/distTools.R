@@ -3,6 +3,9 @@
 
 `distToMatrix` <- function( dist, labels=NULL) {
 
+	# turn a R 'dist' object (that is just one halve of the full N x N square)
+	# into a full matrix
+
 	attr <- attributes(dist)
 	N <- attr$Size
 	hasDiag <- attr$Diag
@@ -26,6 +29,32 @@
 	}
 
 	m
+}
+
+
+`fastADist` <- function( seqs) {
+
+	# try to do a faster 'adist' call by only using one copy of each
+	NS <- length( seqs)
+	if ( !NS) return( matrix( 0, 0, 0))
+
+	uSeqs <- unique.default( seqs)
+	NU <- length( uSeqs)
+	if ( NU == NS) return( adist(seqs))
+
+	# get the distances of just the unique sequences
+	udm <- adist( uSeqs)
+
+	# now figure out how to reconstruct the full matix
+	whU <- match( seqs, uSeqs)
+	mOut <- matrix( 0, nrow=NS, ncol=NS)
+	colnames(mOut) <- rownames(mOut) <- names(seqs)
+	for ( i in 1:NS) {
+		myU <- whU[i]
+		myV <- udm[ myU, whU]
+		mOut[ , i] <- myV
+	}
+	return( mOut)
 }
 
 
