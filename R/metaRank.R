@@ -200,8 +200,17 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		colnames(out) <- c( geneColumn, valueColumn, "AVG_PVALUE", "AVG_RANK", colnames( rankM))
 	}
 
+	# do the final ordering by Average Rank
+	if ( pvalueColumn != "") {
+		ord <- order( out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])
+	} else {
+		ord <- order( out$AVG_RANK, -out[[ valueColumn]])
+	}
+	out <- out[ ord, ]
+	rownames( out) <- 1:nrow(out)
+
 	# do a simulation of random permutations of these ranks
-	# do the FDR before sorting final row order
+	# do the FDR after sorting final row order
 	if ( nFDRsimulations > 0) {
 		simM <- rankM
 		NR <- nrow(simM)
@@ -218,7 +227,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
 		randomAvgRank <- sort( randomAvgRank)
 		avgRank <- out$AVG_RANK
-		myLocs <- findInterval( avgRank * 1.00001, randomAvgRank)
+		myLocs <- findInterval( avgRank * 1.00000001, randomAvgRank)
 		myLocs <- ifelse( myLocs > 0, myLocs - 1, 0)
 		myEvalue <- myLocs / nFDRsimulations
 		myFPrate <- myEvalue / (1:NR)
@@ -226,14 +235,6 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		out$FDR <- round( myFPrate, digits=4)
 	}
 
-	# do the final ordering by Average Rank
-	if ( pvalueColumn != "") {
-		ord <- order( out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])
-	} else {
-		ord <- order( out$AVG_RANK, -out[[ valueColumn]])
-	}
-	out <- out[ ord, ]
-	rownames( out) <- 1:nrow(out)
 	# correlation test...
 	ccM <- matrix( NA, nrow=nfiles, ncol=nfiles)
 	for( i in 1:(nfiles-1)) {
@@ -431,8 +432,13 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 		colnames(out) <- c( geneColumn, valueColumn, "AVG_RANK", "AVG_PVALUE", colnames( rankM))
 	}
 
+	# do the final ordering by Average Rank
+	ord <- order( out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])
+	out <- out[ ord, ]
+	rownames( out) <- 1:nrow(out)
+
 	# do a simulation of random permutations of these ranks
-	# do the FDR before sorting final row order
+	# do the FDR after sorting final row order
 	if ( nFDRsimulations > 0) {
 		simM <- rankM
 		NR <- nrow(simM)
@@ -449,18 +455,13 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 		# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
 		randomAvgRank <- sort( randomAvgRank)
 		avgRank <- out$AVG_RANK
-		myLocs <- findInterval( avgRank * 1.00001, randomAvgRank)
+		myLocs <- findInterval( avgRank * 1.00000001, randomAvgRank)
 		myLocs <- ifelse( myLocs > 0, myLocs - 1, 0)
 		myEvalue <- myLocs / nFDRsimulations
 		myFPrate <- myEvalue / (1:NR)
 		myFPrate <- ifelse( myFPrate > 1, 1, myFPrate)
 		out$FDR <- round( myFPrate, digits=4)
 	}
-
-	# do the final ordering by Average Rank
-	ord <- order( out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])
-	out <- out[ ord, ]
-	rownames( out) <- 1:nrow(out)
 
 	# correlation test...
 	ccM <- matrix( NA, nrow=nDF, ncol=nDF)
