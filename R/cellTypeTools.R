@@ -439,9 +439,9 @@
 
 
 `CellTypeSetup` <- function( dataset=c( "ImmuneCell.TargetMatrix", "Custom"), 
-				unitVectorMode=c("absolute","relative","none"), 
+				unitVectorMode=c("absolute","relative","none","squared","cubed"), 
 				custom.file=NULL, custom.colors=NULL, preNormalize=TRUE, postNormalize=TRUE, 
-				doRMA=FALSE, min.value=0.01, min.spread=2.0, verbose=FALSE) {
+				doRMA=FALSE, min.value=0, min.spread=2.0, verbose=FALSE) {
 
 	dataset <- match.arg( dataset)
 	unitVectorMode <- match.arg( unitVectorMode)
@@ -524,9 +524,22 @@
 }
 
 
+`getCellTypeColors` <- function() {
+
+	verifyCellTypeSetup()
+	colors <- CellTypeEnv[[ "STAGE_COLORS"]]
+	if ( is.null( colors)) {
+		tbl <- CellTypeEnv[[ "VectorSpace"]]
+		nCellTypes <- ncol(tbl) - 2 	# GeneID, Product,  then data....
+		colors <- rainbow( nCellTypes, end=0.8)
+	}
+	return( colors)
+}
+
+
 `buildCellTypeVectorSpace` <- function( file="", tbl=NULL,
-					unitVectorMode=c( "absolute", "relative", "none"), 
-					min.value=0.01, min.spread=2, preNormalize=FALSE, 
+					unitVectorMode=c( "absolute","relative","none","squared","cubed"), 
+					min.value=0, min.spread=2, preNormalize=FALSE, 
 					postNormalize=TRUE, doRMA=TRUE, verbose=FALSE) {
 
 	unitVectorMode <- match.arg( unitVectorMode)
@@ -594,6 +607,15 @@
 		if ( unitVectorMode == "relative") oneV <- oneV - min(oneV)
 		oneV <- oneV / sum(oneV)
 		mNew[i, ] <- oneV
+	    }
+	    # explore allowing a change of relative shape, by applying a power correction
+	    if ( unitVectorMode %in% c( "squared","cubed")) {
+	    	for( i in 1:nrow( mNew)) {
+			oneV <- mNew[ i, ]
+			oneV <- if ( unitVectorMode == "squared") oneV^2 else oneV^3
+			oneV <- oneV / sum(oneV)
+			mNew[i, ] <- oneV
+	        }
 	    }
 	}
 
@@ -874,6 +896,7 @@
 
 	gSet <- shortGeneName( gSet, keep=1)
 	where <- base::match( gSet, vectorSpace$GENE_ID, nomatch=NA)
+	if ( any( is.na(where))) cat( "\nSome Genes not found: ", gSet[ is.na(where)])
 	who <- which( !is.na(where))
 
 	for ( k in who) {
@@ -885,7 +908,7 @@
 			text( xLocation[useY], y[useY], gSet[k], col=colUse[k], pos=3, font=2, cex=1)
 		}
 	}
-	if ( ! is.na( legend)) {
+	if ( ! is.na( legend) && length(who)) {
 		legend( x=legend, legend=gSet[who], col=colUse[who], lwd=3, cex=legend.cex)
 	}
 	
@@ -1055,8 +1078,12 @@
 	tmpM[ ,1] <- obsProfile
 	
 	# ready to iteratively compare the model to the observed. 
+	# track the best and some metrics for seeing stalling
 	cat( "\n")
 	prevRMSD <- 100
+	best.model <- model.pcts
+	best.rmsd <- prevRMSD
+	nTimesStuck <- 0
 	makePlots <- match.arg( makePlots)
 
 	for ( i in 1:max.iterations) {
@@ -1099,9 +1126,20 @@
 			break
 		}
 		deltaRMSD <- prevRMSD - rmsd
-		if ( abs(deltaRMSD) < 1e-6) {
+		if ( abs(deltaRMSD) < 1e-5) {
+			nTimesStuck <- nTimesStuck + 1
+		} else {
+			nTimesStuck <- 0
+		}
+		if ( nTimesStuck > 5) {
 			cat( "\nStalled..")
 			break
+		}
+		# we did not bail out, see if we are better
+		if (rmsd < best.rmsd) {
+			best.model <- model.pcts
+			best.rmsd <- rmsd
+			nTimesStuck <- 0
 		}
 		prevRMSD <- rmsd
 		
@@ -1125,6 +1163,14 @@
 		
 		# and go around again
 	}
+
+	# fell out of the loop
+	if ( i == max.iterations) cat( "\nMax.iterations..")
+
+	# regardless of how we ended, use the best we saw
+	model.pcts <- best.model
+	rmsd <- best.rmsd
+
 	if (makePlots == "final") {
 		labelText <- paste( "Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", rmsd)
 		mp <- plotCellTypeProfiles( t(tmpM), col=c( col, modelCol), label=labelText, ...)
@@ -1141,7 +1187,7 @@
 	cellPercents <- round( model.pcts * 100, digits=2)
 	names(cellPercents) <- names(deltas) <- STAGE_NAMES
 		
-	out <- list( "Iterations"=i, "RMS_Deviation"=rmsd, "CellProportions"=cellPercents)
+	out <- list( "Iterations"=i, "RMSD"=rmsd, "CellProportions"=cellPercents)
 	return( out)
 }
 
@@ -1201,6 +1247,8 @@
 	m <- matrix( nrow=nFiles, ncol=N_STAGES)
 	colnames(m) <- STAGE_NAMES
 	rownames(m) <- fids
+	rmsd <- vector( length=nFiles)
+	names(rmsd) <- fids
 
 	# load each file in turn
 	makePlots <- match.arg( makePlots)
@@ -1212,6 +1260,7 @@
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, ...)
 		m[ i, ] <- ans$CellProportions
+		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
 			plotFile <- paste( "CellTypeProportions", fids[i], "png", sep=".")
 			dev.print( png, plotFile, width=1200)
@@ -1219,7 +1268,8 @@
 	}
 	cat( "\nDone.\n")
 
-	return( t(m))
+	out <- list( "CellProportions"=t(m), "RMSD"=rmsd)
+	return( out)
 }
 
 
@@ -1239,6 +1289,8 @@
 	mOut <- matrix( nrow=nSamples, ncol=N_STAGES)
 	colnames(mOut) <- STAGE_NAMES
 	rownames(mOut) <- fids
+	rmsd <- vector( length=nSamples)
+	names(rmsd) <- fids
 
 	# load each in turn
 	makePlots <- match.arg( makePlots)
@@ -1250,6 +1302,7 @@
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, ...)
 		mOut[ i, ] <- ans$CellProportions
+		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
 			plotFile <- paste( "CellTypeProportions", fids[i], "png", sep=".")
 			dev.print( png, plotFile, width=1200)
@@ -1257,6 +1310,7 @@
 	}
 	cat( "\nDone.\n")
 
-	return( t(mOut))
+	out <- list( "CellProportions"=t(mOut), "RMSD"=rmsd)
+	return( out)
 }
 

@@ -59,13 +59,13 @@ ALL_GENE_SETS <- c( "Blood.GeneModules", "BTM.AntibodyResponses",
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
 			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", 
 			"HGNC.GeneFamily", "Reactome", "WikiPathways", "HumanImmuneSubsets", "MouseImmuneSubsets", 
-			"CellTypes", "MPMP.Pathways", "ParasiteLifeCycle")
+			"STRING", "CellTypes", "MPMP.Pathways", "ParasiteLifeCycle")
 MAMMAL_GENE_SETS <- c( "Blood.GeneModules", "BTM.AntibodyResponses", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
 			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", 
 			"HGNC.GeneFamily", "Reactome", "WikiPathways", "HumanImmuneSubsets", "MouseImmuneSubsets", 
-			"CellTypes")
+			"STRING", "CellTypes")
 PARASITE_GENE_SETS <- c( "Blood.GeneModules", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
