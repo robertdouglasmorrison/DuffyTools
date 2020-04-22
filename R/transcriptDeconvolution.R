@@ -418,7 +418,7 @@
 
 `compareTranscriptProportions` <- function( pcts, groups, levels=sort(unique(as.character(groups))), 
 					minPerGroup=3, test=t.test, plot=TRUE, label="", 
-					wt.fold=1, wt.pvalue=2, ...) {
+					wt.fold=1, wt.pvalue=2, min.percent=0.1, ...) {
 
 	NC <- ncol(pcts)
 	NR <- nrow(pcts)
@@ -451,20 +451,23 @@
 				v1[i] <- mean( x, na.rm=T)
 				v2[i] <- mean( y, na.rm=T)
 				# values too close to zero can give great P-values.  Override that
-				SMALL <- 1.0
-				if ( all( c(x,y) < SMALL)) {
+				if ( all( c(x,y) < min.percent)) {
 					pval[i] <- 1.0
 				} else {
-					isXzero <- which( x < SMALL)
-					if (Nzero <- length(isXzero)) x[ isXzero] <- runif( Nzero, SMALL/2, SMALL)
-					isYzero <- which( y < SMALL)
-					if (Nzero <- length(isYzero)) y[ isYzero] <- runif( Nzero, SMALL/2, SMALL)
-					ans <- test( x, y)
-					pval[i] <- ans$p.value
+					isXzero <- which( x < min.percent)
+					if (Nzero <- length(isXzero)) x[ isXzero] <- runif( Nzero, min.percent/10, min.percent)
+					isYzero <- which( y < min.percent)
+					if (Nzero <- length(isYzero)) y[ isYzero] <- runif( Nzero, min.percent/10, min.percent)
+					if ( ! is.null(test) && ! is.na(test)) {
+						ans <- test( x, y)
+						pval[i] <- ans$p.value
+					} else {
+						pval[i] <- 1
+					}
 				}
 			}
 			# report the fold as Group2 over Group1
-			fold <- log2( (v2+1) / (v1+1))
+			fold <- log2( (v2+min.percent) / (v1+min.percent))
 			pval[ is.nan(pval)] <- 1.0
 			pval[ is.na(pval)] <- 1.0
 		
@@ -492,5 +495,31 @@
 		plotTranscriptProportions( pctsGrp, label=label, ...)
 	}
 
-	return( if (NG == 2) bigOut[[1]] else bigOut)
+	return( if (nOut == 1) bigOut[[1]] else bigOut)
 }
+
+
+`mergeTranscriptProportions` <- function( pcts, groups, drops=NULL) {
+
+	# generic way to reduce the number of cel types by merging similar types
+	if ( length( groups) != nrow(pcts)) stop( "'groups' must be same length as 'nrow(pcts)'")
+
+	out <- data.frame()
+	tapply( 1:nrow(pcts), grpFac <- factor(groups), function(x) {
+				sml <- pcts[ x, , drop=F]
+				smlDF <- as.data.frame(sml[1, , drop=F])
+				vals <- apply( sml, 2, sum, na.rm=T)
+				smlDF[ 1, ] <- vals
+				out <<- rbind( out, smlDF)
+			})
+
+	out <- as.matrix( out)
+	rownames(out) <- levels(grpFac)
+	if ( ! is.null(drops)) {
+		whoDrop <- which( rownames(out) %in% drops)
+		if ( length(whoDrop)) out <- out[ -whoDrop, ]
+	}
+
+	return( out)
+}
+
