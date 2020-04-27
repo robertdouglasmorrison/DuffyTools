@@ -218,7 +218,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		nnow <- 0
 		if (verbose) cat( "  estimating FDR..")
 		for ( k in 1:nFDRsimulations) {
-			for ( i in 1:nDF) simM[ , i] <- sample( NR)
+			for ( i in 1:nfiles) simM[ , i] <- sample( NR)
 			randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
 			randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
 			nnow <- nnow + NR
@@ -259,11 +259,13 @@ metaRank2html <- function( tbl, fileout="metaRanks.html", title="", maxRows=100,
 			valueColumn="LOG2FOLD", ...) {
 
 	# clean up any formatting...
-	tbl[[ valueColumn]] <- formatC( tbl[[ valueColumn]], format="f", digits=3)
-	if ("AVG_PVALUE" %in% colnames(tbl)) tbl$AVG_PVALUE <- formatC( tbl$AVG_PVALUE, format="e", digits=3)
-	if ("AVG_RANK" %in% colnames(tbl)) tbl$AVG_RANK <- formatC( tbl$AVG_RANK, format="f", digits=2)
-	NC <- ncol(tbl)
-	if ( NC > 3) colnames(tbl)[4:NC] <- gsub( "_", " ", colnames(tbl)[4:NC], fixed=T)
+	if ( nrow(tbl)) {
+		tbl[[ valueColumn]] <- formatC( tbl[[ valueColumn]], format="f", digits=3)
+		if ("AVG_PVALUE" %in% colnames(tbl)) tbl$AVG_PVALUE <- formatC( tbl$AVG_PVALUE, format="e", digits=3)
+		if ("AVG_RANK" %in% colnames(tbl)) tbl$AVG_RANK <- formatC( tbl$AVG_RANK, format="f", digits=2)
+		NC <- ncol(tbl)
+		if ( NC > 3) colnames(tbl)[4:NC] <- gsub( "_", " ", colnames(tbl)[4:NC], fixed=T)
+	}
 
 	title <- paste( "Meta Ranks:  &nbsp; ", title)
 	table2html( tbl, fileout=fileout, title=title, maxRows=maxRows, ...)

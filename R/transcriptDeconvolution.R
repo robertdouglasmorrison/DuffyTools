@@ -458,7 +458,7 @@
 					if (Nzero <- length(isXzero)) x[ isXzero] <- runif( Nzero, min.percent/10, min.percent)
 					isYzero <- which( y < min.percent)
 					if (Nzero <- length(isYzero)) y[ isYzero] <- runif( Nzero, min.percent/10, min.percent)
-					if ( ! is.null(test) && ! is.na(test)) {
+					if ( is.function(test)) {
 						ans <- test( x, y)
 						pval[i] <- ans$p.value
 					} else {
