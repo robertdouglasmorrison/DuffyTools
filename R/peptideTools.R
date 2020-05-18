@@ -223,7 +223,7 @@ UNION <- base::union
 
 
 `peptide2BestProtein` <- function( peptides, proteinsFastaFile, nBest=1, tieBreakMode=c("sample", "all", "topN"),
-				substitutionMatrix=NULL, details=FALSE, verbose=T) {
+				substitutionMatrix=NULL, details=FALSE, fastPDmode=TRUE, verbose=T) {
 
 	require( Biostrings)
 	if( is.null( substitutionMatrix)) {
@@ -260,15 +260,20 @@ UNION <- base::union
 
 	# a second method of speedup using the 'PDict' functions, to pre-find perfect matches
 	# one giant string is the 'dictionary', and we make a pointer list to extract who is where
-	proteinLengths <- nchar( fa$seq)
-	spacerString <- "XXXXXXXXXX"
-	proteinStarts <- c( 1, (cumsum( proteinLengths + nchar(spacerString)) + 1)[ 1:(nProteins-1)])
-	giantPDictString <- AAString( PASTE( fa$seq, collapse=spacerString))
-	if (verbose) cat( "\nPre-scanning for perfect matches..")
-	pdAns <- matchPDict( pepstrings, giantPDictString)
-	pdStarts <- startIndex( pdAns)
-	pdLengths <- SAPPLY( pdStarts, length)
-	if (verbose) cat( "  ", sum( pdLengths > 0), "out of", nPeptides, "\n")
+	if (fastPDmode) {
+		proteinLengths <- nchar( fa$seq)
+		spacerString <- "XXXXXXXXXX"
+		proteinStarts <- c( 1, (cumsum( proteinLengths + nchar(spacerString)) + 1)[ 1:(nProteins-1)])
+		giantPDictString <- AAString( PASTE( fa$seq, collapse=spacerString))
+		if (verbose) cat( "\nPre-scanning for perfect matches..")
+		pdAns <- matchPDict( pepstrings, giantPDictString)
+		pdStarts <- startIndex( pdAns)
+		pdLengths <- SAPPLY( pdStarts, length)
+		if (verbose) cat( "  ", sum( pdLengths > 0), "out of", nPeptides, "\n")
+	} else {
+		pdLengths <- rep.int( 0, nPeptides)
+	}
+
 
 
 	# local function to test one peptide against all sequences, returning the N best local alignments
@@ -311,7 +316,8 @@ UNION <- base::union
 		} else {
 			if ( tieBreakMode == "topN") {
 				ord <- ORDER( scores, decreasing=T)
-				whoBest <- ord[ 1:nBest]
+				nKeep <- min( nBest, length(scores))
+				whoBest <- ord[ 1:nKeep]
 				bestPtrs <- whoBest
 				nBestReported <- nBestFound <- length( bestPtrs)
 			}
