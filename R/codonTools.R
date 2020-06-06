@@ -35,7 +35,10 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 	dnaV <- TOUPPER( dnaV)
 
 	# we only want the true codons, none of the extended
-	codonMap <- getCodonMap()[ 1:64, ]
+	codonMap <- getCodonMap()
+	#ambiguityLetters <- c( "W", "S", "M", "K", "R", "Y")
+	drops <- grep( "[WSMKRY]", codonMap$DNA)
+	if ( length( drops)) codonMap <- codonMap[ -drops, ]
 
 	beg <- seq.int( 1, Ndna, 3)
 	Naa <- length(beg)
@@ -808,8 +811,11 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	ambiguityBases <- list( "W"=c("A","T"), "S"=c("C","G"), "M"=c("A","C"), "K"=c("G","T"), 
 			"R"=c("A","G"), "Y"=c("C","T"))
 
+	# we only want the true codons, none of the extended
 	codonMap <- getCodonMap()
-	if ( nrow(codonMap) > 64) codonMap <- codonMap[ 1:64, ]
+	#ambiguityLetters <- c( "W", "S", "M", "K", "R", "Y")
+	drops <- grep( "[WSMKRY]", codonMap$DNA)
+	if ( length( drops)) codonMap <- codonMap[ -drops, ]
 	altMap <- data.frame()
 
 	# loop over all possible triplets
