@@ -1,13 +1,10 @@
 # survivalTools.R -- implement Kaplan-Meier curves
 
-require( survival)
-
-
 kaplanMeier <- function( groups, times, outcomes, eventOutcome="Y", col=2:(length(unique(groups))+1),
 			makePlot=TRUE, xlab="Time  (weeks)", ylab="Survival", lwd=3, legend.cex=1.1,
 			main="Kaplan-Meier: ", nFDR=0) {
 
-	#do.one.surv.test <- function( inhib.calls, test.calls, test.time, test.text, domainName) {
+	require( survival)
 
 	# turn the outcome calls and followup time into censored survival data
 	surv <- Surv( time=times, event=(outcomes == eventOutcome))
