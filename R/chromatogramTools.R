@@ -372,6 +372,11 @@
 
 `subsetChromatogram` <- function( chromoObj, seq=NULL, range=NULL, min.unit.score=NULL) {
 
+	# allow being given a filename
+	if ( is.character(chromoObj) && file.exists( chromoObj[1])) {
+		chromoObj <- loadChromatogram( chromoObj)
+	}
+	
 	if ( ! is.null( seq)) {
 		return( subsetChromatogramBySequence( chromoObj, seq=seq, min.unit.score=min.unit.score))
 	} else if ( ! is.null( range)) {
@@ -399,7 +404,7 @@
 	lastTracePoint <- NT
 
 	# we will find DNA or AA in any reading frame
-	subSeq <- as.character( seq)[1]
+	subSeq <- toupper( as.character( seq)[1])
 	chromoDNA <- chromoObj$DNA_Calls
 	chromoAA <- chromoObj$AA_Calls
 
@@ -412,6 +417,7 @@
 		subSeq <- gsub( "?", "X", subSeq, fixed=T)
 	} else {
 		subSeq <- gsub( "?", "N", subSeq, fixed=T)
+		subSeq <- gsub( "-", "N", subSeq, fixed=T)
 	}
 
 	# find how well the given sequence matches in both worlds
@@ -442,8 +448,8 @@
 	}
 
 	# see if we should return 'not found'
+	unitScore <- bestScore / nchar( subSeq)
 	if ( ! is.null( min.unit.score)) {
-		unitScore <- bestScore / nchar( subSeq)
 		if ( unitScore < min.unit.score) return( NULL)
 	}
 
@@ -479,7 +485,7 @@
 
 	out <- list( "TraceM"=traceOut, "PeakPosition"=peaksOut, "PeakConfidence"=confOut, 
 				"DNA_Calls"=seqData$DNA, "AA_Calls"=seqData$AA, "Filename"=chromoObj$Filename,
-				"Offset"=firstTracePoint, "BestAAframe"=AAoffset)
+				"Offset"=firstTracePoint, "BestAAframe"=AAoffset, "UnitScore"=unitScore)
 	out
 }
 
@@ -529,8 +535,13 @@
 `plotChromatogram` <- function( chromoObj, label="", seq=NULL, range=NULL, 
 				lwd=2, lty=1, cex=1, font=2, add=FALSE, forceYmax=NULL, 
 				showAA=TRUE, showTraceRowNumbers=FALSE, showConfidence=FALSE,
-				min.unit.score=NULL) {
+				min.unit.score=NULL, ...) {
 
+	# allow being given a filename of a chromatogram
+	if ( is.character(chromoObj) && file.exists( chromoObj[1])) {
+		chromoObj <- loadChromatogram( chromoObj)
+	}
+	
 	# given a chromatogram object, show the whole thing
 	acgtBases <- c('A','C','G','T','N','-')
 	acgtColors <- c('red','blue','orange','green','brown','black')
@@ -581,7 +592,7 @@
 	if ( ! is.null(forceYmax)) yLimits[2] <- as.numeric( forceYmax[1])
 
 	if ( ! add) plot( 1,1, type="n", main=mainText, xlim=xLimits, ylim=yLimits, ylab="Intensity", xlab=NA,
-				xaxt="n", xaxs="i", las=2)
+				xaxt="n", xaxs="i", las=2, ...)
 
 	for ( j in 1:4) {
 		y <- traceM[ ,j]
