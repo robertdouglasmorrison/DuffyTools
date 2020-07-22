@@ -7,7 +7,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 			rank.average.FUN=sqrtmean, value.average.FUN=mean,
 			keepIntergenics=FALSE, missingGenes=c("drop", "fill", "na"), 
 			missingValue=0, naDropPercent=0.5, nFDRsimulations=0,
-			diffExpressPvalueCorrection=FALSE, 
+			diffExpressPvalueCorrection=FALSE, mode=c("rank", "percentile"),
 			direction=c("UP","DOWN"), cleanHyperlinks=FALSE, verbose=TRUE) {
 
 	missingGenes <- match.arg( missingGenes)
@@ -74,10 +74,15 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 	rownames(rankM) <- rownames(foldM) <- rownames(pvalM) <- allG
 	colnames(rankM) <- colnames(foldM) <- colnames(pvalM) <- fids
 	allProds <- rep( "", NG)
+	
+	# allow for using a 'rank percentile' mode to better deal with very unevenly
+	# sized datasets
+	mode <- match.arg( mode)
 
 	for( i in 1:nfiles) {
 		thisDF <- allDF[[i]]
 		theseGenes <- thisDF[[geneColumn]]
+		nGenes.thisDF <- length(theseGenes)
 		where <- match( allG, theseGenes, nomatch=0)
 		# so DE tools throw away genes with no difference and/or expression
 		# they will be 'missing', so give them values saying 'not differentially expressed'
@@ -87,6 +92,11 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		missingRank <-  round( (NG+nrow(thisDF))/4)  # thus the 'midpoint' of the average # of genes
 		rankM[ where > 0, i] <- where[ where > 0]
 		rankM[ isMissing, i] <- missingRank
+		if (mode == "percentile") {
+			ptile <- ((nGenes.thisDF - rankM[ , i] + 1) / nGenes.thisDF) * 100
+			ptile[ isMissing] <- 0
+			rankM[ , i] <- ptile
+		}
 		logFoldColumn <- grep( valueColumn, colnames(thisDF))
 		if ( length( logFoldColumn) > 0) {
 			foldM[ where > 0, i] <- thisDF[[ logFoldColumn[1]]][where]
@@ -111,7 +121,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		if ( length(who) > 0) {
 			whoNA <- sort( unique( c( whoNA, who)))
 			if ( missingGenes == "fill") {
-				rankM[ who, i] <- nrow(rankM)
+				rankM[ who, i] <- if ( mode == "rank") nrow(rankM) else 0
 				foldM[ who, i] <- missingValue
 				pvalM[ who, i] <- 1.0
 			}
@@ -206,6 +216,13 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 	} else {
 		ord <- order( out$AVG_RANK, -out[[ valueColumn]])
 	}
+	if ( mode == "percentile") {
+		if ( pvalueColumn != "") {
+			ord <- order( -out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])
+		} else {
+			ord <- order( -out$AVG_RANK, -out[[ valueColumn]])
+		}
+	}
 	out <- out[ ord, ]
 	rownames( out) <- 1:nrow(out)
 
@@ -217,18 +234,35 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		randomAvgRank <- vector( length=NR*nFDRsimulations)
 		nnow <- 0
 		if (verbose) cat( "  estimating FDR..")
-		for ( k in 1:nFDRsimulations) {
-			for ( i in 1:nfiles) simM[ , i] <- sample( NR)
-			randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
-			randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
-			nnow <- nnow + NR
-			if (verbose) cat( ".")
+		if ( mode == "rank") {
+			for ( k in 1:nFDRsimulations) {
+				for ( i in 1:nfiles) simM[ , i] <- sample( NR)
+				randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
+				randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
+				nnow <- nnow + NR
+				if (verbose) cat( ".")
+			}
+			# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
+			randomAvgRank <- sort( randomAvgRank)
+			avgRank <- out$AVG_RANK
+			myLocs <- findInterval( avgRank * 1.00000001, randomAvgRank)
+			myLocs <- ifelse( myLocs > 0, myLocs - 1, 0)
+		} else {	# different values in the FDR whe we do rank percentiles
+			for ( k in 1:nFDRsimulations) {
+				for ( i in 1:nfiles) simM[ , i] <- runif( NR, 0, 100)
+				randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
+				randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
+				nnow <- nnow + NR
+				if (verbose) cat( ".")
+			}
+			# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
+			randomAvgRank <- sort( randomAvgRank)
+			avgRank <- out$AVG_RANK
+			myLocs <- findInterval( avgRank * 0.9999999, randomAvgRank)
+			myLocs <- ifelse( myLocs > 0, myLocs, 0)
+			# bigger values are more rare, so invert the pointers
+			myLocs <- length(randomAvgRank) - myLocs
 		}
-		# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
-		randomAvgRank <- sort( randomAvgRank)
-		avgRank <- out$AVG_RANK
-		myLocs <- findInterval( avgRank * 1.00000001, randomAvgRank)
-		myLocs <- ifelse( myLocs > 0, myLocs - 1, 0)
 		myEvalue <- myLocs / nFDRsimulations
 		myFPrate <- myEvalue / (1:NR)
 		myFPrate <- ifelse( myFPrate > 1, 1, myFPrate)
@@ -280,9 +314,10 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 			missingGenes=c("drop", "fill", "na"), missingValue=0,
 			naDropPercent=0.5, diffExpressPvalueCorrection=FALSE, 
 			direction="UP", nFDRsimulations=0, cleanHyperlinks=FALSE, 
-			verbose=TRUE) {
+			mode=c("rank","percentile"), verbose=TRUE) {
 
 	missingGenes <- match.arg( missingGenes)
+	mode <- match.arg( mode)
 
 	allDF <- vector( "mode"="list")
 	nDF <- 0
@@ -329,8 +364,13 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 		thisDF <- allDF[[i]]
 		hasPROD <- ( !is.na(productColumn) && (productColumn %in% colnames(thisDF)))
 		theseGenes <- thisDF[[geneColumn]]
+		nGenes.thisDF <- length(theseGenes)
 		where <- match( allG, theseGenes, nomatch=0)
 		rankM[ where > 0, i] <- where[ where > 0]
+		if (mode == "percentile") {
+			ptile <- ((nGenes.thisDF - rankM[ , i] + 1) / nGenes.thisDF) * 100
+			rankM[ , i] <- ptile
+		}
 		logFoldColumn <- grep( valueColumn, colnames(thisDF))
 		if ( length( logFoldColumn) > 0) {
 			foldM[ where > 0, i] <- thisDF[[ logFoldColumn[1]]][where]
@@ -352,7 +392,7 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 		if ( length(who) > 0) {
 			whoNA <- sort( unique( c( whoNA, who)))
 			if ( missingGenes == "fill") {
-				rankM[ who, i] <- nrow(rankM)
+				rankM[ who, i] <- if ( mode == "rank") nrow(rankM) else 0
 				foldM[ who, i] <- missingValue
 				pvalM[ who, i] <- 1.0
 			}
@@ -436,6 +476,9 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 
 	# do the final ordering by Average Rank
 	ord <- order( out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])
+	if ( mode == "percentile") {
+		ord <- order( -out$AVG_RANK, out$AVG_PVALUE, -out[[ valueColumn]])
+	}
 	out <- out[ ord, ]
 	rownames( out) <- 1:nrow(out)
 
@@ -447,18 +490,35 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 		randomAvgRank <- vector( length=NR*nFDRsimulations)
 		nnow <- 0
 		if (verbose) cat( "  estimating FDR..")
-		for ( k in 1:nFDRsimulations) {
-			for ( i in 1:nDF) simM[ , i] <- sample( NR)
-			randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
-			randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
-			nnow <- nnow + NR
-			if (verbose) cat( ".")
+		if ( mode == "rank") {
+			for ( k in 1:nFDRsimulations) {
+				for ( i in 1:nDF) simM[ , i] <- sample( NR)
+				randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
+				randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
+				nnow <- nnow + NR
+				if (verbose) cat( ".")
+			}
+			# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
+			randomAvgRank <- sort( randomAvgRank)
+			avgRank <- out$AVG_RANK
+			myLocs <- findInterval( avgRank * 1.00000001, randomAvgRank)
+			myLocs <- ifelse( myLocs > 0, myLocs - 1, 0)
+		} else {
+			for ( k in 1:nFDRsimulations) {
+				for ( i in 1:nDF) simM[ , i] <- runif( NR, 0, 100)
+				randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
+				randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
+				nnow <- nnow + NR
+				if (verbose) cat( ".")
+			}
+			# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
+			randomAvgRank <- sort( randomAvgRank)
+			avgRank <- out$AVG_RANK
+			myLocs <- findInterval( avgRank * 0.9999999, randomAvgRank)
+			myLocs <- ifelse( myLocs > 0, myLocs, 0)
+			# bigger values are more rare, so invert the pointers
+			myLocs <- length(randomAvgRank) - myLocs
 		}
-		# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
-		randomAvgRank <- sort( randomAvgRank)
-		avgRank <- out$AVG_RANK
-		myLocs <- findInterval( avgRank * 1.00000001, randomAvgRank)
-		myLocs <- ifelse( myLocs > 0, myLocs - 1, 0)
 		myEvalue <- myLocs / nFDRsimulations
 		myFPrate <- myEvalue / (1:NR)
 		myFPrate <- ifelse( myFPrate > 1, 1, myFPrate)
