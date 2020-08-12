@@ -7,8 +7,14 @@
 			marker.pos=NULL, minYmax=NULL, maxYmax=NULL,
 			sep="\t", sym.asp=TRUE, lab1="", lab2="", hideZero=FALSE, ...) {
 
-	tmp <- read.delim( file, as.is=T, sep=sep)
-	cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
+	if ( is.character(file)) {
+		tmp <- read.delim( file, as.is=T, sep=sep)
+		cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
+	} else if (is.data.frame(file)) {
+		tmp <- file
+	} else {
+		stop( "Argument 'file' must be a character string or a data frame.")
+	}
 
 	if ( !( all( c( geneColumn, value1Column, value2Column) %in% colnames(tmp)))) {
 		cat( "\nMissing columns:  looked for: ", geneColumn, value1Column, value2Column, 
@@ -225,8 +231,14 @@
 			marker.pos=NULL, sep="\t", min.intensity=0, intensityColumn="RPKM_1", 
 			left.label=NULL, right.label=NULL, ...) {
 
-	tmp <- read.delim( file, as.is=T, sep=sep)
-	cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
+	if ( is.character(file)) {
+		tmp <- read.delim( file, as.is=T, sep=sep)
+		cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
+	} else if (is.data.frame(file)) {
+		tmp <- file
+	} else {
+		stop( "Argument 'file' must be a character string or a data frame.")
+	}
 
 	if ( !( all( c( geneColumn, foldColumn, pvalueColumn) %in% colnames(tmp)))) {
 		cat( "\nMissing columns:  looked for: ", geneColumn, foldColumn, pvalueColumn, 
