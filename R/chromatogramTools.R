@@ -532,10 +532,119 @@
 }
 
 
+
+`peakpickChromatogram` <- function( chromoObj) {
+
+	# get the data we need 
+	traceM <- chromoObj$TraceM
+	peakPos <- chromoObj$PeakPosition
+	peakConf <- chromoObj$PeakConfidence
+
+	# ignore all the existing peak calls, and just call new ones directly from the trace matrix
+	peakPos <- peakpickTraceM( traceM)
+	
+	# with this new set of peak calls, remake all the other parts
+	baseCalls <- names( peakPos)
+	dna.seq <- paste( baseCalls, collapse="")
+		
+	# we will always keep both strands, as both DNA and AA
+	seqData <- chromatogramSequences( dna.seq)
+	
+	# use those peak top locations to estimate where the trace stops being useful
+	avgPeakSeparation <- median( diff( peakPos))
+	rightTail <- max( peakPos) + avgPeakSeparation
+	if ( rightTail < nrow(traceM)) {
+		traceM <- traceM[ 1:rightTail, ]
+	}
+
+	# there could also be rare cases where the trace matrix does not contain all the peaks.
+	# this should never happen, but check and fix if it does
+	NTR <- nrow( traceM)
+	maxPeakLoc <- NTR - floor( avgPeakSeparation/2)
+	if ( any( peakPos > maxPeakLoc)) {
+		# throw away those peaks
+		drops <- which( peakPos > maxPeakLoc)
+		peakPos <- peakPos[ -drops]
+		# this means we need to truncate the DNA calls too
+		if ( nchar(dna.seq) > length(peakPos)) {
+			dna.seq <- substr( dna.seq, 1, length(peakPos))
+			seqData <- chromatogramSequences( dna.seq)
+		}
+	}
+
+	colnames(traceM) <- c( "A", "C", "G", "T")
+	rownames(traceM) <- 1:nrow(traceM)
+	
+	# lastly, calculate confidence scores for each peak
+	peakConfidence <- calcChromatogramPeakConfidence( traceM, peakPos)
+
+	out <- list( "TraceM"=traceM, "PeakPosition"=peakPos, "PeakConfidence"=peakConfidence, 
+				"DNA_Calls"=seqData$DNA, "AA_Calls"=seqData$AA, "Filename"=chromoObj$Filename)
+	out
+}
+
+
+`peakpickTraceM` <- function( traceM) {
+
+	# given a matrix of A/C/G/T trace lines, find the peaks from first principles
+	
+	# start with total intensity in all channels
+	N <- nrow(traceM)
+	inten <- apply( traceM, 1, sum, na.rm=T)
+	intenM1 <- c( 0, inten[1:(N-1)])
+	intenP1 <- c( inten[2:N], 0)
+	min.inten <- max( inten) * 0.01
+	
+	# find all extrema as simple high points above background
+	isExtrema <- which( inten > min.inten & inten > intenM1 & inten >= intenP1 )
+	extremaHts <- inten[ isExtrema]
+	Nextrema <- length( isExtrema)
+	if ( Nextrema < 4) {
+		cat( "\nError: not enough peaks found.  Invalid chromatogram")
+		return( NULL)
+	}
+	
+	# we can get a guess of typical peak spacing
+	avg.peak.separation <- median( diff( isExtrema))
+	peak.tail <- round( avg.peak.separation * 0.6)
+	
+	# now visit every extrema in order by height, and mask out the region under that peak
+	usedMask <- rep.int( FALSE, N)
+	visitOrd <- order( extremaHts[ isExtrema], decreasing=T)
+	peakLoc <- peakBase <- vector()
+	Npeaks <- 0
+	for ( i in 1:Nextrema) {
+		thisPeak <- isExtrema[ visitOrd[i]]
+		# not a real peak if already covered by someone taller
+		if ( usedMask[thisPeak]) next
+		
+		# OK, this is a good peak to keep
+		Npeaks <- Npeaks + 1
+		peakLoc[Npeaks] <- thisPeak
+		peakBase[Npeaks] <- colnames(traceM)[ which.max( traceM[ thisPeak, ])]
+		
+		# now mask its region out
+		loEdge <- max( 1, thisPeak - peak.tail)
+		hiEdge <- min( N, thisPeak + peak.tail)
+		usedMask[ loEdge:hiEdge] <- TRUE
+	}
+	
+	# done visiting the obvious peaks
+	
+	# perhaps search for dead spots...??
+	
+	# package up the results
+	ord <- order( peakLoc)
+	peaksOut <- peakLoc[ ord]
+	names( peaksOut) <- peakBase[ord]
+	return( peaksOut)
+}
+
+
 `plotChromatogram` <- function( chromoObj, label="", seq=NULL, range=NULL, 
 				lwd=2, lty=1, cex=1, font=2, add=FALSE, forceYmax=NULL, 
 				showAA=TRUE, showTraceRowNumbers=FALSE, showConfidence=FALSE,
-				min.unit.score=NULL, ...) {
+				min.unit.score=NULL, xlim=NULL, ...) {
 
 	# allow being given a filename of a chromatogram
 	if ( is.character(chromoObj) && file.exists( chromoObj[1])) {
@@ -573,6 +682,11 @@
 	firstTracePoint <- 1
 	lastTracePoint <- NT
 	xLimits <- c( 1, NT)
+	# allow the caller to shift the plot along X when doing 2+ chromatotrams
+	if ( ! is.null( xlim)) {
+		xLimits[1] <- min( xlim)
+		xLimits[2] <- max( xlim)
+	}
 	AAtoShow <- ""
 	AAoffset <- 1
 	showAllAA <- ( is.character(showAA) && showAA =="all")
@@ -660,20 +774,26 @@
 
 `plotMultipleChromatograms` <- function( chromoSet, label="", seq=NULL, showAA=TRUE, 
 					showTraceRowNumbers=FALSE, showConfidence=FALSE, 
-					min.unit.score=NULL, max.to.show=4, ...) {
+					min.unit.score=NULL, max.to.show=4, xlim=NULL, ...) {
 
 	# set up to draw more than one
 	nChromo <- length( chromoSet)
 	nShow <- min( nChromo, max.to.show)
 	par( mfrow=c( nShow, 1))
 	par( mai=c(0.8, 0.8, 0.7, 0.4))
+	
+	# allow being given a list of X limits
+	myXlimits <- xlim
 
 	for ( i in 1:nChromo) {
 		chromoObj <- chromoSet[[i]]
 		chromoLabel <- paste( label, names(chromoSet)[i], sep="  ")
+		if ( ! is.null( xlim)) {
+			if ( is.list( xlim)) myXlimits <- xlim[[ min( i, length(xlim))]]
+		}
 		plotChromatogram( chromoObj, label=chromoLabel, seq=seq, showAA=showAA,
 				showTraceRowNumbers=showTraceRowNumbers, showConfidence=showConfidence, 
-				min.unit.score=min.unit.score, ...)
+				min.unit.score=min.unit.score, xlim=myXlimits, ...)
 	}
 }
 

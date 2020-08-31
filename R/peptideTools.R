@@ -370,7 +370,7 @@ UNION <- base::union
 
 
 `lowComplexityPeptides` <- function( peps, min.aa=4, max.top1.pct=51, max.top2.pct=76, 
-				max.top3.pct=95, dropPattern="KKKKK|FFFFF|IYIYIY") {
+				max.top3.pct=95, dropPattern="KKKKKKKK|FFFFFFFF|IYIYIYIY|PPPPPPPP|GGGGGGGG") {
 
 	# given a set of peptide, and some rules for complexity, flag which are too low complexity
 	isLOW <- vector()
