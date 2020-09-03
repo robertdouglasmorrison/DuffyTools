@@ -66,7 +66,8 @@
 		}
 
 		# tally the observed volume under each peak, in case we will scale to constant volume later
-		obsHeight[i] <- sum( traceOut[ (centerOut-1):(centerOut+1), ])
+		useHalf <- max( 1, half.width-1)
+		obsHeight[i] <- sum( traceOut[ (centerOut-useHalf):(centerOut+useHalf), ])
 	}
 
 	# the Trace matrix is updated to uniform spacing for peaks.
@@ -97,8 +98,9 @@
 
 	# if asked to provide constant height, do that as a second pass
 	if ( constant.height) {
-		idealHeight <- median( obsHeight)
-		minHeight <- idealHeight * 0.10
+		# some data has a long tail of super low peaks, that should not have a strong impact
+		idealHeight <- max( median( obsHeight), mean(obsHeight), quantile(obsHeight, 0.75))
+		minHeight <- idealHeight * 0.025
 		trace2 <- traceOut
 		for ( i in 1:NP) {
 			centerOut <- peaksOut[i]
@@ -111,10 +113,16 @@
 			trace2[ left:right, ] <- tmpM
 		}
 		traceOut <- trace2
+		
+		# small chance that the scaling caused extreme large values
+		# crop at something sensible
+		max.value.in <- quantile( traceIn, 0.99)
+		traceOut[ traceOut > max.value.in] <- max.value.in
 	}
 
 	# since we did interpolation on the trace matrix, clean it's significant digits some
 	traceOut <- round( traceOut, digits=2)
+	traceOut[ traceOut < 0] <- 0
 	
 	# lastly, recall the peak confidence
 	peakConfidence <- calcChromatogramPeakConfidence( traceOut, peaksOut)
@@ -208,6 +216,7 @@
 
 	# since we did interpolation on the trace matrix, clean it's significant digits some
 	traceM <- round( traceM, digits=2)
+	traceM[ traceM < 0] <- 0
 	
 	# some synthetic data may be too perfect for the model fitting tools, so allow the
 	# choice to add a bit of noise
@@ -623,7 +632,8 @@
 
 
 `deconvoluteChromatogram` <- function( obsChromo, seq=NULL, range=NULL, plot.chromatograms=T, doBlast=TRUE,
-									label="", verbose=T) {
+									blastTarget=c("protein","nucleotide"),
+									label="", path=NULL, max.constructs=3, max.plot=2, verbose=T) {
 
 	# given an observed chromatogram, try to automatically and iteratively deduce what constructs it
 	# is composed of, by repeatedly modelling and subtracting the dominant signal
@@ -635,11 +645,15 @@
 		obsChromo <- loadChromatogram( obsChromo)
 	}
 	
+	# decide where/what to call the files we make
+	chromoFile <- obsChromo$Filename
+	if ( is.null(path)) path <- dirname( chromoFile)
+	baseFile <- sub( ".ab1$", "", basename(chromoFile))
+	
 	# default label is the file's name
 	if ( label == "" && "Filename" %in% names(obsChromo)) {
-		label <- sub( ".ab1$", "", basename( obsChromo$Filename))
+		label <- baseFile
 	}
-	
 
 	# were we given a request for a smaller region?
 	if ( ! is.null( seq)) {
@@ -657,8 +671,11 @@
 	nIter <- 0
 	totalModelInten <- 0
 	chromoToPlot <- vector( mode="list")
+	residToPlot <- vector( mode="list")
 	
 	# get the starting trace matrix, to know when we should stop iterating
+	# but first crop off any decayed tail and standarize the peak spacing
+	obsChromo <- cropChromatogramLowSignalTail( obsChromo)
 	obsChromo <- standardizeChromatogram( obsChromo, constant.height=TRUE)
 	obsTraceM <- obsChromo$TraceM
 	obsInten <- sum( obsTraceM, na.rm=T)
@@ -666,11 +683,10 @@
 
 	# repeat until we stall out or succeed
 	curChromo <- obsChromo
-	if (plot.chromatograms) chromoToPlot[[1]] <- curChromo
 	repeat {
 	
 		# watch for any reason to bail out
-		if (nIter >= 3) break
+		if (nIter >= max.constructs) break
 		curInten <- sum( curChromo$TraceM, na.rm=T)
 		if ( curInten <= stopInten) break
 	
@@ -691,13 +707,14 @@
 		dnaOut[ nIter] <- curDNA
 		intenOut[ nIter] <- modelInten
 		nameOut[nIter] <- paste( "Construct", nIter, sep="_")
-		cat( "  Answer=  ", nIter, "  Intensity= ", modelInten)
-		if (plot.chromatograms) chromoToPlot[[nIter+1]] <- modelChromo
+		cat( "  Answer=  ", nIter, "  Intensity= ", modelInten, "  Percent = ", round( modelInten * 100 / obsInten, digits=1))
+		if (plot.chromatograms) chromoToPlot[[nIter]] <- modelChromo
 		
 		# subtract this model from the current chromatogram
 		cat( "  Subtract..")
 		deltaChromo <- subtractChromatogram( curChromo, modelChromo)
 		if ( is.null( deltaChromo)) break
+		if (plot.chromatograms) residToPlot[[nIter]] <- deltaChromo
 		
 		# re-pick where the peaks are now, watching for any errors
 		cat( "  Re-PeakPick..")
@@ -720,65 +737,96 @@
 	}
 
 	# when we fall out, summarize and return the results
-	residInten <- sum( curChromo$TraceM, na.rm=T)
-	last <- nIter + 1
-	nameOut[last] <- "Residual"
-	dnaOut[last] <- ""
-	intenOut[last] <- residInten
-	if (plot.chromatograms) chromoToPlot[[last+1]] <- curChromo
-	
+	residInten <- sum( curChromo$TraceM, na.rm=T)	
 	intenPcts <- round( intenOut * 100 / obsInten, digits=1)
 	out <- data.frame( "Name"=nameOut, "Percentage"=intenPcts, "DNA_Sequence"=dnaOut, stringsAsFactors=F)
 	
 	# submit the constructs to BLAST?
-	if (doBlast) {
-		tmpFastaFile <- "Temp.ChromoDeconvolution.BlastInput.fasta"
-		tmpBlastFile <- "Temp.ChromoDeconvolution.BlastOutput.xml"
-		writeFasta( as.Fasta( nameOut[1:nIter], dnaOut[1:nIter]), tmpFastaFile)
-		callBlastx( tmpFastaFile, outfile=tmpBlastFile, evalue=10, outfmt=5, maxhits=1, verbose=verbose)
-		cat( "\nExtracting results from XML..")
-		blastAns <<- extractBlastXMLdetails( tmpBlastFile, IDs=nameOut[1:nIter], IDprefix="")
-		# supplement the output with what we found
-		acc <- unlist( sapply( blastAns, `[[`, "accession"))
-		def <- unlist( sapply( blastAns, `[[`, "definition"))
-		eval <- unlist( sapply( blastAns, `[[`, "evalue"))
-		scor <- unlist( sapply( blastAns, `[[`, "score"))
-		matchStr <- unlist( sapply( blastAns, `[[`, "match"))
-		# small chance that not all constructs gave valid hits...
-		if ( length(acc) < nIter) acc <- c( acc, rep.int( "NA", nIter-length(acc)))
-		if ( length(def) < nIter) def <- c( def, rep.int( "No good scoring hits found", nIter-length(def)))
-		if ( length(eval) < nIter) eval <- c( eval, rep.int( 1, nIter-length(eval)))
-		if ( length(scor) < nIter) scor <- c( scor, rep.int( 0, nIter-length(scor)))
-		if ( length(matchStr) < nIter) matchStr <- c( matchStr, rep.int( "", nIter-length(matchStr)))
-		# and the residual gets no details
-		out$Accession <- c( acc, "")
-		out$Definition <- c( def, "")
-		out$Evalue <- c( eval, NA)
-		out$Score <- c( scor, NA)
-		out$MatchString <- c( matchStr, "")
+	fastaFile <- file.path( path, paste( baseFile, "Deconvolution.Constructs.fasta", sep="."))
+	blastFile <- file.path( path, paste( baseFile, "Deconvolution.BlastOutput.xml", sep="."))
+	resultsFile <- file.path( path, paste( baseFile, "Deconvolution.Results.csv", sep="."))
+	plotFile <- file.path( path, paste( baseFile, "Deconvolution.Results.pdf", sep="."))
+	if ( doBlast || !file.exists(blastFile) || (file.exists(blastFile) && file.info(blastFile)$size < 1000)) {
+		writeFasta( as.Fasta( nameOut[1:nIter], dnaOut[1:nIter]), fastaFile)
+		blastTarget <- match.arg( blastTarget)
+		if ( blastTarget == "protein") {
+			callBlastx( fastaFile, outfile=blastFile, evalue=10, wordsize=5, threads=6, outfmt=5, maxhits=1, verbose=verbose)
+		} else {
+			callBlastn( fastaFile, outfile=blastFile, evalue=10, wordsize=9, threads=6, outfmt=5, maxhits=1, verbose=verbose)
+		}
 	}
+	cat( "\nExtracting results from XML..")
+	blastAns <- extractBlastXMLdetails( blastFile, IDs=nameOut[1:nIter], IDprefix="")
+	# supplement the output with what we found
+	acc <- unlist( sapply( blastAns, `[[`, "accession"))
+	def <- unlist( sapply( blastAns, `[[`, "definition"))
+	eval <- unlist( sapply( blastAns, `[[`, "evalue"))
+	scor <- unlist( sapply( blastAns, `[[`, "score"))
+	matchStr <- unlist( sapply( blastAns, `[[`, "match"))
+	# small chance that not all constructs gave valid hits...
+	if ( length(acc) < nIter) acc <- c( acc, rep.int( "NA", nIter-length(acc)))
+	if ( length(def) < nIter) def <- c( def, rep.int( "No good scoring hits found", nIter-length(def)))
+	if ( length(eval) < nIter) eval <- c( eval, rep.int( 1, nIter-length(eval)))
+	if ( length(scor) < nIter) scor <- c( scor, rep.int( 0, nIter-length(scor)))
+	if ( length(matchStr) < nIter) matchStr <- c( matchStr, rep.int( "", nIter-length(matchStr)))
+	# and the residual gets no details
+	out$Accession <- acc
+	out$Definition <- gsub( "&gt;", "  ", def, fixed=T)
+	out$Evalue <- eval
+	out$Score <- round( as.numeric(scor), digits=2)
+	out$MatchString <- matchStr
+	write.table( out, resultsFile, sep=",", quote=T, row.names=F)
 
 	# do we want to draw what we did?
 	if (plot.chromatograms) {
-		NtoDraw <- length(chromoToPlot)
+		if ( length(chromoToPlot) > max.plot) length(chromoToPlot) <- max.plot
+		if ( length(residToPlot) > max.plot) length(residToPlot) <- max.plot
+		NtoDraw <- 1 + length(chromoToPlot) + length(residToPlot)
 		cex <- 1 - (0.05*NtoDraw)
 		savMAI <- par( "mai")
 		par( mfrow=c(NtoDraw, 1))
 		par( mai=c(0.5,0.9,0.3,0.4))
 		maxObsHeight <- quantile( apply( obsTraceM,1,max,na.rm=T),0.99)
-		plotChromatogram( chromoToPlot[[1]], forceYmax=maxObsHeight, label=paste( "Observed Data:  ", label), cex=cex, cex.main=2)
-		for ( j in 2:NtoDraw) {
+		plotChromatogram( obsChromo, forceYmax=maxObsHeight, label=paste( "Observed Data:  ", label), cex=cex, cex.main=1.8)
+		for ( j in 1:length(chromoToPlot)) {
 			myChromo <- chromoToPlot[[j]]
-			plotChromatogram( myChromo, forceYmax=maxObsHeight, cex=cex, cex.main=2,
-							label=paste( "Deconvolution ", nameOut[j-1], " = ", intenPcts[j-1], "%    Score=", scor[j-1], "   Evalue=", eval[j-1], sep=""))
+			plotChromatogram( myChromo, forceYmax=maxObsHeight, cex=cex, cex.main=1.8,
+							label=paste( "Deconvolution ", out$Name[j], " = ", intenPcts[j], "%    Score = ", out$Score[j], 
+							"   Evalue = ", out$Evalue[j], sep=""))
 			if ( "Definition" %in% colnames(out)) {
-				textToShow <- out$Definition[j-1]
-				textToShow <- gsub( "&gt;", "  ", textToShow, fixed=T)
-				if ( nchar(textToShow) > 200) textToShow <- paste( substr( textToShow, 1, 200), "...", sep="")
-				text( nrow(myChromo$TraceM)/2, maxObsHeight*0.9,  textToShow, cex=2)
+				textToShow <- out$Definition[j]
+				if ( ! is.na(textToShow)) {
+					textToShow <- gsub( "&gt;", "  ", textToShow, fixed=T)
+					if ( nchar(textToShow) > 200) textToShow <- paste( substr( textToShow, 1, 200), "...", sep="")
+					text( nrow(myChromo$TraceM)/2, maxObsHeight*0.925,  textToShow, cex=2)
+				}
+			}
+			if ( "MatchString" %in% colnames(out)) {
+				if ( ! is.na(out$Score[j]) && out$Score[j] > 10) {
+					require( plotrix)
+					textToShow <- out$MatchString[j]
+						if ( ! is.na(textToShow) && nchar(textToShow) > 10) {
+						textToShow <- strsplit( textToShow, split="\n")[[1]]
+						textToShow <- sub( "^    ", "", textToShow)
+						textToShow <- paste( c( "Construct  ", "           ", "Blast Hit  "), textToShow, sep="")
+						textCharWidth <- nrow(myChromo$TraceM) / 400
+						textX <- (nrow(myChromo$TraceM)/2) + (nchar(textToShow[1]) * textCharWidth * c(-1,1))
+						textY <- maxObsHeight * c(0.15, 0.51)
+						rect( textX[1], textY[1], textX[2], textY[2], border='black', col='white')
+						text( nrow(myChromo$TraceM)/2, maxObsHeight*.43, textToShow[1], cex=1, family="mono")
+						text( nrow(myChromo$TraceM)/2, maxObsHeight*.33, textToShow[2], cex=1, family="mono")
+						text( nrow(myChromo$TraceM)/2, maxObsHeight*.23, textToShow[3], cex=1, family="mono")
+					}
+				}
 			}
 			dev.flush()
+			myChromo <- residToPlot[[j]]
+			myIntenPct <- round( sum( myChromo$TraceM, na.rm=T) * 100 / obsInten, digits=1)
+			plotChromatogram( myChromo, forceYmax=maxObsHeight, cex=cex, cex.main=1.8,
+							label=paste( "Residual after ", out$Name[j], " = ", myIntenPct, "%", sep=""))
+			dev.flush()
 		}
+		dev.print( pdf, plotFile, width=20)
 		par( mfrow=c(1,1))
 		par( mai=c(1,1,0.8,0.4))
 	}

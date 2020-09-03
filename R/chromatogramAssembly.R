@@ -20,7 +20,13 @@
 	use <- 1:nChromo
 	if ( verbose) cat( "\nGiven as input", nChromo, "chromatograms.")
 
-	# Step 0.5:  fix any 'N' calls in the raw data
+
+	# Step 0.5.1:  crop off any low signal tails
+	for ( i in 1:nChromo) {
+		chromoSet[[i]] <- cropChromatogramLowSignalTail( chromoSet[[i]], verbose=verbose)
+	}
+	
+	# Step 0.5.2:  fix any 'N' calls in the raw data
 	for ( i in 1:nChromo) {
 		chromoSet[[i]] <- fixChromatogramNcalls( chromoSet[[i]], verbose=verbose)
 	}

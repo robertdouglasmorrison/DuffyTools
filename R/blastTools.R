@@ -192,3 +192,88 @@
 
 	return( blastDF)
 }
+
+
+extractBlastXMLdetails <- function( filein, IDs, IDprefix="", IDsuffix="") {
+
+	# we want to extract the details that show the 'best hits'...
+	out <- vector( mode="list")
+	txt <- readLines( con=filein)
+	iterDefLines <- grep( "Iteration_query-def", txt, fixed=TRUE)
+	if ( length( iterDefLines) < 1) return( out)
+
+	for( i in 1:length(iterDefLines)) {
+		if ( i < length( iterDefLines)) {
+			lastLine <- iterDefLines[i+1]
+		} else {
+			lastLine <- length( txt)
+		}
+		out[[i]] <- extractOneXMLiterationSet( txt[ iterDefLines[i] : lastLine] )
+	}
+
+	# some CRs may not return anything, but try to make the answer more complete
+	idsOut <- sapply( out, function(x) x$id)
+	finalOut <- vector( mode="list")
+	for ( j in 1:length(IDs)) {
+		i <- IDs[j]
+		thisID <- paste( IDprefix, i, IDsuffix, sep="")
+		where <- match( thisID, idsOut, nomatch=0)
+		if ( where > 0) {
+			finalOut[[j]] <- out[[where]]
+		} else {
+			finalOut[[j]] <- list( "n"=0, "id"=thisID, "accession"=NA, "definition"=NA, "evalue"=NA, 
+						"score"=NA, "match"=NA, "hitFrom"=NA, "hitTo"=NA)
+		}
+	}
+
+	return( finalOut)
+}
+
+
+extractOneXMLiterationSet <- function( txt) {
+
+	# given a subset of text lines that contain one XML blast output alignment...
+	id <- sub( "( *<Iteration_query-def>)(.+)(</Iteration_query-def>)", "\\2", txt[1])
+	hitLines <- grep( "<Hit>", txt, fixed=TRUE)
+	nHits <- length( hitLines)
+	if ( nHits < 1) return( list( "n"=0, "id"=id))
+
+	hitACClines <- grep( "<Hit_accession>", txt, fixed=TRUE)
+	hitACCs <- sub( "( *<Hit_accession>)(.+)(</Hit_accession>)", "\\2", txt[ hitACClines])
+	hitDEFlines <- grep( "<Hit_def>", txt, fixed=TRUE)
+	hitDEFs <- sub( "( *<Hit_def>)(.+)(</Hit_def>)", "\\2", txt[ hitDEFlines])
+	
+	# use just the first HSP for each hit, static offsets from hit line...
+	hitEvalue <- hitScore <- hitMatch <- hitFrom <- hitTo <- vector()
+	for ( i in 1:length( hitLines)) {
+		line <- hitLines[i]
+		hitScore[i] <- as.numeric( sub( "( +<Hsp_bit-score>)(.+)(</Hsp_bit-score>)", "\\2", txt[line+9]))
+		hitEvalue[i] <- as.numeric( sub( "( +<Hsp_evalue>)(.+)(</Hsp_evalue>)", "\\2", txt[line+11]))
+		qfrom <- as.integer( sub( "( +<Hsp_query-from>)(.+)(</Hsp_query-from>)", "\\2", txt[line+12]))
+		qto <- as.integer( sub( "( +<Hsp_query-to>)(.+)(</Hsp_query-to>)", "\\2", txt[line+13]))
+		hfrom <- as.integer( sub( "( +<Hsp_hit-from>)(.+)(</Hsp_hit-from>)", "\\2", txt[line+14]))
+		hto <- as.integer( sub( "( +<Hsp_hit-to>)(.+)(</Hsp_hit-to>)", "\\2", txt[line+15]))
+		hitFrom[i] <- hfrom
+		hitTo[i] <- hto
+
+		# there may be a 'gaps' line... there may not be...
+		hasGaps <- ( regexpr( "Hsp_gaps", txt[ line+20], fixed=TRUE) > 0)
+		if ( hasGaps) line <- line + 1
+
+		seq <- sub( "( +<Hsp_qseq>)(.+)(</Hsp_qseq>)", "\\2", txt[line+21])
+		qtxt <- base::paste( formatC( qfrom, digits=12, format="d"), seq, formatC( qto, digits=12, 
+				format="d"), sep=" ")
+		seq <- sub( "( +<Hsp_hseq>)(.+)(</Hsp_hseq>)", "\\2", txt[line+22])
+		htxt <- base::paste( formatC( hfrom, digits=12, format="d"), seq, formatC( hto, digits=12, 
+				format="d"), sep=" ")
+		seq <- sub( "( +<Hsp_midline>)(.+)(</Hsp_midline>)", "\\2", txt[line+23])
+		mtxt <- base::paste( "             ", seq, "             ", sep=" ")
+		hitMatch[i] <- base::paste( qtxt, mtxt, htxt, sep="\n")
+	}
+
+	out <- list( "n"=nHits, "id"=id, "accession"=hitACCs, "definition"=hitDEFs, "evalue"=hitEvalue, 
+			"score"=hitScore, "match"=hitMatch, "hitFrom"=hitFrom, "hitTo"=hitTo)
+
+	return( out)
+}
+

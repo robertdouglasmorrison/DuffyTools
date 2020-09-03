@@ -1312,6 +1312,71 @@
 }
 
 
+
+`cropChromatogramLowSignalTail` <- function( chromoObj, min.signal.percent=20, windowSize=11, verbose=TRUE) {
+
+	# grab the raw data that we start from
+	traceM <- chromoObj$TraceM
+	peakPos <- chromoObj$PeakPosition
+	peakConf <- chromoObj$PeakConfidence
+	NP <- length( peakPos)
+	if ( NP <= windowSize) {
+		if (verbose) cat( "  Crop Warning:  sequence too short, cropped to 'empty'.")
+		return( NULL)
+	}
+
+	# get the intensity heights of the peaks
+	peakHts <- apply( traceM[ peakPos, ], MARGIN=1, FUN=max)
+	
+	# apply a smoothing window to the peak heights
+	smoothHts <- peakHts
+	if ( NP >= windowSize * 2) {
+		names(peakHts) <- peakPos
+		smoothHts <- movingAverage( peakHts, window=windowSize)
+	}
+
+	# the cutoff may be given on 0 to one, or zero to 100
+	# but the raw data is always zero to one
+	if ( min.signal.percent > 1) min.signal.percent <- min.signal.percent / 100
+
+	# make sure the front center portion -- which should be high height -- is
+	centerPts <- round( c( NP*0.2, NP*0.5))
+	meanHt <- mean( smoothHts[ centerPts[1] : centerPts[2]], na.rm=T)
+	cropHtCutoff <- round( meanHt * min.signal.percent)
+
+	# keep all the front, but
+	# find the first place in the back half that is below the minimum height
+	badRight <- which( smoothHts[ centerPts[2] : NP] < cropHtCutoff)
+	keepLeft <- 1
+	if ( length( badRight)) {
+		keepRight <- min( badRight) + centerPts[2] - 1
+	} else {
+		keepRight <- NP
+	}
+	keep <- keepLeft : keepRight
+
+	# grap those parts for each piece
+	outPeaks <- peakPos[ keep]
+	outConfs <- peakConf[ keep]
+	NP2 <- length( outPeaks)
+	halfPeak <- floor( median( diff( peakPos)) / 2)
+	firstTrace <- 1
+	lastTrace <- min( outPeaks[NP2] + halfPeak, nrow(traceM))
+	outTrace <- traceM[ firstTrace:lastTrace, ]
+
+	# now reset all the peak pointers
+	rownames(outTrace) <- 1:nrow(outTrace)
+	outPeaks <- outPeaks - firstTrace + 1
+
+	# OK, the cleaned DNA string becomes the truth now
+	dnaOut <- paste( names( outPeaks), collapse="")
+	seqData <- chromatogramSequences( dnaOut)
+	out <- list( "TraceM"=outTrace, "PeakPosition"=outPeaks, "PeakConfidence"=outConfs,
+			"DNA_Calls"=seqData$DNA, "AA_Calls"=seqData$AA, "Filename"=chromoObj$Filename)
+	out
+}
+
+
 `cropChromatogramByConfidence` <- function( chromoObj, min.confidence=60, windowSize=11, verbose=TRUE) {
 
 	# grab the raw data that we start from
