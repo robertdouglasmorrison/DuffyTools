@@ -17,14 +17,20 @@
 	chromoSet <- loadMultipleChromatograms( chromoFiles, curated=curated)
 	nChromo <- length( chromoSet)
 	if ( is.null( chromoSet)) return( NULL)
-	use <- 1:nChromo
+	if ( nChromo < 1) return( NULL)
 	if ( verbose) cat( "\nGiven as input", nChromo, "chromatograms.")
 
 
-	# Step 0.5.1:  crop off any low signal tails
+	# Step 0.5.1:  crop off any low signal tails, this may reomve entire ones...
+	nnow <- 0
 	for ( i in 1:nChromo) {
-		chromoSet[[i]] <- cropChromatogramLowSignalTail( chromoSet[[i]], verbose=verbose)
+		ans <- cropChromatogramLowSignalTail( chromoSet[[i]], verbose=verbose)
+		if (is.null(ans)) next
+		nnow <- nnow + 1
+		chromoSet[[nnow]] <- ans
 	}
+	length(chromoSet) <- nChromo <- nnow
+	if ( nChromo < 1) return( NULL)
 	
 	# Step 0.5.2:  fix any 'N' calls in the raw data
 	for ( i in 1:nChromo) {
@@ -32,6 +38,7 @@
 	}
 	
 	# Step 1: crop off low confidence edges
+	use <- 1:nChromo
 	if ( crop) {
 		for ( ichr in 1:nChromo) {
 			if ( verbose) cat( "\nCropping: ", names(chromoSet)[ichr])

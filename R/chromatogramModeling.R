@@ -631,7 +631,8 @@
 	
 
 
-`deconvoluteChromatogram` <- function( obsChromo, seq=NULL, range=NULL, plot.chromatograms=T, doBlast=TRUE,
+`deconvoluteChromatogram` <- function( obsChromo, seq=NULL, range=NULL, 
+									doModel=TRUE, doBlast=TRUE, doPlot=TRUE,
 									blastTarget=c("protein","nucleotide"),
 									label="", path=NULL, max.constructs=3, max.plot=2, verbose=T) {
 
@@ -643,6 +644,7 @@
 	# allow being given a filename of a chromatogram
 	if ( is.character(obsChromo) && file.exists( obsChromo[1])) {
 		obsChromo <- loadChromatogram( obsChromo)
+		if (is.null(obsChromo)) return(NULL)
 	}
 	
 	# decide where/what to call the files we make
@@ -662,6 +664,7 @@
 		if ( is.null( obsChromo)) return( NULL)
 	} else if ( ! is.null( range)) {
 		obsChromo <- subsetChromatogramByRange(obsChromo, range=range)
+		if ( is.null( obsChromo)) return( NULL)
 	}
 	
 	# accumulate the answers we will return
@@ -676,13 +679,16 @@
 	# get the starting trace matrix, to know when we should stop iterating
 	# but first crop off any decayed tail and standarize the peak spacing
 	obsChromo <- cropChromatogramLowSignalTail( obsChromo)
+	if ( is.null( obsChromo)) return( NULL)
 	obsChromo <- standardizeChromatogram( obsChromo, constant.height=TRUE)
+	if ( is.null( obsChromo)) return( NULL)
 	obsTraceM <- obsChromo$TraceM
 	obsInten <- sum( obsTraceM, na.rm=T)
 	stopInten <- obsInten * 0.05
 
 	# repeat until we stall out or succeed
 	curChromo <- obsChromo
+	if (doModel) {
 	repeat {
 	
 		# watch for any reason to bail out
@@ -708,13 +714,13 @@
 		intenOut[ nIter] <- modelInten
 		nameOut[nIter] <- paste( "Construct", nIter, sep="_")
 		cat( "  Answer=  ", nIter, "  Intensity= ", modelInten, "  Percent = ", round( modelInten * 100 / obsInten, digits=1))
-		if (plot.chromatograms) chromoToPlot[[nIter]] <- modelChromo
+		if (doPlot) chromoToPlot[[nIter]] <- modelChromo
 		
 		# subtract this model from the current chromatogram
 		cat( "  Subtract..")
 		deltaChromo <- subtractChromatogram( curChromo, modelChromo)
 		if ( is.null( deltaChromo)) break
-		if (plot.chromatograms) residToPlot[[nIter]] <- deltaChromo
+		if (doPlot) residToPlot[[nIter]] <- deltaChromo
 		
 		# re-pick where the peaks are now, watching for any errors
 		cat( "  Re-PeakPick..")
@@ -740,13 +746,14 @@
 	residInten <- sum( curChromo$TraceM, na.rm=T)	
 	intenPcts <- round( intenOut * 100 / obsInten, digits=1)
 	out <- data.frame( "Name"=nameOut, "Percentage"=intenPcts, "DNA_Sequence"=dnaOut, stringsAsFactors=F)
+	}   # if doModel...
 	
 	# submit the constructs to BLAST?
 	fastaFile <- file.path( path, paste( baseFile, "Deconvolution.Constructs.fasta", sep="."))
 	blastFile <- file.path( path, paste( baseFile, "Deconvolution.BlastOutput.xml", sep="."))
 	resultsFile <- file.path( path, paste( baseFile, "Deconvolution.Results.csv", sep="."))
 	plotFile <- file.path( path, paste( baseFile, "Deconvolution.Results.pdf", sep="."))
-	if ( doBlast || !file.exists(blastFile) || (file.exists(blastFile) && file.info(blastFile)$size < 1000)) {
+	if ( doModel && (doBlast || !file.exists(blastFile) || (file.exists(blastFile) && file.info(blastFile)$size < 1000))) {
 		writeFasta( as.Fasta( nameOut[1:nIter], dnaOut[1:nIter]), fastaFile)
 		blastTarget <- match.arg( blastTarget)
 		if ( blastTarget == "protein") {
@@ -755,7 +762,12 @@
 			callBlastn( fastaFile, outfile=blastFile, evalue=10, wordsize=9, threads=6, outfmt=5, maxhits=1, verbose=verbose)
 		}
 	}
+	
 	cat( "\nExtracting results from XML..")
+	if ( ! file.exists(blastFile)) {
+		cat( "\nFile not found: ", blastFile, "\nSkipping...")
+		return(NULL)
+	}
 	blastAns <- extractBlastXMLdetails( blastFile, IDs=nameOut[1:nIter], IDprefix="")
 	# supplement the output with what we found
 	acc <- unlist( sapply( blastAns, `[[`, "accession"))
@@ -769,16 +781,25 @@
 	if ( length(eval) < nIter) eval <- c( eval, rep.int( 1, nIter-length(eval)))
 	if ( length(scor) < nIter) scor <- c( scor, rep.int( 0, nIter-length(scor)))
 	if ( length(matchStr) < nIter) matchStr <- c( matchStr, rep.int( "", nIter-length(matchStr)))
-	# and the residual gets no details
-	out$Accession <- acc
-	out$Definition <- gsub( "&gt;", "  ", def, fixed=T)
-	out$Evalue <- eval
-	out$Score <- round( as.numeric(scor), digits=2)
-	out$MatchString <- matchStr
-	write.table( out, resultsFile, sep=",", quote=T, row.names=F)
-
+	
+	if (doModel) {
+		out$Accession <- acc
+		out$Definition <- gsub( "&gt;", "  ", def, fixed=T)
+		out$Evalue <- eval
+		out$Score <- round( as.numeric(scor), digits=2)
+		out$MatchString <- matchStr
+		write.table( out, resultsFile, sep=",", quote=T, row.names=F)
+	} else {
+		if ( file.exists(resultsFile)) {
+			out <- read.csv( resultsFile, as.is=T)
+		} else {
+			cat( "\nFile not found: ", resultsFile, "\nSkipping...")
+			return(NULL)
+		}
+	}
+	
 	# do we want to draw what we did?
-	if (plot.chromatograms) {
+	if (doPlot) {
 		if ( length(chromoToPlot) > max.plot) length(chromoToPlot) <- max.plot
 		if ( length(residToPlot) > max.plot) length(residToPlot) <- max.plot
 		NtoDraw <- 1 + length(chromoToPlot) + length(residToPlot)
@@ -830,5 +851,6 @@
 		par( mfrow=c(1,1))
 		par( mai=c(1,1,0.8,0.4))
 	}
+	
 	return( out)
 }
