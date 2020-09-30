@@ -409,9 +409,10 @@
 }
 
 
-`modelBlendChromatogram` <- function( obsChromo, seqs, plot.chromatograms=T, 
-									synthetic.width=2.5, min.pct.plot=5, max.pval.plot=0.05,
-									label="") {
+`modelBlendChromatogram` <- function( obsChromo, seqs, synthetic.width="fit", 
+				trim.chromatogram=TRUE, trim.seqs=FALSE, noise.seqs=TRUE, 
+				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05,
+				max.show.plot=4, label="") {
 
 	# given an observed chromatogram, fit 2 or more sequences to it and return the contribution of
 	# how much of each sequence was needed to best fit the observed chromatogram.
@@ -456,17 +457,23 @@
 	noGapSeqs <- gsub( "-", "", seqs, fixed=T)
 	
 	# 2.  We need to find the best matching sequence to know which to use to crop the chromatogram
+	#	  Find the best, even if we don't crop the chromatogram...
 	scores <- numeric(NS)
 	stdChromo <- standardizeChromatogram( obsChromo, constant.height=TRUE)
 	for ( i in 1:NS) {
 		tmpChromo <- subsetChromatogram( stdChromo, seq=noGapSeqs[i])
-		scores[i] <- tmpChromo$UnitScore
+		if ( "UnitScore" %in% names(tmpChromo)) {
+			scores[i] <- tmpChromo$UnitScore
+		} else {
+			scores[i] <- 0
+		}
 	}
 	best <- which.max( scores)
 	bestSeq <- seqs[ best]
-	# debug:  look at the scores
 	names(scores) <- names(seqs)
-	tmpChromo <- subsetChromatogram( stdChromo, seq=bestSeq)	
+	tmpChromo <- stdChromo
+	if (trim.chromatogram) tmpChromo <- subsetChromatogram( stdChromo, seq=bestSeq)	
+
 	
 	# 3. We need to know if we are doing Fwd or RevComp to get the sequences facing the right way
 	editDist <- adist( bestSeq, tmpChromo$DNA_Calls)
@@ -490,8 +497,30 @@
 	}
 	
 	# with the best starting sequence chosen, and Fwd/Rev known, and gaps moved to the ends, 
-	# now we can extract that portion from the observed chromatogram,
-	observedChromo <- subsetChromatogram( stdChromo, seq=bestSeq)	
+	# now we can extract that portion from the observed chromatogram.   Or perhaps trim the 
+	# sequences to match the observed chromatogram
+	observedChromo <- stdChromo
+	
+	if ( trim.seqs) {
+		# if we need/want to trim the reference sequences, do that now, and do it the same to all
+		pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], bestSeq, type="local", scoreOnly=F)
+		from <- start( subject(pa))
+		to <- width( subject(pa)) + from -1
+		cat( "\nDebug trim seqs: (size,from,to): ", nchar(bestSeq), from, to)
+		# but don't let it subset away to nothing...
+		newLen <- to - from + 1
+		oldLen <- nchar(bestSeq)
+		if ( newLen < oldLen/2) {
+			extra <- round(((oldLen/2) - newLen) / 2)
+			from <- max( from - extra, 1)
+			to <- min( to + extra, oldLen)
+		}
+		seqs <- substr( seqs, from, to)
+		bestSeq <- seqs[ best]
+	}
+	if (trim.chromatogram || trim.seqs) observedChromo <- subsetChromatogram( observedChromo, seq=bestSeq)	
+	
+	# 
 	maxObsHeight <- quantile( observedChromo$TraceM, 0.99)
 	observedTraceM <- observedChromo$TraceM
 	
@@ -519,25 +548,26 @@
 	}
 	
 	# add in some noise sequences to be more realistic
-	noiseSeqs <- vector()
-	noiseBases <- c("A","C","G","T","N")
-	NN <- length( noiseBases)
-	noiseTraceMs <- noiseChromos <- vector( mode="list")
-	for (i in 1:NN) {
-		ch <- noiseBases[i]
-		noiseStr <- paste( rep.int(ch,nchar(bestSeq)), collapse="")
-		noiseSeqs[i] <-  noiseStr
-		noiseChromos[[i]] <- tmpChromo <- syntheticChromatogram( noiseStr, height=maxObsHeight, 
-														width=synthetic.width, addJitter=T)
-		noiseTraceMs[[i]] <- tmpChromo$TraceM
+	if (noise.seqs) {
+		noiseSeqs <- vector()
+		noiseBases <- c("A","C","G","T","N")
+		NN <- length( noiseBases)
+		noiseTraceMs <- noiseChromos <- vector( mode="list")
+		for (i in 1:NN) {
+			ch <- noiseBases[i]
+			noiseStr <- paste( rep.int(ch,nchar(bestSeq)), collapse="")
+			noiseSeqs[i] <-  noiseStr
+			noiseChromos[[i]] <- tmpChromo <- syntheticChromatogram( noiseStr, height=maxObsHeight, 
+								width=synthetic.width, addJitter=T)
+			noiseTraceMs[[i]] <- tmpChromo$TraceM
+		}
+		names(noiseSeqs) <- paste( "Poly", noiseBases, sep="_")
+		# join our real choices and the noise choices
+		seqs <- c( seqs, noiseSeqs)
+		NS <- length( seqs)
+		synthChromos <- c( synthChromos, noiseChromos)
+		synthChromoTraceMs <- c( synthChromoTraceMs, noiseTraceMs)
 	}
-	names(noiseSeqs) <- paste( "Poly", noiseBases, sep="_")
-	
-	# join our real choices and the noise choices
-	seqs <- c( seqs, noiseSeqs)
-	NS <- length( seqs)
-	synthChromos <- c( synthChromos, noiseChromos)
-	synthChromoTraceMs <- c( synthChromoTraceMs, noiseTraceMs)
 	
 	# ready to do the NLS fitting...   set up the controls
 	controlList <- nls.control( maxiter=100, minFactor=1/512, warnOnly=TRUE)
@@ -559,16 +589,66 @@
 	}
 	
 	# call the NLS to do the fit
-	nlsAns <- nls( y ~ blendChromatograms( x, weights), 
+	nlsAns <- try( nls( y ~ blendChromatograms( x, weights), 
 				start=starts, control=controlList, algorithm="port", lower=lowerBounds,
-				upper=upperBounds)
+				upper=upperBounds))
+	if ( class( nlsAns) != "try-error") {
+		nlsAns2 <- try( summary( nlsAns))
+	}
 	
-	# extract the results
-	nlsAns2 <- summary( nlsAns)
-	coefs <- coefficients( nlsAns2)
-	blendEsts <- rawEsts <- coefs[ ,1]
-	names( blendEsts) <- names( seqs)
-	pvals <- coefs[,4]
+	# extract the results if successful
+	if ( class(nlsAns) == "try-error" || class(nlsAns2) == "try-error") {
+	
+		# try using the GenSA tool instead
+		cat( "\nNLS fitting failed.  Trying GenSA...\n")
+		# set up for Generalize Simulated Annealing
+		require( GenSA)
+		# we can stop if we explain 95% of the observed data
+		obsTrace <- observedChromo$TraceM
+		stopValue <- sqrt( sum( obsTrace ^ 2)) * 0.05
+
+		# GenSA wants one vector of parameter weights
+		wts <- jitter( rep.int( 1/NS, NS))
+		control.list <- list( "maxit"=100, "threshold.stop"=stopValue, "smooth"=FALSE, "max.call"=1000000,
+					"max.time"=100, "trace.mat"=FALSE)
+	
+		# define the called GenSA blending residual function
+		genSA.Chromatogram.Blend.residual <- function( weights, obs, traceMset) {
+				N <- length( traceMset)
+				v <- as.vector( x[[1]]) * weights[1]
+				if ( N > 1) for ( j in 2:N) {
+					v2 <- as.vector( x[[j]]) * weights[j]
+					v <- v + v2
+				}
+				diff <- ( obs - v)
+				resid <- sqrt( sum( diff * diff))
+				return( resid)
+		}
+
+		# make the call
+		ans <- GenSA( par=wts, lower=lowerBounds, upper=upperBounds, fn=genSA.Chromatogram.Blend.residual,
+					control=control.list, obs=obsTrace, traceMset=x)
+
+		# extract and apply the optimal parameters
+		pars <- ans$par
+		blendEsts <- rawEsts <- pars
+		names( blendEsts) <- names( seqs)
+		# the GenSA tool does not give any P-values at all.
+		pvals <- rep.int( 1, NS)
+		# try to estimate these by comparing the set of estimate values
+		for ( k in 1:length(pvals)) {
+			thisSet <- rep.int( blendEsts[k],5) + c( -0.02,-0.01,0,0.01,0.02)
+			otherSet <- blendEsts[-k]
+			pvals[k] <- t.test( thisSet, otherSet, altern="greater")$p.value
+		}
+		totResid <- ans$value
+	} else {
+		coefs <- coefficients( nlsAns2)
+		blendEsts <- rawEsts <- coefs[ ,1]
+		names( blendEsts) <- names( seqs)
+		pvals <- coefs[,4]
+		totResid <- sum( abs( nlsAns2$residuals))
+	}
 	pvalText <- ifelse( pvals < 0.001, formatC( pvals, format="e", digits=2), as.character( round(pvals, digits=3)))
 	
 	# turn these estimates into percentages
@@ -584,12 +664,11 @@
 	
 	# quantify how well the model fit the observed data
 	obsInten <- sum( y)
-	totResid <- sum( abs( nlsAns2$residuals))
 	resPct <- round( totResid * 100 / obsInten, digits=2)
 	modelPct <- 100 - resPct
-	
+
 	out <- list( "Model.Estimates"=out1, "Model.Fit.Percentage"=modelPct)
-	
+
 	# do we want to draw what we did?
 	if (plot.chromatograms) {
 		# create the residual by subtracting all non-zero components
@@ -597,11 +676,13 @@
 		residM <- residChromo$TraceM
 		toDraw <- which( pcts >= min.pct.plot | pvals < max.pval.plot)
 		NtoDraw <- length(toDraw)
+		if ( NtoDraw > max.show.plot) NtoDraw <- max.show.plot
 		cex <- 1 - (0.05*NtoDraw)
 		savMAI <- par( "mai")
 		par( mfrow=c(NtoDraw+2, 1))
 		par( mai=c(0.5,0.9,0.3,0.4))
 		plotChromatogram( observedChromo, forceYmax=maxObsHeight, label=paste( "Observed Data:  ", label), cex=cex, cex.main=1.5)
+		nShown <- 0
 		for ( j in seqOrd) {
 			myEst <- rawEsts[j]
 			myChromo <- synthChromos[[j]]
@@ -612,18 +693,23 @@
 			if( j %in% toDraw) {
 				myYheight <- maxObsHeight * sqrt(myEst)
 				plotChromatogram( myChromo, forceYmax=myYheight, cex=cex, cex.main=1.5,
-							label=paste( "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), "%    P.value = ", pvalText[j], sep=""))
+						label=paste( "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), "%    P.value = ", pvalText[j], sep=""))
 				dev.flush()
+				nShown <- nShown + 1
 			}
+			if ( nShown >= max.show.plot) break
 		}
-		# lastly, show the final residual
+		# lastly, always show the final residual.   And re-calculate exactly what % is left over
 		residChromo$TraceM <- residM
+		resInten <- sum( residM)
+		resPct <- round( resInten * 100 / obsInten, digits=2)
+		modelPct <- 100 - resPct
+		out$Model.Fit.Percentage <- modelPct
 		plotChromatogram( residChromo, forceYmax=maxObsHeight, cex=cex, cex.main=1.5, 
-					label=paste( "Model Residual   (model explains ", modelPct, "% of raw intensity)", sep=""))	
+				label=paste( "Model Residual   (model explains ", modelPct, "% of raw intensity)", sep=""))	
 		dev.flush()
 		par( mfrow=c(1,1))
 		par( mai=c(1,1,0.8,0.4))
-
 	}
 	
 	return( out)
@@ -632,9 +718,9 @@
 
 
 `deconvoluteChromatogram` <- function( obsChromo, seq=NULL, range=NULL, 
-									doModel=TRUE, doBlast=TRUE, doPlot=TRUE,
-									blastTarget=c("protein","nucleotide"),
-									label="", path=NULL, max.constructs=3, max.plot=2, verbose=T) {
+				doModel=TRUE, doBlast=TRUE, doPlot=TRUE,
+				blastTarget=c("protein","nucleotide"),
+				label="", path=NULL, max.constructs=3, max.plot=2, verbose=T) {
 
 	# given an observed chromatogram, try to automatically and iteratively deduce what constructs it
 	# is composed of, by repeatedly modelling and subtracting the dominant signal
