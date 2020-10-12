@@ -161,6 +161,7 @@
 	# only keep/show what we filled in
 	nFound <- sum( aaOut != "")
 	length(aaOut) <- length(dnaOut) <- length(pctOut) <- length(rankOut) <- nFound
+	cat( "\nDebug old codon measure tool: ", nFound, aaOut, pctOut)
 	if ( plot) {
 		usr <- par( "usr")
 		myX <- mean(usr[1:2])
@@ -170,6 +171,128 @@
 	}
 	return( data.frame( "Status"="Pass", "AA_Call"=aaOut, "Codon"=dnaOut, "Percent"=pctOut, "Rank"=rankOut,
 					stringsAsFactors=F))
+}
+
+
+
+`modelFitOneCodon` <- function( chromoObj, ref.AA, alt.AA, min.percent=1, plot=T) {
+
+	# given a tiny chromatogram that spans just a single codon, fit this to the
+	# expected amino acid calls being searched for.  The fit tool will search for any codons
+	# that code for the reference AA, the expected alternate AA (like a resistance mutation)
+	# and the codon AA as called by the chromatogram itself
+
+	failAns <- data.frame( "Status"="FAIL", "Best_AA_Call"="", "Best_Codon"="", "Best_Percent"=NA, 
+				"Ref_Name"="", "Ref_Percent"=NA, "Mutant_Name"="", 
+				"Mutant_Percent"=NA, "Confidence"=0, stringsAsFactors=F)
+	if ( is.null( chromoObj)) return( failAns)
+	
+	# start with what is given
+	peaks <- chromoObj$PeakPosition
+	conf <- chromoObj$PeakConfidence
+	tm <- chromoObj$TraceM
+	calledAA <- substr( chromoObj$AA_Calls[1], 1, 1)
+
+	# we will use the model fit tools that expect the model sequences to be explicitly given.
+	# use the codon map and trim down to just the non-degenerate AA of interest
+	cmap <- getCodonMap()
+	cmap <- cmap[ grep( "^[ACGT]+$", cmap$DNA), ]
+	cmap <- subset( cmap, AA %in% c( ref.AA, alt.AA, calledAA))
+	
+	# name these as being 'ref' or 'mutant'
+	modelSeqs <- cmap$DNA
+	names(modelSeqs) <- paste( "Mutant", cmap$AA, cmap$DNA, sep="_")
+	isRef <- which( cmap$AA == ref.AA)
+	names(modelSeqs)[isRef] <- sub( "Mutant", "Ref", names(modelSeqs)[isRef])
+	cat( "\nN_Model_Seq: ", length(modelSeqs))
+	
+	# call the modeler
+	ans <- modelBlendChromatogram( chromoObj, modelSeqs, plot.chromatograms=F, 
+				synthetic.width="fit", noise.seqs=FALSE)
+	if ( is.null( ans)) return( NULL)
+	fitAns <- ans$Model.Estimates
+	if ( is.null( fitAns)) return( failAns)
+	
+	# recombine what we got back into a format that best answers the question about what we saw
+	# the P-values are useless since the data is so small we have no power.  
+	# Just look at % calls of those that are above zero
+	fitAns <- subset( fitAns, Percentage > 0)
+	ord <- order( fitAns$Percentage, decreasing=T)
+	fitAns <- fitAns[ ord, ]
+	bestConstruct <- fitAns$Construct[1]
+	constructIDs <- sub( "_[ACGT]+$", "", fitAns$Construct)
+	bestID <- constructIDs[1]
+	bestCodon <- sub( ".+_","", bestConstruct)
+	bestAA <- sub( "(^.+_)([A-Z])(_.+$)", "\\2", bestConstruct)
+	
+	# tally up how much percentage went with each ID, and renormalize to 100%
+	amounts <- tapply( fitAns$Percentage, factor( constructIDs), sum, na.rm=T)
+	pcts <- round( amounts * 100 / sum(amounts), digits=2)
+	# enforce a minimum percentage to prevent small noise from acting
+	# like a true minor variant.  Is so, renormalize again.
+	drops <- which( pcts < min.percent)
+	if ( length( drops)) {
+		pcts <- pcts[ -drops]
+		pcts <- round( pcts * 100 / sum(pcts), digits=2)
+	}
+	nCalls <- length(pcts)
+	pcts <- round( pcts, digits=0)
+	
+	# how to decipher depends on how many came back
+	if ( nCalls > 1) {
+		# we know the reference will be last alphabetically
+		refAns <- pcts[ length(pcts)]
+		refName <- names(refAns)
+		# the best mutant may need to be found
+		useMutant <- which.max( pcts[1:(length(pcts)-1)])
+		mutAns <- pcts[useMutant]
+		mutName <- names(mutAns)
+		# lastly with the top 2 known, set the best percentage
+		bestPct <- if ( bestID == refName) refAns else mutAns
+	} else {
+		# with just the one, which is it...
+		if ( bestAA == ref.AA) {
+			refAns <- pcts[1]
+			refName <- names(pcts)[1]
+			mutAns <- 0
+			mutName <- ""
+		} else {
+			refAns <- 0
+			refName <- ""
+			mutAns <- pcts[1]
+			mutName <- names(pcts)[1]
+		}
+		bestPct <- pcts[1]
+	}
+	
+	# the final confidence is the average confidence of the codon bases
+	confOut <- round( mean(conf,na.rm=T) * 100, digits=2)
+	
+	out <- data.frame( "Status"="Pass", "Best_AA_Call"=bestAA, "Best_Codon"=bestCodon, "Best_Percent"=bestPct, 
+				"Ref_Name"=refName, "Ref_Percent"=refAns, "Mutant_Name"=mutName, 
+				"Mutant_Percent"=mutAns, "Confidence"=confOut, stringsAsFactors=F)
+	rownames(out) <- 1:nrow(out)
+	
+	if ( plot) {
+		usr <- par( "usr")
+		myX <- mean(usr[1:2])
+		myY <- max(tm, na.rm=T)
+		# let's make the bigger one be first
+		aaOut <- c( refName, mutName)
+		pctOut <- as.numeric( c( refAns, mutAns))
+		if ( pctOut[1] < pctOut[2]) {
+			aaOut <- rev( aaOut)
+			pctOut <- rev( pctOut)
+		}
+		# we only report those above zero
+		keep <- which( pctOut >= 1)
+		aaOut <- aaOut[keep]
+		pctOut <- pctOut[keep]
+		txt <- paste( aaOut, "=", pctOut, "%", sep="", collapse="; ")
+		text( myX, myY, txt, font=2, cex=1.1, pos=3, offset=0.25)
+	}
+	
+	return( out)
 }
 
 

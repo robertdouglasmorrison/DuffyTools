@@ -106,6 +106,8 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 		if ( length( pvalColumn) > 0) {
 			pvalM[ where > 0, i] <- thisDF[[ pvalColumn[1]]][where]
 			pvalM[ isMissing, i] <- missingPval
+		} else {
+			pvalM[ , i] <- missingPval
 		}
 		hasPROD <- ( !is.na(productColumn) && (productColumn %in% colnames(thisDF)))
 		if ( hasPROD) {
@@ -359,10 +361,12 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 	rownames(rankM) <- rownames(foldM) <- rownames(pvalM) <- allG
 	colnames(rankM) <- colnames(foldM) <- colnames(pvalM) <- fids
 	allProds <- rep( "", NG)
+	missingPval <- 1
 
 	for( i in 1:nDF) {
 		thisDF <- allDF[[i]]
 		hasPROD <- ( !is.na(productColumn) && (productColumn %in% colnames(thisDF)))
+		hasPVAL <- ( !is.na(pvalueColumn) && (pvalueColumn %in% colnames(thisDF)))
 		theseGenes <- thisDF[[geneColumn]]
 		nGenes.thisDF <- length(theseGenes)
 		where <- match( allG, theseGenes, nomatch=0)
@@ -375,9 +379,13 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 		if ( length( logFoldColumn) > 0) {
 			foldM[ where > 0, i] <- thisDF[[ logFoldColumn[1]]][where]
 		}
-		pvalColumn <- grep( pvalueColumn, colnames(thisDF))
-		if ( length( pvalColumn) > 0) {
-			pvalM[ where > 0, i] <- thisDF[[ pvalColumn[1]]][where]
+		if (hasPVAL) {
+			pvalColumn <- grep( pvalueColumn, colnames(thisDF))
+			if ( length( pvalColumn) > 0) {
+				pvalM[ where > 0, i] <- thisDF[[ pvalColumn[1]]][where]
+			}
+		} else {
+			pvalM[ , i] <- missingPval
 		}
 		if (hasPROD) {
 			allProds[ where > 0] <- ifelse( allProds[where > 0] == "", 

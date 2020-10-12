@@ -719,13 +719,15 @@
 	for (k in 1:NB) axis( side=1, at=peakPos[k], label=baseCall[k], col.axis=baseColor[k], 
 				col.ticks=baseColor[k], font=font, cex.axis=cex)
 
-	if ( AAtoShow != "") {
+	if ( AAtoShow != "" && nchar(AAtoShow) >= 3) {
 		aaCall <- strsplit( AAtoShow, split="")[[1]]
 		NAA <- min( length(aaCall), round(NB/3))
 		for (k in 1:NAA) {
 			kk <- (k-1) * 3 + 1 + AAoffset
-			axis( side=1, at=peakPos[kk], label=aaCall[k], line=1, col.axis='black', col.ticks=NA, 
+			if (kk > 0 & kk <= length(peakPos)) {
+				axis( side=1, at=peakPos[kk], label=aaCall[k], line=1, col.axis='black', col.ticks=NA, 
 					font=2, lwd.ticks=0, cex.axis=cex*1.4)
+			}
 		}
 	}
 	if ( showAllAA) {
@@ -735,10 +737,12 @@
 			AAtoShow <- chromoObj$AA_Calls[frame]
 			aaCall <- strsplit( AAtoShow, split="")[[1]]
 			NAA <- min( length(aaCall), round(NB/3))
-			for (k in 1:NAA) {
+			if ( NAA > 1) for (k in 1:NAA) {
 				kk <- (k-1) * 3 + 1 + frame
-				axis( side=1, at=peakPos[kk], label=aaCall[k], line=lineNow, col.axis='black', col.ticks=NA, 
-					font=1, lwd.ticks=0, cex.axis=cex*1.0)
+				if (kk > 0 & kk <= length(peakPos)) {
+					axis( side=1, at=peakPos[kk], label=aaCall[k], line=lineNow, col.axis='black', col.ticks=NA, 
+							font=1, lwd.ticks=0, cex.axis=cex*1.0)
+				}
 			}
 			lineNow <- lineNow + 0.75
 		}
@@ -813,6 +817,7 @@
 	# use the length of the raw data to set the device
 	nTraceRows <-nrow( chromoObj$TraceM)
 	plotWidth <- round( nTraceRows/95)
+	plotWidth <- max( plotWidth, 6)
 	plotHeight <- 6
 
 	# since the raw data usually has big spikes, clip Y a bit

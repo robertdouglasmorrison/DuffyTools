@@ -1,7 +1,7 @@
 #
-# DuffyTools  ver 1.8.1
+# DuffyTools  ver 1.9.0
 
-VER = 1.8.1
+VER = 1.9.0
 
 DuffyTools.tar.gz : 
 
