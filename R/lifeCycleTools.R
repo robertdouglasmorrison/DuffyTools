@@ -31,25 +31,25 @@
 		data( LifeCycleData_RNAseq, package="DuffyTools", envir=environment())
 
 		# use explicit colnames lookup
-		sgspzPtrs <- match( c("sgSPZ.3D7","sgSPZ.NF54","SanariaSG_SPZ_1","SanariaSG_SPZ_2",
-					"Spz1","Spz2","Spz3","Spz4"), colnames(lifeCycleData))
+		sgspzPtrs <- match( c("sgSPZ.3D7","sgSPZ.NF54",
+					"Spz1","Spz2","Spz3","Spz4", "SGspz1","SGspz2","SGspz3"), colnames(lifeCycleData))
 		#lsd3Ptrs <- match( c("SanariaLS_Day3_1","SanariaLS_Day3_2"), colnames(lifeCycleData))
 		lsd3Ptrs <- match( c("SanariaLS_Day3_Clean"), colnames(lifeCycleData))
 		merozPtrs <- match( c("OttoHr48","StunHr5","HoeijHr05"), colnames(lifeCycleData))
 		eringPtrs <- match( c("OttoHr0","OttoHr8","StunHr10","HoeijHr10"), colnames(lifeCycleData))
-		lringPtrs <- match( c("OttoHr16","Su.Ring","StunHr15","HoeijHr15","StunHr20","HoeijHr20",
+		lringPtrs <- match( c("OttoHr16","StunHr15","HoeijHr15","StunHr20","HoeijHr20",
 					"Ring1","Ring2"), colnames(lifeCycleData))
-		etrophPtrs <- match( c("OttoHr24","Su.EarlyTroph","StunHr25","HoeijHr25",
+		etrophPtrs <- match( c("OttoHr24","StunHr25","HoeijHr25",
 					"HoeijHr30","StunHr30"), colnames(lifeCycleData))
-		ltrophPtrs <- match( c("OttoHr32","Su.LateTroph","StunHr35","HoeijHr35"), colnames(lifeCycleData))
-		schizPtrs <- match( c("OttoHr40","Su.Schizont","StunHr40","HoeijHr40","SanariaBLOOD_1",
+		ltrophPtrs <- match( c("OttoHr32","StunHr35","HoeijHr35"), colnames(lifeCycleData))
+		schizPtrs <- match( c("OttoHr40","StunHr40","HoeijHr40","SanariaBLOOD_1",
 					"SanariaBLOOD_2"), colnames(lifeCycleData))
 		#gcyte2Ptrs <- match( c("Su.GcyteII"), colnames(lifeCycleData))
 		gcyte5Ptrs <- match( c("Su.GcyteV","AO_Gcyte","SauerGcyte_Female","SauerGcyte_Male1",
 					"SauerGcyte_Male2","Gcyte1","Gcyte2"), colnames(lifeCycleData))
 		ookinePtrs <- match( c("Su.Ookinete3D7","Su.Ookinete7G8"), colnames(lifeCycleData))
 		#oocystPtrs <- match( c("Oocyst1","Oocyst2"), colnames(lifeCycleData))
-		oospzPtrs <- match( c("ooSPZ.NF54"), colnames(lifeCycleData))
+		oospzPtrs <- match( c("ooSPZ.NF54","OOspz1","OOspz2","OOspz3"), colnames(lifeCycleData))
 		#allPtrs <- c( sgspzPtrs, lsd3Ptrs, merozPtrs, eringPtrs, lringPtrs, etrophPtrs, ltrophPtrs,
 		#		schizPtrs, gcyte2Ptrs, gcyte5Ptrs, ookinePtrs, oospzPtrs)
 		allPtrs <- c( sgspzPtrs, lsd3Ptrs, merozPtrs, eringPtrs, lringPtrs, etrophPtrs, ltrophPtrs,
