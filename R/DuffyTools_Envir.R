@@ -69,13 +69,13 @@ MAMMAL_GENE_SETS <- c( "Blood.GeneModules", "BTM.AntibodyResponses",
 PARASITE_GENE_SETS <- c( "Blood.GeneModules", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
-			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", 
+			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", "STRING",
 			"HGNC.GeneFamily", "Reactome", "WikiPathways", "MPMP.Pathways", "ParasiteLifeCycle")
 BACTERIA_GENE_SETS <- c( "GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
-			"KEGG.Pathways", "MetabolicPathways", "HGNC.GeneFamily", "Panther.Pathways", "Reactome", "WikiPathways", 
-			"TFOE.Regulons", "Tuberculist.FunctionalGroups", "Tuberculist.GO.Ontology",
-			"ISB.Corems")
+			"KEGG.Pathways", "MetabolicPathways", "HGNC.GeneFamily", "Panther.Pathways", "Reactome", 
+			"WikiPathways", "STRING",
+			"TFOE.Regulons", "Tuberculist.FunctionalGroups", "Tuberculist.GO.Ontology", "ISB.Corems")
 
 # TimeHour tools
 TimeHourEnv <- new.env( hash=TRUE, parent=emptyenv())
