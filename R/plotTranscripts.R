@@ -32,10 +32,10 @@
 	drops <- vector()
 	if ( ! keepIntergenics) {
 		drops <- grep( "(ng)", genes, fixed=TRUE)
-		gmap <- getCurrentGeneMap()
-		dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
-		drops2 <- which( genes %in% dropableGenes)
-		drops <- base::sort( base::union( drops, drops2))
+		# gmap <- getCurrentGeneMap()
+		# dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
+		# drops2 <- which( genes %in% dropableGenes)
+		# drops <- base::sort( base::union( drops, drops2))
 	}
 	if ( length( drops) > 0) {
 		genes <- genes[ -drops]
@@ -121,10 +121,10 @@
 	drops <- vector()
 	if ( ! keepIntergenics) {
 		drops <- grep( "(ng)", genes, fixed=TRUE)
-		gmap <- getCurrentGeneMap()
-		dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
-		drops2 <- which( genes %in% dropableGenes)
-		drops <- base::sort( base::union( drops, drops2))
+		# gmap <- getCurrentGeneMap()
+		# dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
+		# drops2 <- which( genes %in% dropableGenes)
+		# drops <- base::sort( base::union( drops, drops2))
 	}
 	if ( length( drops) > 0) {
 		genes <- genes[ -drops]
@@ -201,10 +201,10 @@
 	drops <- vector()
 	if ( ! keepIntergenics) {
 		drops <- grep( "(ng)", genes, fixed=TRUE)
-		gmap <- getCurrentGeneMap()
-		dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
-		drops2 <- which( genes %in% dropableGenes)
-		drops <- base::sort( base::union( drops, drops2))
+		# gmap <- getCurrentGeneMap()
+		# dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
+		# drops2 <- which( genes %in% dropableGenes)
+		# drops <- base::sort( base::union( drops, drops2))
 	}
 	if ( length( drops) > 0) {
 		genes <- genes[ -drops]
@@ -256,10 +256,10 @@
 	drops <- vector()
 	if ( ! keepIntergenics) {
 		drops <- grep( "(ng)", genes, fixed=TRUE)
-		gmap <- getCurrentGeneMap()
-		dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
-		drops2 <- which( genes %in% dropableGenes)
-		drops <- base::sort( base::union( drops, drops2))
+		# gmap <- getCurrentGeneMap()
+		# dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
+		# drops2 <- which( genes %in% dropableGenes)
+		# drops <- base::sort( base::union( drops, drops2))
 	}
 	if ( length( drops) > 0) {
 		genes <- genes[ -drops]
