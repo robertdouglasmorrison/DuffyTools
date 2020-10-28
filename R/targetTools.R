@@ -218,9 +218,11 @@
 	addTarget( "Ecoli", "Ecoli", "Eco")
 
 	addTarget( "MT_H37", "MT_H37", "MTb")
-	addTarget( "MTbHs", "MT_H37,Hs_grc", "MTb,Hs")
-	addTarget( "MTbMmu", "MT_H37,Mmu_grc", "MTb,Mmus")
 	addTarget( "MT_HN878", "MT_HN878", "MTbHN878")
+	addTarget( "HsMTb", "MT_H37,Hs_grc", "MTb,Hs")
+	addTarget( "HsMTbHN878", "MT_HN878,Hs_grc", "MTbHN878,Hs")
+	addTarget( "MTbMmu", "MT_H37,Mmu_grc", "MTb,Mmus")
+	addTarget( "MTbHN878Mmu", "MT_HN878,Mmu_grc", "MTbHN878,Mmus")
 
 	addTarget( "Styph", "Styph_sl1344", "Styph")
 	addTarget( "StyphHs", "Styph_sl1344,Hs_grc", "Styph,Hs")
