@@ -39,10 +39,12 @@
 	# we have to read the transcriptomes in... to pre-load the data
 	needLoad <- TRUE
 	if (needLoad) {
+		# still to do... get 'multi' vs 'unique' call?...
+		intensityColumn <- getExpressionUnitsColumn( optionsFile, useMultiHits=TRUE)
 		cat( "\nLoading ", length( allSamples), "transcriptomes..")
 		files <- paste( allSamples, prefix, "Transcript.txt", sep=".")
 		files <- file.path( results.path, "transcript", files)
-		radarM <<- expressionFileSetToMatrix( files, allSamples, verbose=T)
+		radarM <<- expressionFileSetToMatrix( files, allSamples, intensityColumn=intensityColumn, verbose=T)
 		cat( "\nConverting Expression Abundance to M-values..")
 		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=median)
 		cat( "  Done.\n")
