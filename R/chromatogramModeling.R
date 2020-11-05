@@ -693,7 +693,8 @@
 			if( j %in% toDraw) {
 				myYheight <- maxObsHeight * sqrt(myEst)
 				plotChromatogram( myChromo, forceYmax=myYheight, cex=cex, cex.main=1.5,
-						label=paste( "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), "%    P.value = ", pvalText[j], sep=""))
+						label=paste( "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), 
+						"%    P.value = ", pvalText[j], sep=""))
 				dev.flush()
 				nShown <- nShown + 1
 			}
@@ -903,16 +904,21 @@
 			if ( "Definition" %in% colnames(out)) {
 				textToShow <- out$Definition[j]
 				if ( ! is.na(textToShow)) {
-					textToShow <- gsub( "&gt;", "  ", textToShow, fixed=T)
-					if ( nchar(textToShow) > 200) textToShow <- paste( substr( textToShow, 1, 200), "...", sep="")
-					text( nrow(myChromo$TraceM)/2, maxObsHeight*0.925,  textToShow, cex=2)
+					textToShow <- convertHypertext( textToShow)
+					textCex <- 2
+					if ( nchar(textToShow) > 100) textCex <- 1.6
+					if ( nchar(textToShow) > 150) {
+						textToShow <- paste( substr( textToShow, 1, 150), "...", sep="")
+						textCex <- 1.25
+					}
+					text( nrow(myChromo$TraceM)/2, maxObsHeight*0.925,  textToShow, cex=textCex)
 				}
 			}
 			if ( "MatchString" %in% colnames(out)) {
 				if ( ! is.na(out$Score[j]) && out$Score[j] > 10) {
 					require( plotrix)
 					textToShow <- out$MatchString[j]
-						if ( ! is.na(textToShow) && nchar(textToShow) > 10) {
+					if ( ! is.na(textToShow) && nchar(textToShow) > 10) {
 						textToShow <- strsplit( textToShow, split="\n")[[1]]
 						textToShow <- sub( "^    ", "", textToShow)
 						textToShow <- paste( c( "Construct  ", "           ", "Blast Hit  "), textToShow, sep="")
@@ -920,9 +926,12 @@
 						textX <- (nrow(myChromo$TraceM)/2) + (nchar(textToShow[1]) * textCharWidth * c(-1,1))
 						textY <- maxObsHeight * c(0.15, 0.51)
 						rect( textX[1], textY[1], textX[2], textY[2], border='black', col='white')
-						text( nrow(myChromo$TraceM)/2, maxObsHeight*.43, textToShow[1], cex=1, family="mono")
-						text( nrow(myChromo$TraceM)/2, maxObsHeight*.33, textToShow[2], cex=1, family="mono")
-						text( nrow(myChromo$TraceM)/2, maxObsHeight*.23, textToShow[3], cex=1, family="mono")
+						textCex <- 1.0
+						if ( nchar(textToShow[1]) > 100) textCex <- 0.9
+						if ( nchar(textToShow[1]) > 150) textCex <- 0.8
+						text( nrow(myChromo$TraceM)/2, maxObsHeight*.43, textToShow[1], cex=textCex, family="mono")
+						text( nrow(myChromo$TraceM)/2, maxObsHeight*.33, textToShow[2], cex=textCex, family="mono")
+						text( nrow(myChromo$TraceM)/2, maxObsHeight*.23, textToShow[3], cex=textCex, family="mono")
 					}
 				}
 			}

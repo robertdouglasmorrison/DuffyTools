@@ -188,8 +188,10 @@
 		for ( mask in maskVSAgenes) toDrop <- c( toDrop, grep( mask, myVsa$GENE_ID))
 		toDrop <- sort( unique( toDrop))
 		dropGenes <- sort( unique( myVsa$GENE_ID[toDrop]))
-		cat( "\nMasking VSA genes to exclude from search: ", length(dropGenes), "\n")
-		print( dropGenes)
+		if (verbose) {
+			cat( "\nMasking VSA genes to exclude from search: ", length(dropGenes), "\n")
+			print( dropGenes)
+		}
 		myVsa <- myVsa[ -toDrop, ]
 	}
 
