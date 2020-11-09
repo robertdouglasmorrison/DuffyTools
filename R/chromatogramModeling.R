@@ -352,10 +352,6 @@
 	if (algorithm == "nls" && fixedPeaks) {
 		controlList <- nls.control( maxiter=100, minFactor=1/512, warnOnly=TRUE)
 		starts <- list( "height"=guess.height, "width"=guess.width, "center"=guess.center)
-		cat( "\nDebug: \n")
-		print( starts)
-		print( lowerBounds)
-		print( upperBounds)
 		x <- seq
 		y <- obsTrace
 		nlsAns <<- nls( y ~ syntheticTraceMatrix( x, peak.dist=11, height, width, center), 
@@ -412,7 +408,7 @@
 `modelBlendChromatogram` <- function( obsChromo, seqs, synthetic.width="fit", 
 				trim.chromatogram=TRUE, trim.seqs=FALSE, noise.seqs=TRUE, 
 				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05,
-				max.show.plot=4, label="") {
+				max.show.plot=4, label="", vebose=FALSE) {
 
 	# given an observed chromatogram, fit 2 or more sequences to it and return the contribution of
 	# how much of each sequence was needed to best fit the observed chromatogram.
@@ -526,10 +522,10 @@
 	
 	# let's allow using the model fit algorithm to optimize the peak width we use
 	if ( is.character( synthetic.width) && synthetic.width == "fit") {
-		cat( "\nFitting best model element sequence to observed data..")
+		if (verbose) cat( "\nFitting best model element sequence to observed data..")
 		fitAns <- modelFitChromatogram( observedChromo, seq=bestSeq, doStandardize=F, doSubset=F, algorithm="GenSA")
 		synthetic.width <- as.numeric( fitAns$FitPeakWidth)
-		cat( "    Optimal Peak Width =", synthetic.width)
+		if (verbose) cat( "    Optimal Peak Width =", synthetic.width)
 	}
 	
 	# finally ready to create synthetic chromatograms for each sequence to be modeled
@@ -543,7 +539,7 @@
 	}
 	# if any flagged for bad size, die now
 	if (synthSizeError) {
-		cat( "\nError creating model chromatogram elements.  Unable to do model fit..")
+		if (verbose) cat( "\nError creating model chromatogram elements.  Unable to do model fit..")
 		return( NULL)
 	}
 	
@@ -600,7 +596,7 @@
 	if ( class(nlsAns) == "try-error" || class(nlsAns2) == "try-error") {
 	
 		# try using the GenSA tool instead
-		cat( "\nNLS fitting failed.  Trying GenSA...\n")
+		if (verbose) cat( "\nNLS fitting failed.  Trying GenSA...\n")
 		# set up for Generalize Simulated Annealing
 		require( GenSA)
 		# we can stop if we explain 95% of the observed data
@@ -790,7 +786,7 @@
 		curChromo <- subsetChromatogram( curChromo, seq=curDNA)
 		
 		# make the best fit model for this
-		cat( "\nModel..")
+		if (verbose) cat( "\nModel..")
 		modelChromo <- modelFitChromatogram( curChromo, seq=curDNA, fixedPeaks=TRUE, effort=1, 
 									doStandardize=TRUE, doSubset=FALSE, algorithm="GenSA")
 		modelInten <- sum( modelChromo$TraceM, na.rm=T)
@@ -800,17 +796,17 @@
 		dnaOut[ nIter] <- curDNA
 		intenOut[ nIter] <- modelInten
 		nameOut[nIter] <- paste( "Construct", nIter, sep="_")
-		cat( "  Answer=  ", nIter, "  Intensity= ", modelInten, "  Percent = ", round( modelInten * 100 / obsInten, digits=1))
+		if (verbose) cat( "  Answer=  ", nIter, "  Intensity= ", modelInten, "  Percent = ", round( modelInten * 100 / obsInten, digits=1))
 		if (doPlot) chromoToPlot[[nIter]] <- modelChromo
 		
 		# subtract this model from the current chromatogram
-		cat( "  Subtract..")
+		if (verbose) cat( "  Subtract..")
 		deltaChromo <- subtractChromatogram( curChromo, modelChromo)
 		if ( is.null( deltaChromo)) break
 		if (doPlot) residToPlot[[nIter]] <- deltaChromo
 		
 		# re-pick where the peaks are now, watching for any errors
-		cat( "  Re-PeakPick..")
+		if (verbose) cat( "  Re-PeakPick..")
 		newChromo <- peakpickChromatogram( deltaChromo)
 		if ( is.null( newChromo)) break
 		# and restandardize it
@@ -850,7 +846,7 @@
 		}
 	}
 	
-	cat( "\nExtracting results from XML..")
+	if (verbose) cat( "\nExtracting results from XML..")
 	if ( ! file.exists(blastFile)) {
 		cat( "\nFile not found: ", blastFile, "\nSkipping...")
 		return(NULL)
