@@ -175,7 +175,7 @@
 
 
 
-`modelFitOneCodon` <- function( chromoObj, ref.AA, alt.AA, min.percent=1, plot=T) {
+`modelFitOneCodon` <- function( chromoObj, ref.AA, alt.AA, min.percent=1, plot=T, verbose=T) {
 
 	# given a tiny chromatogram that spans just a single codon, fit this to the
 	# expected amino acid calls being searched for.  The fit tool will search for any codons
@@ -197,18 +197,41 @@
 	# use the codon map and trim down to just the non-degenerate AA of interest
 	cmap <- getCodonMap()
 	cmap <- cmap[ grep( "^[ACGT]+$", cmap$DNA), ]
-	cmap <- subset( cmap, AA %in% c( ref.AA, alt.AA, calledAA))
+	myCmap <- subset( cmap, AA %in% c( ref.AA, alt.AA, calledAA))
 	
 	# name these as being 'ref' or 'mutant'
-	modelSeqs <- cmap$DNA
-	names(modelSeqs) <- paste( "Mutant", cmap$AA, cmap$DNA, sep="_")
-	isRef <- which( cmap$AA == ref.AA)
-	names(modelSeqs)[isRef] <- sub( "Mutant", "Ref", names(modelSeqs)[isRef])
-	cat( "\nN_Model_Seq: ", length(modelSeqs))
+	modelSeqs <- myCmap$DNA
+	prefix <- c( "Ref", "Mutant", "Other")[ match( myCmap$AA, c( ref.AA, alt.AA, calledAA))]
+	names(modelSeqs) <- paste( prefix, myCmap$AA, myCmap$DNA, sep="_")
+	
+	# there is a small chance that the given pool of Ref/Mutant/Called codons do not fully capture
+	# the raw data.  Check each of the 3 bases in the codon for minor peaks, and perhaps extend our
+	# set of models
+	for (k in 1:3) {
+		givenCodon <- chromoObj$DNA_Calls[1]
+		tmPoint <- peaks[k]
+		tmValues <- apply( tm[ (tmPoint-1):(tmPoint+1), ], MARGIN=2, sum)
+		baseOrd <- order( tmValues, decreasing=T)
+		base2 <- colnames(tm)[ baseOrd[2]]
+		heights <- tmValues[ baseOrd[1:2]]
+		if (heights[2] >= heights[1]/2) {
+			# got a second peak at this base
+			extraCodon <- givenCodon
+			substr( extraCodon, k, k) <- substr(base2,1,1)
+			# have we already yet seen this codon?
+			if ( extraCodon %in% myCmap$DNA) next
+			moreCmap <- subset( cmap, DNA == extraCodon)
+			if (nrow(moreCmap)) {
+				names(extraCodon) <- paste( "Other", moreCmap$AA[1], moreCmap$DNA[1], sep="_")
+				modelSeqs <- c( modelSeqs, extraCodon)
+			}
+		}
+	}
+	if (verbose) cat( "\nN_Model_Seq: ", length(modelSeqs), "\n  ", names(modelSeqs))
 	
 	# call the modeler
 	ans <- modelBlendChromatogram( chromoObj, modelSeqs, plot.chromatograms=F, 
-				synthetic.width="fit", noise.seqs=FALSE)
+				synthetic.width="fit", noise.seqs=FALSE, verbose=verbose)
 	if ( is.null( ans)) return( NULL)
 	fitAns <- ans$Model.Estimates
 	if ( is.null( fitAns)) return( failAns)
@@ -240,26 +263,38 @@
 	
 	# how to decipher depends on how many came back
 	if ( nCalls > 1) {
-		# we know the reference will be last alphabetically
-		refAns <- pcts[ length(pcts)]
-		refName <- names(refAns)
-		# the best mutant may need to be found
-		useMutant <- which.max( pcts[1:(length(pcts)-1)])
-		mutAns <- pcts[useMutant]
-		mutName <- names(mutAns)
+		# we have 2+, so find the best of both groups: Ref & Not Ref
+		isREF <- grep( "^Ref", names(pcts))
+		isMUT <- setdiff( 1:length(pcts), isREF)
+		if ( length(isREF)) {
+			bestRefPtr <- isREF[ which.max( pcts[isREF])]
+			refPct <- pcts[ bestRefPtr]
+			refName <- names(refPct)
+		} else {
+			refPct <- 0
+			refName <- ""
+		}
+		if ( length(isMUT)) {
+			bestMutPtr <- isMUT[ which.max( pcts[isMUT])]
+			mutPct <- pcts[ bestMutPtr]
+			mutName <- names(mutPct)
+		} else {
+			mutPct <- 0
+			mutName <- ""
+		}
 		# lastly with the top 2 known, set the best percentage
-		bestPct <- if ( bestID == refName) refAns else mutAns
+		bestPct <- if ( bestID == refName) refPct else mutPct
 	} else {
 		# with just the one, which is it...
 		if ( bestAA == ref.AA) {
-			refAns <- pcts[1]
+			refPct <- pcts[1]
 			refName <- names(pcts)[1]
-			mutAns <- 0
+			mutPct <- 0
 			mutName <- ""
 		} else {
-			refAns <- 0
+			refPct <- 0
 			refName <- ""
-			mutAns <- pcts[1]
+			mutPct <- pcts[1]
 			mutName <- names(pcts)[1]
 		}
 		bestPct <- pcts[1]
@@ -269,8 +304,8 @@
 	confOut <- round( mean(conf,na.rm=T) * 100, digits=2)
 	
 	out <- data.frame( "Status"="Pass", "Best_AA_Call"=bestAA, "Best_Codon"=bestCodon, "Best_Percent"=bestPct, 
-				"Ref_Name"=refName, "Ref_Percent"=refAns, "Mutant_Name"=mutName, 
-				"Mutant_Percent"=mutAns, "Confidence"=confOut, stringsAsFactors=F)
+				"Ref_Name"=refName, "Ref_Percent"=refPct, "Mutant_Name"=mutName, 
+				"Mutant_Percent"=mutPct, "Confidence"=confOut, stringsAsFactors=F)
 	rownames(out) <- 1:nrow(out)
 	
 	if ( plot) {
@@ -279,7 +314,7 @@
 		myY <- max(tm, na.rm=T)
 		# let's make the bigger one be first
 		aaOut <- c( refName, mutName)
-		pctOut <- as.numeric( c( refAns, mutAns))
+		pctOut <- as.numeric( c( refPct, mutPct))
 		if ( pctOut[1] < pctOut[2]) {
 			aaOut <- rev( aaOut)
 			pctOut <- rev( pctOut)
