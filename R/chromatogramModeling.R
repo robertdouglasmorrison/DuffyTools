@@ -408,7 +408,7 @@
 `modelBlendChromatogram` <- function( obsChromo, seqs, synthetic.width="fit", 
 				trim.chromatogram=TRUE, trim.seqs=FALSE, noise.seqs=TRUE, 
 				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05,
-				max.show.plot=4, label="", vebose=FALSE) {
+				max.show.plot=4, label="", verbose=FALSE) {
 
 	# given an observed chromatogram, fit 2 or more sequences to it and return the contribution of
 	# how much of each sequence was needed to best fit the observed chromatogram.
@@ -502,7 +502,7 @@
 		pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], bestSeq, type="local", scoreOnly=F)
 		from <- start( subject(pa))
 		to <- width( subject(pa)) + from -1
-		cat( "\nDebug trim seqs: (size,from,to): ", nchar(bestSeq), from, to)
+		if (verbose) cat( "\nDebug trim seqs: (size,from,to): ", nchar(bestSeq), from, to)
 		# but don't let it subset away to nothing...
 		newLen <- to - from + 1
 		oldLen <- nchar(bestSeq)

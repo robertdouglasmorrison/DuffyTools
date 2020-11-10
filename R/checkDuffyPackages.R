@@ -5,6 +5,7 @@
 	# see what is installed
 	current <- installed.packages()
 	packages <- current[ ,"Package"]
+	versions <- current[ ,"Version"]
 
 	Nadd <- 0
 	Nfail <- 0
@@ -25,6 +26,9 @@
 				Nfail <- Nfail + 1
 				failSet[Nfail] <- pack
 			}
+		} else {
+			where <- which( packages == pack)
+			cat( "\nPackage '", pack, "' found.  \tVersion = ", versions[where],  sep="")
 		}
 	}
 
@@ -56,6 +60,9 @@
 				Nfail <- Nfail + 1
 				failSet[Nfail] <- pack
 			}
+		} else {
+			where <- which( packages == pack)
+			cat( "\nPackage '", pack, "' found.  \tVersion = ", versions[where],  sep="")
 		}
 	}
 
