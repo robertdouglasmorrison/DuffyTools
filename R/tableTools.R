@@ -2,8 +2,8 @@
 
 table.nosort <- function(x) {
 
-	s <- x[ ! base::duplicated.default(x)]
-	wh <- base::match( x, s)
+	s <- x[ ! duplicated(x)]
+	wh <- match( x, s)
 	cnt <- base::tabulate(wh)
 	names(cnt) <- s
 	cnt
