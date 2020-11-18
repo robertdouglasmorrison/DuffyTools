@@ -1,7 +1,7 @@
 # fastaTools.R  --  collection of FASTA file manipulation routines
 
 
-`loadFasta` <- function( file="file.fasta", verbose=TRUE, short.desc=TRUE) {
+`loadFasta` <- function( file="file.fasta", mode=c("character","BStrings"), verbose=TRUE, short.desc=TRUE) {
 
 	require( Biostrings)
 
@@ -9,9 +9,16 @@
 	if (verbose) cat( "\nLoading Fasta file: ", file, "...")
 
 	fa <- readBStringSet( file)
-	seqs <- as.character(fa, use.names=TRUE)
-	nams <- names(seqs)
-	names(seqs) <- NULL
+
+	# do we send back character strings or BStrings?
+	mode <- match.arg( mode)
+
+	nams <- names(fa)
+	if ( mode == "character") {
+		seqs <- as.character(fa, use.names=FALSE)
+	} else {
+		seqs <- fa
+	}
 
 	# for consistency with other tools, trim the descriptor after the first blank
 	if ( short.desc) {
