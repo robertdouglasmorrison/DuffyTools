@@ -53,6 +53,10 @@ UNION <- base::union
 			if ( length(pepFrags) < 2) return( pepFrags[1])
 
 			if ( tieBreakMode == "reference") {
+				# may save some time if we have a perfect match
+				for ( i in seq_along(pepFrags)) {
+					if ( grepl( pepFrags[i], refAA, fixed=T)) return( pepFrags[i])
+				}
 				paScores <- pairwiseAlignment( pepFrags, refAA, type="local", substitutionMatrix=BLOSUM62, scoreOnly=T)
 				return( pepFrags[ WHICH.MAX( paScores)])
 			}
