@@ -536,7 +536,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 
 # try to convert DNA to AA given the current annotation info
-`convertGenomicDNApositionToAAposition` <- function( seqID, DNAposition) {
+`convertGenomicDNApositionToAAposition` <- function( seqID, DNAposition, genemap=NULL, cdsmap=NULL) {
 
 	outPos <- outGene <- NA
 	out <- list( "GENE_ID"=outGene, "AA_POSITION"=outPos)
@@ -547,13 +547,17 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		DNAposition <- DNAposition[1]
 	}
 
-	gmap <- subset.data.frame( getCurrentGeneMap(), SEQ_ID == seqID)
-	if ( nrow( gmap) < 1) return( out)
-	where <- findInterval( DNAposition, gmap$POSITION)
-	if ( where < 1 || where > nrow(gmap)) return(out)
-	outGene <- geneID <- gmap$GENE_ID[ where[1]]
+	if (is.null(genemap)) genemap <- subset.data.frame( getCurrentGeneMap(), SEQ_ID == seqID)
+	if ( nrow( genemap) < 1) return( out)
+	where <- findInterval( DNAposition, genemap$POSITION)
+	if ( where < 1 || where > nrow(genemap)) return(out)
+	outGene <- geneID <- genemap$GENE_ID[ where[1]]
 
-	cdsmap <- subset.data.frame( getCurrentCdsMap(), GENE_ID == geneID)
+	if (is.null(cdsmap)) {
+		cdsmap <- subset.data.frame( getCurrentCdsMap(), GENE_ID == geneID)
+	} else {
+		cdsmap <- subset.data.frame( cdsmap, GENE_ID == geneID)
+	}
 	if ( nrow( cdsmap) < 1) return( out)
 
 	# make a little band of relative DNA positions

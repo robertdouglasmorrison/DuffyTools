@@ -19,12 +19,16 @@ UNION <- base::union
 
 
 `DNAtoBestPeptide` <- function( dnaSet, clipAtStop=FALSE, readingFrames=1:6,
-				tieBreakMode=c("evalue","sample","reference"), reference=NULL) {
+				tieBreakMode=c("evalue","sample","reference"), reference=NULL,
+				substitutionMatrix=NULL) {
 
 	tieBreakMode <- match.arg( tieBreakMode)
 	if ( tieBreakMode == "reference") {
 		require( Biostrings)
-		data( BLOSUM62)
+		if ( is.null(substitutionMatrix)) {
+			data( BLOSUM62)
+			substitutionMatrix <- BLOSUM62
+		}
 		refAA <- base::toupper( as.character( reference))
 	}
 
@@ -57,7 +61,8 @@ UNION <- base::union
 				for ( i in seq_along(pepFrags)) {
 					if ( grepl( pepFrags[i], refAA, fixed=T)) return( pepFrags[i])
 				}
-				paScores <- pairwiseAlignment( pepFrags, refAA, type="local", substitutionMatrix=BLOSUM62, scoreOnly=T)
+				paScores <- pairwiseAlignment( pepFrags, refAA, type="local", 
+								substitutionMatrix=substitutionMatrix, scoreOnly=T)
 				return( pepFrags[ WHICH.MAX( paScores)])
 			}
 
