@@ -533,7 +533,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 
 
 `fastqToPeptides` <- function( filein, fileout, chunkSize=100000, maxReads=NULL, maxPeptides=NULL,
-				lowComplexityFilter=FALSE, trim5=0, trim3=0, ...) {
+				lowComplexityFilter=FALSE, trim5=0, trim3=0, clipAtStop=TRUE, ...) {
 
 	filein <- allowCompressedFileName( filein)
 	if ( ! file.exists( filein)) stop( paste("Can't find input file: ", filein))
@@ -541,6 +541,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 
 	chunkLines <- chunkSize * 4
 
+	GREP <- base::grep
 	LAPPLY <- base::lapply
 	NCHAR <- base::nchar
 	SETDIFF <- base::setdiff
@@ -557,13 +558,32 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 				# they have to be full length with no N's or non-AA calls
 				# 'full length is a bit too restrictive...  we lose many peptides
 				# at the true stop codon of the protein...  Relax a bit.
-				# keep any where the STOP was in the last 25% of the peptide
-				# and a hard minimum length
+
+				# If Clipping at Stop Codon:
+				# keep any where the STOP was in the last 25% of the peptide and a hard minimum length
 				lenFullAA <- floor( NCHAR(dna)/3 * 0.75)
 				if (lenFullAA < 5) lenFullAA <- 5
-				AAs <- DNAtoAA( dna)
-				good <- SETDIFF( WHICH( NCHAR(AAs) >= lenFullAA), grep( "?", AAs, fixed=T))
-				if ( (ngood <- length(good)) > 0) {
+
+				# If not clipping at Stop Codon, let's reject those with 2+ stops??
+
+				AAs <- DNAtoAA( dna, clipAtStop=clipAtStop)
+				if (clipAtStop) {
+					good <- SETDIFF( WHICH( NCHAR(AAs) >= lenFullAA), GREP( "?", AAs, fixed=T))
+				} else {
+					good <- GREP( "^[A-Z]+\\*?[A-Z]*$", AAs)
+					hasSTOP <- GREP( "*", AAs[good])
+					# do some trimming before/past Stops
+					if ( length(hasSTOP)) {
+						AAs <- AAs[good]
+						good <- 1:length(AAs)
+						whereStop <- regexpr( "*", AAs, fixed=T)
+						isFront <- which( whereStop <= lenFullAA/3)
+						if ( length(isFront)) AAs[isFront] <- substr( AAs[isFront], whereStop[isFront], nchar(AAs[isFront]))
+						isBack <- which( whereStop >= lenFullAA)
+						if ( length(isBack)) AAs[isBack] <- substr( AAs[isBack], 1, whereStop[isBack])
+					}
+				}
+				if ( ngood <- length(good)) {
 					nnow <- (nout+1) : (nout+ngood)
 					peptides[ nnow] <<- AAs[ good]
 					counts[ nnow] <<- cnts[i]

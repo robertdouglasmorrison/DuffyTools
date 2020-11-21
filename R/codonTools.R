@@ -536,22 +536,39 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 
 # try to convert DNA to AA given the current annotation info
-`convertGenomicDNApositionToAAposition` <- function( seqID, DNAposition, genemap=NULL, cdsmap=NULL) {
+`convertGenomicDNApositionToAAposition` <- function( seqID, DNAposition, geneID=NULL, genemap=NULL, cdsmap=NULL) {
 
-	outPos <- outGene <- NA
+	# for speed, we are allowing multiple DNA locations from the same gene
+	outPos <- outGene <- rep.int( NA, length(DNAposition))
 	out <- list( "GENE_ID"=outGene, "AA_POSITION"=outPos)
 
-	if ( any( c( length(seqID), length(DNAposition)) > 1)) {
-		warning( "Only using the first seqID/position elements")
+	if ( length(seqID) > 1) {
+		warning( "Only using the first SeqID element")
 		seqID <- seqID[1]
+	}
+	if ( is.null(geneID) && length(DNAposition) > 1) {
+		warning( "Only using the first DNAposition element")
 		DNAposition <- DNAposition[1]
+		length(outPos) <- length(outGene) <- 1
 	}
 
-	if (is.null(genemap)) genemap <- subset.data.frame( getCurrentGeneMap(), SEQ_ID == seqID)
+	if (is.null(genemap)) {
+		genemap <- subset.data.frame( getCurrentGeneMap(), SEQ_ID == seqID)
+		if ( ! is.null(geneID)) genemap <- subset( genemap, GENE_ID == geneID)
+	}
 	if ( nrow( genemap) < 1) return( out)
-	where <- findInterval( DNAposition, genemap$POSITION)
-	if ( where < 1 || where > nrow(genemap)) return(out)
-	outGene <- geneID <- genemap$GENE_ID[ where[1]]
+
+	# if we have a whole chromosome, find the one gene
+	if ( is.null( geneID)) {
+		where <- findInterval( DNAposition, genemap$POSITION)
+		if ( where < 1 || where > nrow(genemap)) return(out)
+		outGene <- geneID <- genemap$GENE_ID[ where[1]]
+	} else {
+		# when given a single gene, make sure all locations are valid
+		DNAposition[ DNAposition < genemap$POSITION[1]] <- NA
+		DNAposition[ DNAposition > genemap$END[1]] <- NA
+		outGene <- geneID
+	}
 
 	if (is.null(cdsmap)) {
 		cdsmap <- subset.data.frame( getCurrentCdsMap(), GENE_ID == geneID)
@@ -572,11 +589,10 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	if ( cdsmap$STRAND[1] == "-") names( vNow) <- REV( 1:length(vNow))
 
 	where <- base::match( DNAposition, vNow, nomatch=0)
-	if ( where > 0) {
-		localDNApos <- as.numeric( names( vNow)[where])
-		outPos <- floor( (localDNApos-1) / 3) + 1
-	}
-
+	# 'where' can now be a vector...
+	localDNApos <- as.numeric( names( vNow)[where])
+	outPos[ where > 0] <- floor( (localDNApos-1) / 3) + 1
+	
 	out <- list( "GENE_ID"=outGene, "AA_POSITION"=outPos)
 	return( out)
 }
