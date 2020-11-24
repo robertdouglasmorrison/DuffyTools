@@ -539,8 +539,8 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 `convertGenomicDNApositionToAAposition` <- function( seqID, DNAposition, geneID=NULL, genemap=NULL, cdsmap=NULL) {
 
 	# for speed, we are allowing multiple DNA locations from the same gene
-	outPos <- outGene <- rep.int( NA, length(DNAposition))
-	out <- list( "GENE_ID"=outGene, "AA_POSITION"=outPos)
+	outPos <- outGene <- outCodon <- rep.int( NA, length(DNAposition))
+	out <- list( "GENE_ID"=outGene, "AA_POSITION"=outPos, "CODON_POSITION"=outCodon)
 
 	if ( length(seqID) > 1) {
 		warning( "Only using the first SeqID element")
@@ -549,7 +549,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	if ( is.null(geneID) && length(DNAposition) > 1) {
 		warning( "Only using the first DNAposition element")
 		DNAposition <- DNAposition[1]
-		length(outPos) <- length(outGene) <- 1
+		length(outPos) <- length(outGene) <- length(outCodon) <- 1
 	}
 
 	if (is.null(genemap)) {
@@ -592,8 +592,9 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	# 'where' can now be a vector...
 	localDNApos <- as.numeric( names( vNow)[where])
 	outPos[ where > 0] <- floor( (localDNApos-1) / 3) + 1
+	outCodon[ where > 0] <- ((localDNApos-1) %% 3) + 1
 	
-	out <- list( "GENE_ID"=outGene, "AA_POSITION"=outPos)
+	out <- list( "GENE_ID"=outGene, "AA_POSITION"=outPos, "CODON_POSITION"=outCodon)
 	return( out)
 }
 
