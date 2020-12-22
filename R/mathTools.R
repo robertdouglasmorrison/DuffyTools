@@ -192,13 +192,19 @@ tukey.logmean <- function( x,  c=5,  e=0.0001, na.rm=FALSE) {
 }
 
 
-errorBar <- function( x, mode=c("se", "sd"), average.FUN=mean, plot=TRUE, at=1, whisker=0.2, 
+errorBar <- function( x, mode=c("se", "sd", "mad"), average.FUN=mean, plot=TRUE, at=1, whisker=0.2, 
 			horiz=FALSE, error.col=1, error.lty=1) {
 
 	mn <- average.FUN( x, na.rm=T)
+	mode <- match.arg(mode)
 	se <- s <- sd( x, na.rm=T)
-	if ( match.arg( mode) == "se") {
+	if ( mode == "se") {
 		se <- s / sqrt( length(x))
+	}
+	if ( mode == "mad") {
+		mn <- median( x, na.rm=T)
+		dx <- abs( x - mn)
+		se <- mad <- median( dx)
 	}
 
 	if (plot && horiz) {

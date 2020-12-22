@@ -6,7 +6,8 @@
 # centered on a single AA of interest, and we use the term "codon" as the center AA of interest
 
 # get the motif region directly from an ABI chromatogram file
-`motifSubsetChromatogram` <- function( f, motif, gene="", plot=TRUE, min.score=0, verbose=TRUE, referenceDNA=NULL) {
+`motifSubsetChromatogram` <- function( f, motif, gene="", plot=TRUE, min.score=0, verbose=TRUE, 
+					referenceDNA=NULL, ...) {
 
 	motifName <- names(motif)[1]
 	motif <- toupper( motif[1])
@@ -22,7 +23,7 @@
 	if (plot) {
 		mainText <- paste( "  Motif:  ", motifName, "    Gene:  ", gene, 
 					"\nFile: ", sub( ".ab1$","",basename(f)))
-		plotChromatogram( ch2, label=mainText, showConfidence=T)
+		plotChromatogram( ch2, label=mainText, showConfidence=T, ...)
 	}
 
 	# sanity check to see if we got that motif

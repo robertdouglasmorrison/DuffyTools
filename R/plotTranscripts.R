@@ -229,7 +229,7 @@
 			pch=21, col=c('blue','red', 'black'), cut.fold=1, cut.pvalue=0.05, shortNames=TRUE,
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.pch=21, 
 			marker.pos=NULL, sep="\t", min.intensity=0, intensityColumn="RPKM_1", 
-			left.label=NULL, right.label=NULL, ...) {
+			left.label=NULL, right.label=NULL, forceYmax=NULL, ...) {
 
 	if ( is.character(file)) {
 		tmp <- read.delim( file, as.is=T, sep=sep)
@@ -287,7 +287,7 @@
 			pch=pch, col=col, cut.fold=cut.fold, cut.pvalue=cut.pvalue,
 			marker.genes=marker.genes, marker.col=marker.col, marker.cex=marker.cex,
 			marker.labels=marker.labels, marker.pch=marker.pch, marker.pos=marker.pos, 
-			left.label=left.label, right.label=right.label, ...)
+			left.label=left.label, right.label=right.label, forceYmax=forceYmax, ...)
 	}
 
 	return( invisible( ans))
@@ -441,7 +441,7 @@
 
 `makeVolcanoPlot` <- function( genes, fold, pval, label="Volcano Plot: ", 
 			pch=21, col=c('blue','red','black'), cut.fold=1, cut.pvalue=0.05,
-			clip.fold=10, clip.pvalue=1e-10,
+			clip.fold=10, clip.pvalue=1e-10, forceYmax=NULL,
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, 
 			marker.pch=21, marker.pos=NULL, cex=1, left.label=NULL, right.label=NULL, ...) {
 
@@ -458,6 +458,7 @@
 
 	y <- -( log10( pval))
 	myRangeY <- c( 0, max( y, na.rm=F)*1.05)
+	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
 
 	# use color to show when we exceed the wanted fold change
 	N <- length( fold)

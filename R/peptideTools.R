@@ -232,7 +232,8 @@ UNION <- base::union
 
 
 `peptide2BestProtein` <- function( peptides, proteinsFastaFile, nBest=1, tieBreakMode=c("sample", "all", "topN"),
-				substitutionMatrix=NULL, details=FALSE, fastPDmode=TRUE, verbose=T) {
+				substitutionMatrix=NULL, details=FALSE, fastPDmode=TRUE, 
+				fasta.short.desc=FALSE, verbose=T) {
 
 	require( Biostrings)
 	if( is.null( substitutionMatrix)) {
@@ -248,7 +249,7 @@ UNION <- base::union
 			cat( "\nProteins FASTA file not found: ", proteinsFastaFile)
 			return( NULL)
 		}
-		fa <- loadFasta( proteinsFastaFile, verbose=verbose, short.desc=F)
+		fa <- loadFasta( proteinsFastaFile, verbose=verbose, short.desc=fasta.short.desc)
 	} else if ( is.list( proteinsFastaFile)) {
 		if ( ! all( c("desc", "seq") %in% names( proteinsFastaFile))) {
 			cat( "\nProteins FASTA object missing 'desc' and/or 'seq' fields.")
