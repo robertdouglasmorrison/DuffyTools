@@ -11,7 +11,7 @@
 		small.offset <- 0
 	}
 	if ( minIntensity < 0) minIntensity <- 0
-	if (any( x <= minIntensity)) {
+	if (any( x < minIntensity)) {
 		if (verbose) cat( "Clipping low abundance values at: ", minIntensity)
 		x[ x < minIntensity] <- minIntensity
 	}

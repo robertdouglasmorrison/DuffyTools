@@ -10,13 +10,14 @@
 		chromoObj <- loadChromatogram( chromoObj)
 	}
 	
-	peak.dist <- as.integer( peak.dist)
-	half.width <- floor( peak.dist/2)
+	peak.dist <- abs( as.integer( peak.dist))
+	half.width <- max( floor( peak.dist/2), 1)
 
 	traceIn <- chromoObj$TraceM
 	peaksIn <- chromoObj$PeakPosition
 	NP <- length( peaksIn)
 	callsIn <- names(peaksIn)
+	if ( NP < 3) return(NULL)
 
 	# make new storage to hold these peaks
 	traceSizeOut <- NP * peak.dist
@@ -260,6 +261,14 @@
 	}
 
 	ansModel <- syntheticTraceMatrix( seq, height=ht, width=wid, center=ctr)
+	if ( length(obs) != length(ansModel)) {
+		# trap and fix?...
+		if ( nrow(obs) > nrow(ansModel)) {
+			obs <- obs[ 1:nrow(ansModel), ]
+		} else if ( nrow(obs) < nrow(ansModel)) {
+			ansModel <- ansModel[ 1:nrow(obs), ]
+		}
+	}
 	diff <- ( obs - ansModel)
 	resid <- sqrt( sum( diff * diff))
 	return( resid)
@@ -456,6 +465,7 @@
 	#	  Find the best, even if we don't crop the chromatogram...
 	scores <- numeric(NS)
 	stdChromo <- standardizeChromatogram( obsChromo, constant.height=TRUE)
+	if ( is.null(stdChromo)) return(NULL)
 	for ( i in 1:NS) {
 		tmpChromo <- subsetChromatogram( stdChromo, seq=noGapSeqs[i])
 		if ( "UnitScore" %in% names(tmpChromo)) {
@@ -469,6 +479,7 @@
 	names(scores) <- names(seqs)
 	tmpChromo <- stdChromo
 	if (trim.chromatogram) tmpChromo <- subsetChromatogram( stdChromo, seq=bestSeq)	
+	if ( is.null(tmpChromo)) return(NULL)
 
 	
 	# 3. We need to know if we are doing Fwd or RevComp to get the sequences facing the right way
@@ -496,29 +507,39 @@
 	# now we can extract that portion from the observed chromatogram.   Or perhaps trim the 
 	# sequences to match the observed chromatogram
 	observedChromo <- stdChromo
+	lenObs <- length( observedChromo$PeakPosition)
 	
 	if ( trim.seqs) {
 		# if we need/want to trim the reference sequences, do that now, and do it the same to all
-		pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], bestSeq, type="local", scoreOnly=F)
+		pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], bestSeq, type="global-local", scoreOnly=F)
 		from <- start( subject(pa))
 		to <- width( subject(pa)) + from -1
 		if (verbose) cat( "\nDebug trim seqs: (size,from,to): ", nchar(bestSeq), from, to)
 		# but don't let it subset away to nothing...
 		newLen <- to - from + 1
-		oldLen <- nchar(bestSeq)
-		if ( newLen < oldLen/2) {
-			extra <- round(((oldLen/2) - newLen) / 2)
-			from <- max( from - extra, 1)
-			to <- min( to + extra, oldLen)
+		if ( newLen < lenObs) {
+			extra <- round(((lenObs/2) - newLen) / 2)
+			if (extra > 0) {
+				from <- max( from - extra, 1)
+				to <- min( to + extra, lenObs)
+			}
+			if (verbose) cat( "\nDebug trim: Too short: pad extra (size,extra,from,to): ", nchar(bestSeq), extra, from, to)
 		}
 		seqs <- substr( seqs, from, to)
 		bestSeq <- seqs[ best]
 	}
-	if (trim.chromatogram || trim.seqs) observedChromo <- subsetChromatogram( observedChromo, seq=bestSeq)	
+	if (trim.chromatogram || trim.seqs) {
+		observedChromo <- subsetChromatogram( observedChromo, seq=bestSeq)	
+		# verify we didn't trim to nothing?
+		lenNow <- length( observedChromo$PeakPosition)
+		if (verbose) cat( "\nDebug trim: new size of observed chromo (was,now): ", lenObs, lenNow)
+	}
 	
-	# 
+	# after all the prep, make sure we still have something to fit
 	maxObsHeight <- quantile( observedChromo$TraceM, 0.99)
 	observedTraceM <- observedChromo$TraceM
+	observedPeaks <- observedChromo$PeakPosition
+	if ( length(observedPeaks) < 3 || nrow(observedTraceM) < 30) return(NULL)
 	
 	# let's allow using the model fit algorithm to optimize the peak width we use
 	if ( is.character( synthetic.width) && synthetic.width == "fit") {
@@ -616,6 +637,7 @@
 					v2 <- as.vector( x[[j]]) * weights[j]
 					v <- v + v2
 				}
+				if ( length(obs) != length(v)) cat( "\nWarning: GenSA: size mismatch in residual calculation: ", length(obs), length(v))
 				diff <- ( obs - v)
 				resid <- sqrt( sum( diff * diff))
 				return( resid)
@@ -649,7 +671,7 @@
 	
 	# turn these estimates into percentages
 	pcts <- round( blendEsts * 100 / sum( blendEsts), digits=3)
-	out1 <- data.frame( "Construct"=names(seqs), "Percentage"=pcts, "P.value"=pvals, stringsAsFactors=F)
+	out1 <- data.frame( "Construct"=names(seqs), "DNA_Length"=nchar(seqs), "Percentage"=pcts, "P.value"=pvals, stringsAsFactors=F)
 	
 	# order them, and the blend estimates too
 	seqOrd <- order( out1$Percentage, decreasing=T)
@@ -788,7 +810,7 @@
 		# make the best fit model for this
 		if (verbose) cat( "\nModel..")
 		modelChromo <- modelFitChromatogram( curChromo, seq=curDNA, fixedPeaks=TRUE, effort=1, 
-									doStandardize=TRUE, doSubset=FALSE, algorithm="GenSA")
+						doStandardize=TRUE, doSubset=FALSE, algorithm="GenSA")
 		modelInten <- sum( modelChromo$TraceM, na.rm=T)
 		
 		# accumulate these answers
