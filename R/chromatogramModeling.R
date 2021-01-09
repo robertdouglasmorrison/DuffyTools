@@ -508,32 +508,30 @@
 	# sequences to match the observed chromatogram
 	observedChromo <- stdChromo
 	lenObs <- length( observedChromo$PeakPosition)
-	
-	if ( trim.seqs) {
+	lenRef <- nchar( bestSeq)
+	if (verbose) cat( "\nDEBUG LEN 1:  (obs, ref): ", lenObs, lenRef)
+	if ( lenRef > lenObs) {
 		# if we need/want to trim the reference sequences, do that now, and do it the same to all
 		pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], bestSeq, type="global-local", scoreOnly=F)
 		from <- start( subject(pa))
-		to <- width( subject(pa)) + from -1
-		if (verbose) cat( "\nDebug trim seqs: (size,from,to): ", nchar(bestSeq), from, to)
-		# but don't let it subset away to nothing...
-		newLen <- to - from + 1
-		if ( newLen < lenObs) {
-			extra <- round(((lenObs/2) - newLen) / 2)
-			if (extra > 0) {
-				from <- max( from - extra, 1)
-				to <- min( to + extra, lenObs)
-			}
-			if (verbose) cat( "\nDebug trim: Too short: pad extra (size,extra,from,to): ", nchar(bestSeq), extra, from, to)
-		}
+		to <- width( subject(pa)) + from - 1
+		# slight change that gaps were involved, don't let them break resizing
+		if ( to < (from+lenObs-1)) to <- from + lenObs - 1
+		if (verbose) cat( "\nDebug trim seqs: (size,from,to, now): ", lenRef, from, to, to-from+1)
 		seqs <- substr( seqs, from, to)
 		bestSeq <- seqs[ best]
+		lenRef <- nchar( bestSeq)
 	}
-	if (trim.chromatogram || trim.seqs) {
+	#if (trim.chromatogram || trim.seqs) {
+	if (verbose) cat( "\nDEBUG LEN 2:  (obs, ref): ", lenObs, lenRef)
+	if ( lenObs > lenRef) {
 		observedChromo <- subsetChromatogram( observedChromo, seq=bestSeq)	
 		# verify we didn't trim to nothing?
 		lenNow <- length( observedChromo$PeakPosition)
-		if (verbose) cat( "\nDebug trim: new size of observed chromo (was,now): ", lenObs, lenNow)
+		if (verbose) cat( "\nDebug trim: new size of observed chromo (was,now,refSeq): ", lenObs, lenNow, nchar(bestSeq))
+		lenObs <- lenNow
 	}
+	if (verbose) cat( "\nDEBUG LEN 3:  (obs, ref): ", lenObs, lenRef)
 	
 	# after all the prep, make sure we still have something to fit
 	maxObsHeight <- quantile( observedChromo$TraceM, 0.99)
@@ -557,6 +555,9 @@
 		synthChromoTraceMs[[i]] <- tmpChromo$TraceM
 		# small chance that we have a problem making all the chromatograms be the exact same size
 		if ( nrow(tmpChromo$TraceM) != nrow(observedTraceM)) synthSizeError <- TRUE
+		if ( verbose && synthSizeError) {
+			cat( "\nDebug Synth TraceM size: (obs,synth) ", i, names(seqs)[i], "|", dim(observedTraceM), "|", dim(tmpChromo$TraceM))
+		}
 	}
 	# if any flagged for bad size, die now
 	if (synthSizeError) {
@@ -612,7 +613,8 @@
 	if ( class( nlsAns) != "try-error") {
 		nlsAns2 <- try( summary( nlsAns))
 	}
-	
+	SAV_NLS <<- nlsAns
+
 	# extract the results if successful
 	if ( class(nlsAns) == "try-error" || class(nlsAns2) == "try-error") {
 	
