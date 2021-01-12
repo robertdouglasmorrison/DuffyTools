@@ -327,14 +327,16 @@
 	obsTrace <- obsChromo$TraceM
 	NP <- length( obsChromo$PeakPosition)
 	guess.height <- as.numeric( quantile( as.vector(obsTrace), 0.95))
-	max.height <- guess.height * 5
+	max.height <- guess.height * 10
 	min.height <- guess.height * 0.01
 	guess.width <- 3
 	max.width <- 4
 	min.width <- 1
+	# allow it to slide the synthetic back/forth by a few peaks...
+	maxCenterShift <- 3   #  5 * 11   # 5 peaks times 11 traceM points per peak
 	guess.center <- 0
-	max.center <- 2
-	min.center <- -2
+	max.center <- maxCenterShift
+	min.center <- -maxCenterShift
 
 	if ( fixedPeaks) {
 		start.height <- guess.height
@@ -414,8 +416,8 @@
 }
 
 
-`modelBlendChromatogram` <- function( obsChromo, seqs, synthetic.width="fit", 
-				trim.chromatogram=TRUE, trim.seqs=FALSE, noise.seqs=TRUE, 
+`modelBlendChromatogram` <- function( obsChromo, seqs, synthetic.width="fit", gap.mode=c("drop", "N"),
+				trim.chromatogram=TRUE, trim.seqs=FALSE, force.jitter.seqs=FALSE, noise.seqs=TRUE, 
 				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05,
 				max.show.plot=4, label="", verbose=FALSE) {
 
@@ -435,6 +437,8 @@
 	}
 	
 	# there is a bunch of setup steps, to assure the sequences and chromatogram can be directly compared
+	# we may be able to relax this requirement going forward...
+	gap.mode <- match.arg( gap.mode)
 	setupOK <- TRUE
 	# 1.  All the sequences must be exact same size.  Gap characters are allowed.
 	if ( length(seqs) < 2) {
@@ -443,10 +447,12 @@
 	}
 	if ( length( unique( nchar(seqs))) > 1) {
 		# catch/allow gaps to be present without braking this rule
-		seqs2 <- gsub( "-", "", seqs, fixed=T)
+		seqs2 <- if ( gap.mode == "drop") gsub( "-", "", seqs, fixed=T) else gsub( "-", "N", seqs, fixed=T)
 		if ( length( unique( nchar(seqs2))) > 1) {
 			cat( "\nAll DNA sequences for 'modelBlend' must be same length.  Explicit gap characters are allowed.")
-			setupOK <- FALSE
+			cat( "\nWarn:  Truncating all to shortest length..")
+			seqs <- substr( seq2, 1, min( nchar(seq2)))
+			setupOK <- TRUE   #FALSE
 		} else {
 			# removing the gaps put all at the same length, so use those version of the seqs
 			seqs <- seqs2
@@ -461,13 +467,14 @@
 	seqs <- toupper( seqs)
 	noGapSeqs <- gsub( "-", "", seqs, fixed=T)
 	
-	# 2.  We need to find the best matching sequence to know which to use to crop the chromatogram
+	# 2.  We need to find the best matching sequence to know which to use to crop the chromatogram,
+	#	and for knowing the Forward/RevComp orientation question
 	#	  Find the best, even if we don't crop the chromatogram...
 	scores <- numeric(NS)
 	stdChromo <- standardizeChromatogram( obsChromo, constant.height=TRUE)
 	if ( is.null(stdChromo)) return(NULL)
 	for ( i in 1:NS) {
-		tmpChromo <- subsetChromatogram( stdChromo, seq=noGapSeqs[i])
+		tmpChromo <- subsetChromatogramBySequence( stdChromo, seq=noGapSeqs[i], subset.type="local", verbose=FALSE)
 		if ( "UnitScore" %in% names(tmpChromo)) {
 			scores[i] <- tmpChromo$UnitScore
 		} else {
@@ -477,8 +484,14 @@
 	best <- which.max( scores)
 	bestSeq <- seqs[ best]
 	names(scores) <- names(seqs)
+	if (verbose) {
+		cat( "\nDebug Crop Observed:")
+		cat( "\nBest Ref: ", names(seqs)[best], scores[best], "|", bestSeq)
+	}
 	tmpChromo <- stdChromo
-	if (trim.chromatogram) tmpChromo <- subsetChromatogram( stdChromo, seq=bestSeq)	
+	if (trim.chromatogram && length(stdChromo$PeakPosition) > nchar(bestSeq)) {
+		tmpChromo <- subsetChromatogramBySequence( stdChromo, seq=bestSeq, subset.type=NULL)
+	}
 	if ( is.null(tmpChromo)) return(NULL)
 
 	
@@ -487,6 +500,9 @@
 	if ( which.min( editDist) == 2) {
 		for (i in 1:NS) seqs[i] <- myReverseComplement( seqs[i])
 		bestSeq <- seqs[ best]
+		if (verbose) cat( "\nRevComp was better..")
+	} else {
+		if (verbose) cat( "\nForward was better..")
 	}
 	
 	# with strand known, we now need to move any gap bases to the end, to correctly represent what
@@ -510,29 +526,46 @@
 	lenObs <- length( observedChromo$PeakPosition)
 	lenRef <- nchar( bestSeq)
 	if (verbose) cat( "\nDEBUG LEN 1:  (obs, ref): ", lenObs, lenRef)
-	if ( lenRef > lenObs) {
-		# if we need/want to trim the reference sequences, do that now, and do it the same to all
-		pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], bestSeq, type="global-local", scoreOnly=F)
-		from <- start( subject(pa))
-		to <- width( subject(pa)) + from - 1
-		# slight change that gaps were involved, don't let them break resizing
-		if ( to < (from+lenObs-1)) to <- from + lenObs - 1
-		if (verbose) cat( "\nDebug trim seqs: (size,from,to, now): ", lenRef, from, to, to-from+1)
-		seqs <- substr( seqs, from, to)
+	if ( trim.seqs && lenRef > lenObs) {
+		# if we need/want to trim the reference sequences, do that now, and do it the same way to all
+		# and force them all to be exactly the right length
+		for ( k in 1:NS) {
+			pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], seqs[k], type="global-local", scoreOnly=F)
+			#from <- start( subject(pa))
+			#to <- width( subject(pa)) + from - 1
+			# slight change that gaps were involved, don't let them break resizing
+			seqs[k] <- gsub( "-", "", as.character( subject(pa)), fixed=T)
+			while ( nchar(seqs[k]) < lenObs) seqs[k] <- paste( seqs[k], "N", sep="")
+			#if ( to < (from+lenObs-1)) to <- from + lenObs - 1
+			#if (verbose) cat( "\nDebug trim seqs: (size,from,to, now): ", lenRef, from, to, to-from+1)
+			#seqs <- substr( seqs, from, to)
+		}
 		bestSeq <- seqs[ best]
 		lenRef <- nchar( bestSeq)
+		if (verbose) cat( "\nDebug trim ref seqs: (now): ", lenRef)
 	}
-	#if (trim.chromatogram || trim.seqs) {
 	if (verbose) cat( "\nDEBUG LEN 2:  (obs, ref): ", lenObs, lenRef)
-	if ( lenObs > lenRef) {
-		observedChromo <- subsetChromatogram( observedChromo, seq=bestSeq)	
+	if (trim.chromatogram && lenObs > lenRef) {
+		observedChromo <- subsetChromatogramBySequence( observedChromo, seq=bestSeq)	
 		# verify we didn't trim to nothing?
 		lenNow <- length( observedChromo$PeakPosition)
-		if (verbose) cat( "\nDebug trim: new size of observed chromo (was,now,refSeq): ", lenObs, lenNow, nchar(bestSeq))
+		if (verbose) cat( "\nDebug trim Obs: new size of observed chromo (was,now,refSeq): ", lenObs, lenNow, nchar(bestSeq))
 		lenObs <- lenNow
 	}
 	if (verbose) cat( "\nDEBUG LEN 3:  (obs, ref): ", lenObs, lenRef)
+	if ( force.jitter.seqs) {
+		if ( verbose) cat( "\nForcing Jitter of Sequences..")
+		seqs <- force.jitter.ChromatogramFit.sequences( observedChromo, seqs)
+	}
 	
+	if (verbose) {
+		cat( "\n\nSetup done.  Current sequences:")
+		cat( "\nInitial Observed: ", nchar(stdChromo$DNA_Calls[1]), "|", stdChromo$DNA_Calls[1])
+		cat( "\nCropped Observed: ", nchar(tmpChromo$DNA_Calls[1]), "|", tmpChromo$DNA_Calls[1])
+		cat( "\nBest Reference:   ", nchar(bestSeq), "|", bestSeq)
+		cat( "\nAll Seqs:\n", paste( seqs, collapse="\n"), sep="")
+	}
+
 	# after all the prep, make sure we still have something to fit
 	maxObsHeight <- quantile( observedChromo$TraceM, 0.99)
 	observedTraceM <- observedChromo$TraceM
@@ -968,4 +1001,47 @@
 	}
 	
 	return( out)
+}
+
+
+`force.jitter.ChromatogramFit.sequences` <- function( observedChromo, seqs) {
+	
+	# given one target chromatogram, after all preliminary trimming and Fwd/Rev phasing issues
+	# and a set of target reference sequences that will be used in the Blend Fit call,
+	# force the sequences to be in the best alignment
+	
+	obsDNA <- observedChromo$DNA_Calls[1]
+	
+	obsV <- strsplit( obsDNA, split="")[[1]]
+	nch <- length( obsV)
+	polyN <- paste( rep.int("N",nch), collapse="")
+	
+	out <- seqs
+	NS <- length(seqs)
+	for ( i in 1:NS) {
+		mySeq <- seqs[i]
+		if ( nchar(mySeq) > nch) mySeq <- substr( mySeq, 1, nch)
+		if ( nchar(mySeq) < nch) mySeq <- substr( paste(mySeq,polyN,sep="",collapse=""), 1, nch)
+		myV <- strsplit( mySeq, split="")[[1]]
+		bestSeq <- mySeq
+		bestScore <- sum( myV == obsV)
+		for ( k in 1:round(nch*0.15)) {
+			myLeftSeq <- substr( paste( mySeq, substr(polyN,1,k), sep="", collapse=""), 1+k, nch+k)
+			myRightSeq <- substr( paste( substr(polyN,1,k), mySeq, sep="", collapse=""), 1, nch)
+			myLeftV <- strsplit( myLeftSeq, split="")[[1]]
+			myRightV <- strsplit( myRightSeq, split="")[[1]]
+			leftScore <- sum( myLeftV == obsV)
+			rightScore <- sum( myRightV == obsV)
+			if ( leftScore > bestScore) {
+				bestSeq <- myLeftSeq
+				bestScore <- leftScore
+			}
+			if ( rightScore > bestScore) {
+				bestSeq <- myRightSeq
+				bestScore <- rightScore
+			}
+		}
+		out[i] <- bestSeq
+	}
+	return(out)
 }

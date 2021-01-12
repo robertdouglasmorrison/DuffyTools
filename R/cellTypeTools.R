@@ -528,6 +528,7 @@
 
 	verifyCellTypeSetup()
 	colors <- CellTypeEnv[[ "STAGE_COLORS"]]
+	names(colors) <- CellTypeEnv[[ "STAGE_NAMES"]]
 	if ( is.null( colors)) {
 		tbl <- CellTypeEnv[[ "VectorSpace"]]
 		nCellTypes <- ncol(tbl) - 2 	# GeneID, Product,  then data....
@@ -1450,3 +1451,311 @@
 	return( out)
 }
 
+
+`plotCellTypeVolcano` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
+			keepIntergenics=FALSE, label="Plot", cex=1, sep="\t", cut.fold=1, cut.pvalue=0.05, pch=21,
+			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.pch=21, 
+			marker.pos=NULL, min.intensity=0, intensityColumn="RPKM_1", 
+			left.label=NULL, right.label=NULL, forceYmax=NULL, ...) {
+
+	if ( is.character(file)) {
+		tmp <- read.delim( file, as.is=T, sep=sep)
+		cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
+	} else if (is.data.frame(file)) {
+		tmp <- file
+	} else {
+		stop( "Argument 'file' must be a character string or a data frame.")
+	}
+
+	if ( !( all( c( geneColumn, foldColumn, pvalueColumn) %in% colnames(tmp)))) {
+		cat( "\nMissing columns:  looked for: ", geneColumn, foldColumn, pvalueColumn, 
+				"\n  \tFound: ", colnames(tmp))
+		return()
+	}
+
+	# extract the parts we want
+	genes <- tmp[[ geneColumn]]
+	genes <- shortGeneName( genes, keep=1)
+	fold <- as.numeric( tmp[[ foldColumn]])
+	pval <- as.numeric( tmp[[ pvalueColumn]])
+	celltype <- if ( "CellType" %in% colnames(tmp)) tmp$CellType else gene2CellType(genes)
+
+	# allow the removal of non genes, etc.
+	drops <- vector()
+	if ( ! keepIntergenics) {
+		drops <- grep( "(ng)", genes, fixed=TRUE)
+		# gmap <- getCurrentGeneMap()
+		# dropableGenes <- subset( gmap, SEQ_ID %in% c( "Pf3D7_PFC10_API_IRAB", "Pf3D7_M76611"))$GENE_ID
+		# drops2 <- which( genes %in% dropableGenes)
+		# drops <- base::sort( base::union( drops, drops2))
+	}
+	if ( length( drops) > 0) {
+		genes <- genes[ -drops]
+		fold <- fold[ -drops]
+		pval <- pval[ -drops]
+		celltype <- celltype[ -drops]
+		cat( "\nAfter dropping non-genes: ", length(genes))
+	}
+
+	# allow the removal of very low expression genes
+	if ( min.intensity > 0) {
+		inten <- tmp[[ intensityColumn]]
+		drops <- which( inten < min.intensity)
+		if ( length(drops)) {
+			genes <- genes[ -drops]
+			fold <- fold[ -drops]
+			pval <- pval[ -drops]
+			celltype <- celltype[ -drops]
+			cat( "\nAfter dropping low intensity: ", length(genes))
+		}
+	}
+
+	# get the cell type colors to use/show.  The color map is short names, but the data passed in
+	# may have the longer human readable names
+	cellColors <- getCellTypeColors()
+	longNames <- cleanCellTypeName( names(cellColors))
+	allCellNames <- c( names(cellColors), longNames)
+	allCellColors <- rep( cellColors, times=2)
+	geneCellColor <- allCellColors[ match( celltype, allCellNames)]
+
+	# do the volcano in line now
+	# we are plotting -log10(pval) on Y axis, Fold on X axis
+	clip.fold <- 10
+	clip.pvalue <- 1e-10
+	# prevent absurd numbers from dominating
+	fold[ fold > clip.fold] <- clip.fold
+	fold[ fold < -clip.fold] <- -clip.fold
+	pval[ pval < clip.pvalue] <- clip.pvalue
+
+	# add extra room on X for the labels, and the cell types too
+	bigX <- max( abs( fold), na.rm=T)
+	myRangeX <- range( fold, na.rm=T) * 1.15
+	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.1
+
+	y <- -( log10( pval))
+	myRangeY <- c( 0, max( y, na.rm=F)*1.05)
+	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
+
+	# plot so the importent genes get drawn last
+	ord <- order(y)
+	plot ( fold[ord], y[ord], type="p", main=label, xlab="Log2 Fold Change",
+		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
+		pch=pch, col=geneCellColor[ord], bg=geneCellColor[ord], cex=cex, font.axis=2, font.lab=2, ...)
+
+	# label selected genes, assumes the genes 'up in set1' are in the first half...
+	# add labels when the P-value is great enough
+	if ( ! is.null( marker.genes)) {
+		doLabel <- whereMarker
+		myPos <- ifelse( fold[whereMarker] > 0, 4, 2)
+	} else {
+		doLabel <- which( pval < cut.pvalue & abs(fold) > cut.fold)
+		myPos <- ifelse( fold[doLabel] > 0, 4, 2)
+	}
+		
+	if ( is.null( marker.genes) && length( doLabel)) {
+		if ( length(doLabel) > 2) {
+			require( plotrix)
+			myPos <- thigmophobe( fold[doLabel], y[doLabel])
+			# but force these to take right sides
+			myPos[ fold[doLabel] < 0 & myPos == 4] <- 2
+			myPos[ fold[doLabel] > 0 & myPos == 2] <- 4
+		}
+		text( fold[doLabel], y[doLabel], genes[doLabel], pos=myPos, cex=marker.cex)
+	}
+
+	if ( length( marker.genes) > 0) {
+		if ( marker.genes[1] == "identify") {
+			identify( fold, y, shortGeneName(genes, keep=1), col=marker.col, cex=marker.cex)
+		} else {
+			who <- whereMarker
+			marker.genes <- marker.genes[ who > 0]
+			if ( length( marker.col) > 1) marker.col <- marker.col[ who > 0]
+			who <- who[ who > 0]
+			if ( length(who) > 0) {
+				# put name left for down reg, right for up
+				if ( is.null( marker.pos)) {
+					pos <- ifelse( fold[who] < 0, 2, 4)
+				} else {
+					pos <- marker.pos
+				}
+				points( fold[who], y[who], col=marker.col, bg=marker.col, pch=marker.pch, cex=marker.cex)
+				if (marker.labels) text( fold[who], y[who], genes[who], pos=pos, col=col[3], cex=marker.cex)
+			}
+		}
+	}
+
+	# optional labels to remind which group is which
+	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in", left.label), cex=1, font=2)
+	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in", right.label), cex=1, font=2)
+
+	# and show the cell type color legend
+	legend( 'topleft', names(cellColors), fill=cellColors, bg='white')
+	
+	return( invisible( list( "x"=fold, "y"=y, "id"=genes )))
+}
+
+
+# modified version of a volcano plot, that makes one circle per cell type
+`plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
+					gene.pct=5.0, min.pct.show=2.5, label="", sep="\t", label.cex=1, 
+					left.label=NULL, right.label=NULL, forceYmax=NULL, ...) {
+
+	require( plotrix)
+
+	if ( is.character(file)) {
+		tmp <- read.delim( file, as.is=T, sep=sep)
+		cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
+	} else if (is.data.frame(file)) {
+		tmp <- file
+	} else {
+		stop( "Argument 'file' must be a character string or a data frame.")
+	}
+
+	if ( !( all( c( geneColumn, foldColumn, pvalueColumn) %in% colnames(tmp)))) {
+		cat( "\nMissing columns:  looked for: ", geneColumn, foldColumn, pvalueColumn, 
+			"\n  \tFound: ", colnames(tmp))
+		return()
+	}
+
+	# extract the parts we want
+	genes <- tmp[[ geneColumn]]
+	genes <- shortGeneName( genes, keep=1)
+	fold <- as.numeric( tmp[[ foldColumn]])
+	pval <- as.numeric( tmp[[ pvalueColumn]])
+	celltype <- if ( "CellType" %in% colnames(tmp)) tmp$CellType else gene2CellType(genes)
+
+	# always remove  non genes, etc.
+	drops <- grep( "(ng)", genes, fixed=TRUE)
+	if ( length( drops) > 0) {
+		genes <- genes[ -drops]
+		fold <- fold[ -drops]
+		pval <- pval[ -drops]
+		celltype <- celltype[ -drops]
+	}
+	NG <- length(genes)
+
+	# make sure we are in DE order
+	ord <- diffExpressRankOrder( fold, pval)
+	genes <- genes[ord]
+	fold <- fold[ord]
+	pval <- pval[ord]
+	celltype <- celltype[ord]
+
+	# get the cell type colors to use/show.  The color map is short names, but the data passed in
+	# may have the longer human readable names
+	cellColors <- getCellTypeColors()
+	shortCellNames <- names(cellColors)
+	longCellNames <- cleanCellTypeName( shortCellNames)
+	allCellNames <- c( shortCellNames, longCellNames)
+	allCellColors <- rep( cellColors, times=2)
+	# make some transparent colors too
+	rgbCol <- col2rgb( allCellColors)
+	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=0.25)
+	geneCellColor <- allCellColors[ match( celltype, longCellNames)]
+
+	# we are plotting -log10(pval) on Y axis, Fold on X axis
+	clip.fold <- 10
+	clip.pvalue <- 1e-10
+	# prevent absurd numbers from dominating
+	fold[ fold > clip.fold] <- clip.fold
+	fold[ fold < -clip.fold] <- -clip.fold
+	pval[ pval < clip.pvalue] <- clip.pvalue
+
+	# add extra room on X for the labels, and the cell types too
+	# because we are doing averages, soom in a bit
+	# the bigger the percentage, the more we need to zoom in
+	xZoom <- 1 - (gene.pct/100)*5
+	yZoom <- 1 - (gene.pct/100)*5
+	myRangeX <- range( fold, na.rm=T) * xZoom
+	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
+	y <- -( log10( pval))
+	myRangeY <- c( 0, max( y, na.rm=F)*yZoom)
+	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
+
+	NG.use <- round( NG * (gene.pct/100) / 10) * 10
+
+	# plot the volcano as a dust cloud, to downplay the genes
+	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
+	plot ( fold[ord], y[ord], type="p", main=mainText, xlab="Log2 Fold Change",
+		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
+		pch=".", col=geneCellColor, cex=1, font.axis=2, font.lab=2, ...)
+
+	# now let's calculate the clusters for each cell type, both UP and DOWN
+	UPgenes <- 1:NG.use
+	DOWNgenes <- (NG-NG.use+1):NG
+	cellFac <- factor( celltype)
+	outCell <- outDir <- outCount <- outPct <- outFold <- outPval <- vector()
+	outRadius <- outColor <- vector()
+	nout <- 0
+
+	# decide a scaling factor for turning percentages into a radius
+	# lets say 100% should fill the Y axis
+	radius.scale.fac <- (diff( range( myRangeY)) * 0.5) * 0.01
+
+	tapply( 1:NG, cellFac, function(k) {
+		
+		# given all the genes for one cell type
+		ct <- celltype[k[1]]
+		if ( ct == "") return()
+		ct <- shortCellNames[ ct == longCellNames]
+		ctColor <- allCellTransparentColors[ match( ct, allCellNames)]
+
+		# see how many and where each group falls
+		xUP <- yUP <- xDOWN <- yDOWN <- 0
+		kUP <- intersect( k, UPgenes)
+		nUP <- length(kUP)
+		pctUP <- round( nUP * 100 / NG.use, digits=1)
+		radUP <- pctUP * radius.scale.fac
+		if (nUP) {
+			xUP <- mean( fold[kUP], na.rm=T)
+			yUP <- mean( y[kUP], na.rm=T)
+		} 
+
+		kDOWN <- intersect( k, DOWNgenes)
+		nDOWN <- length(kDOWN)
+		pctDOWN <- round( nDOWN * 100 / NG.use, digits=1)
+		radDOWN <- pctDOWN * radius.scale.fac
+		if (nDOWN) {
+			xDOWN <- mean( fold[kDOWN], na.rm=T)
+			yDOWN <- mean( y[kDOWN], na.rm=T)
+		} 
+
+		# save all the details
+		now <- (nout+1) : (nout+2)
+		outCell[now] <<- ct
+		outColor[now] <<- ctColor
+		outDir[now] <<- c( "UP", "DOWN")
+		outCount[now] <<- c( nUP, nDOWN)
+		outPct[now] <<- c( pctUP, pctDOWN)
+		outRadius[now] <<- c( radUP, radDOWN)
+		outFold[now] <<- c( xUP, xDOWN)
+		outPval[now] <<- c( yUP, yDOWN)
+		nout <<- nout + 2
+	})
+
+	out <- data.frame( "CellType"=outCell, "Direction"=outDir, "N_Genes"=outCount, "Pct_Genes"=outPct,
+				"Color"=outColor, "Radius"=outRadius, "Log2Fold"=outFold, "Log10.Pvalue"=outPval,
+				stringsAsFactors=F)
+
+	# now with all known, we can draw them all
+	ord <- order( out$Radius, decreasing=T)
+	out <- out[ ord, ]
+	toShow <- which( out$Pct_Genes >= min.pct.show)
+	if ( length(toShow) < 3) toShow <- 1:3
+	for ( i in toShow) {
+		draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
+	}
+	ctLabels <- paste( out$CellType[toShow], "\nN=", out$N_Genes[toShow], sep="")
+	thigmophobe.labels( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
+				offset=(out$Pct_Genes[toShow]*0.05))
+
+	# optional labels to remind which group is which
+	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in", left.label), cex=1, font=2)
+	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in", right.label), cex=1, font=2)
+
+	# and show the cell type color legend
+	legend( 'topleft', names(cellColors), fill=cellColors, bg='white')
+	
+	return( invisible( out))
+	
+}

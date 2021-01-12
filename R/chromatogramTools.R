@@ -370,7 +370,7 @@
 }
 
 
-`subsetChromatogram` <- function( chromoObj, seq=NULL, range=NULL, min.unit.score=NULL) {
+`subsetChromatogram` <- function( chromoObj, seq=NULL, range=NULL, min.unit.score=NULL, verbose=FALSE) {
 
 	# allow being given a filename
 	if ( is.character(chromoObj) && file.exists( chromoObj[1])) {
@@ -378,9 +378,9 @@
 	}
 	
 	if ( ! is.null( seq)) {
-		return( subsetChromatogramBySequence( chromoObj, seq=seq, min.unit.score=min.unit.score))
+		return( subsetChromatogramBySequence( chromoObj, seq=seq, min.unit.score=min.unit.score, verbose=verbose))
 	} else if ( ! is.null( range)) {
-		return( subsetChromatogramByRange( chromoObj, range=range))
+		return( subsetChromatogramByRange( chromoObj, range=range, verbose=verbose))
 	} else {
 		cat( "\nMust specifiy a chromatogram subset by sequence or range.")
 	}
@@ -388,7 +388,7 @@
 }
 
 
-`subsetChromatogramBySequence` <- function( chromoObj, seq, min.unit.score=NULL) {
+`subsetChromatogramBySequence` <- function( chromoObj, seq, min.unit.score=NULL, subset.type=NULL, verbose=FALSE) {
 
 	# get the data we need 
 	traceM <- chromoObj$TraceM
@@ -419,10 +419,15 @@
 		subSeq <- gsub( "?", "N", subSeq, fixed=T)
 		subSeq <- gsub( "-", "N", subSeq, fixed=T)
 	}
-
+	
+	# by default, we assume the subset sequence we are finding is smaller than the full chromatogram,
+	# and we use this to find/extract the smaller construct, but this is user settable even if it breaks some
+	# assumptions below...
+	if ( is.null(subset.type)) subset.type <- "local-global"
+	
 	# find how well the given sequence matches in both worlds
-	dnaScores <- if ( notDNA) -99999 else pairwiseAlignment( chromoDNA, subSeq, type="local-global", substitutionMatrix=DNA_MATRIX, scoreOnly=T) * 3
-	aaScores <- pairwiseAlignment( chromoAA, subSeq, type="local-global", substitutionMatrix=BLOSUM62, scoreOnly=T)
+	dnaScores <- if ( notDNA) -99999 else pairwiseAlignment( chromoDNA, subSeq, type=subset.type, substitutionMatrix=DNA_MATRIX, scoreOnly=T) * 3
+	aaScores <- pairwiseAlignment( chromoAA, subSeq, type=subset.type, substitutionMatrix=BLOSUM62, scoreOnly=T)
 
 	# get the exact limits on both DNA and AA, regardless of which one we were given
 	if ( max(dnaScores) > max(aaScores)) {
@@ -434,6 +439,7 @@
 		stopDNA <- startDNA + width( pattern( pa)) - 1
 		needChromoRevComp <- (best > 1)
 		AAoffset <- 1
+		if (verbose) cat( "\nBest Subset was DNA: ", best, bestScore, substr(bestDNA,startDNA,stopDNA))
 	} else {
 		best <- which.max( aaScores)
 		bestScore <- aaScores[ best]
@@ -445,6 +451,7 @@
 		startDNA <- startAA*3 - 2
 		needChromoRevComp <- (best > 3)
 		AAoffset <- if (best < 4) best else best - 3
+		if (verbose) cat( "\nBest Subset was AA:  ", best, bestScore, substr(bestAA,startAA,stopAA))
 	}
 
 	# see if we should return 'not found'
@@ -490,7 +497,7 @@
 }
 
 
-`subsetChromatogramByRange` <- function( chromoObj, range) {
+`subsetChromatogramByRange` <- function( chromoObj, range, verbose=FALSE) {
 
 	# get the data we need 
 	traceM <- chromoObj$TraceM
