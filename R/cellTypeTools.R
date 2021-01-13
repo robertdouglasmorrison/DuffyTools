@@ -1597,8 +1597,8 @@
 
 # modified version of a volcano plot, that makes one circle per cell type
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
-					gene.pct=5.0, min.pct.show=2.5, label="", sep="\t", label.cex=1, 
-					left.label=NULL, right.label=NULL, forceYmax=NULL, ...) {
+					gene.pct=5.0, min.enrichment=1.1, label="", sep="\t", label.cex=1, 
+					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, ...) {
 
 	require( plotrix)
 
@@ -1610,7 +1610,6 @@
 	} else {
 		stop( "Argument 'file' must be a character string or a data frame.")
 	}
-
 	if ( !( all( c( geneColumn, foldColumn, pvalueColumn) %in% colnames(tmp)))) {
 		cat( "\nMissing columns:  looked for: ", geneColumn, foldColumn, pvalueColumn, 
 			"\n  \tFound: ", colnames(tmp))
@@ -1650,7 +1649,7 @@
 	allCellColors <- rep( cellColors, times=2)
 	# make some transparent colors too
 	rgbCol <- col2rgb( allCellColors)
-	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=0.25)
+	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=0.4)
 	geneCellColor <- allCellColors[ match( celltype, longCellNames)]
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
@@ -1660,29 +1659,20 @@
 	fold[ fold > clip.fold] <- clip.fold
 	fold[ fold < -clip.fold] <- -clip.fold
 	pval[ pval < clip.pvalue] <- clip.pvalue
-
-	# add extra room on X for the labels, and the cell types too
-	# because we are doing averages, soom in a bit
-	# the bigger the percentage, the more we need to zoom in
-	xZoom <- 1 - (gene.pct/100)*5
-	yZoom <- 1 - (gene.pct/100)*5
-	myRangeX <- range( fold, na.rm=T) * xZoom
-	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
 	y <- -( log10( pval))
-	myRangeY <- c( 0, max( y, na.rm=F)*yZoom)
-	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
-
 	NG.use <- round( NG * (gene.pct/100) / 10) * 10
 
-	# plot the volcano as a dust cloud, to downplay the genes
-	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
-	plot ( fold[ord], y[ord], type="p", main=mainText, xlab="Log2 Fold Change",
-		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
-		pch=".", col=geneCellColor, cex=1, font.axis=2, font.lab=2, ...)
-
-	# now let's calculate the clusters for each cell type, both UP and DOWN
+	# we wiil look at the top UP and DOWN genes
 	UPgenes <- 1:NG.use
 	DOWNgenes <- (NG-NG.use+1):NG
+
+	# use cell type enrichment to decide who to highlight
+	UPenrich <- cellTypeEnrichment( celltype[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
+	DOWNenrich <- cellTypeEnrichment( celltype[DOWNgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
+	UPenrich$CellType <- shortCellNames[ match( UPenrich$CellType , longCellNames)]
+	DOWNenrich$CellType <- shortCellNames[ match( DOWNenrich$CellType , longCellNames)]
+
+	# now let's calculate the clusters for each cell type, both UP and DOWN
 	cellFac <- factor( celltype)
 	outCell <- outDir <- outCount <- outPct <- outFold <- outPval <- vector()
 	outRadius <- outColor <- vector()
@@ -1690,6 +1680,7 @@
 
 	# decide a scaling factor for turning percentages into a radius
 	# lets say 100% should fill the Y axis
+	myRangeY <- c( 0, max( quantile( y, 0.995, na.rm=F)))
 	radius.scale.fac <- (diff( range( myRangeY)) * 0.5) * 0.01
 
 	tapply( 1:NG, cellFac, function(k) {
@@ -1737,17 +1728,44 @@
 				"Color"=outColor, "Radius"=outRadius, "Log2Fold"=outFold, "Log10.Pvalue"=outPval,
 				stringsAsFactors=F)
 
+	# add extra room on X for the labels, and the cell types too
+	# and retune the Y axis limits
+	bigX <- max( quantile( abs(fold), 0.95, na.rm=F), abs(out$Log2Fold)+out$Radius)
+	myRangeX <- c( -bigX, bigX)
+	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
+	myRangeY <- c( 0, max( quantile( y, 0.95, na.rm=F), out$Log10.Pvalue+out$Radius))
+	if ( ! is.null( forceXmax)) myRangeX[2] <- as.numeric(forceXmax)
+	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
+
+	# plot the volcano as a dust cloud, to downplay the genes
+	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
+	plot ( fold[ord], y[ord], type="p", main=mainText, xlab="Log2 Fold Change",
+		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
+		pch=".", col=geneCellColor, cex=1, font.axis=2, font.lab=2, ...)
+
 	# now with all known, we can draw them all
 	ord <- order( out$Radius, decreasing=T)
 	out <- out[ ord, ]
-	toShow <- which( out$Pct_Genes >= min.pct.show)
-	if ( length(toShow) < 3) toShow <- 1:3
-	for ( i in toShow) {
-		draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
+	toShow <- vector()
+	for ( i in 1:nrow(out)) {
+		# use the enrichment to decide who to show
+		myCellType <- out$CellType[i]
+		myUpDown <- out$Direction[i]
+		if ( myUpDown == "UP") {
+			where <- match( myCellType, UPenrich$CellType)
+			myEnrich <- UPenrich$Enrichment[where]
+		} else {
+			where <- match( myCellType, DOWNenrich$CellType)
+			myEnrich <- DOWNenrich$Enrichment[where]
+		}
+		if ( ! is.na(where) && myEnrich >= min.enrichment) {
+			draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
+			toShow <- c( toShow, i)
+		}
 	}
 	ctLabels <- paste( out$CellType[toShow], "\nN=", out$N_Genes[toShow], sep="")
 	thigmophobe.labels( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
-				offset=(out$Pct_Genes[toShow]*0.05))
+				offset=(out$Radius[toShow]*1))
 
 	# optional labels to remind which group is which
 	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in", left.label), cex=1, font=2)
