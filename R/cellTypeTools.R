@@ -1768,8 +1768,8 @@
 				offset=(out$Radius[toShow]*1))
 
 	# optional labels to remind which group is which
-	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in", left.label), cex=1, font=2)
-	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in", right.label), cex=1, font=2)
+	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in Group '", left.label, "'", sep=""), cex=1, font=2)
+	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
 
 	# and show the cell type color legend
 	legend( 'topleft', names(cellColors), fill=cellColors, bg='white')
