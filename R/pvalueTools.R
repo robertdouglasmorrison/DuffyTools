@@ -35,3 +35,19 @@ p.combine.stouffer <- function( x, check.valid=TRUE) {
 	if (check.valid) x <- p.valid(x, max.p.value=0.99999)
 	return( pnorm( sum( qnorm( x)) / sqrt( length( x))))
 }
+
+
+`as.PvalueText` <- function( pvalue, digits=4) {
+
+	# format the P-value based on how significant
+	pvalue <- as.numeric(pvalue)
+	out <- formatC( round( pvalue, digits=digits), format="f", digits=digits)
+	logMag <- -log10( pvalue)
+	needs.E <- which( logMag > digits)
+	if ( length( needs.E)) {
+		e.digits <- max( 1, digits-2)
+		out[needs.E] <- formatC( pvalue[needs.E], format="e", digits=e.digits)
+	}
+	out
+}
+

@@ -1597,7 +1597,7 @@
 
 # modified version of a volcano plot, that makes one circle per cell type
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
-					gene.pct=5.0, min.enrichment=1.1, label="", sep="\t", label.cex=1, 
+					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, 
 					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, ...) {
 
 	require( plotrix)
@@ -1663,8 +1663,11 @@
 	NG.use <- round( NG * (gene.pct/100) / 10) * 10
 
 	# we wiil look at the top UP and DOWN genes
+	# watch the fold change to make sure we don't cross zero
 	UPgenes <- 1:NG.use
 	DOWNgenes <- (NG-NG.use+1):NG
+	UPgenes <- intersect( UPgenes, which(fold > 0))
+	DOWNgenes <- intersect( DOWNgenes, which(fold < 0))
 
 	# use cell type enrichment to decide who to highlight
 	UPenrich <- cellTypeEnrichment( celltype[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
@@ -1679,9 +1682,10 @@
 	nout <- 0
 
 	# decide a scaling factor for turning percentages into a radius
-	# lets say 100% should fill the Y axis
-	myRangeY <- c( 0, max( quantile( y, 0.995, na.rm=F)))
-	radius.scale.fac <- (diff( range( myRangeY)) * 0.5) * 0.01
+	# lets say 100% should fill the area from Fold=0 to max X
+	# will be applied to the sqrt of the Pct of Genes, so sqrt(100%) = 10%
+	myBigX <- quantile( abs(fold), 0.995, na.rm=F)
+	radius.scale.fac <- (myBigX * 0.5) * 0.10
 
 	tapply( 1:NG, cellFac, function(k) {
 		
@@ -1696,7 +1700,7 @@
 		kUP <- intersect( k, UPgenes)
 		nUP <- length(kUP)
 		pctUP <- round( nUP * 100 / NG.use, digits=1)
-		radUP <- pctUP * radius.scale.fac
+		radUP <- sqrt(pctUP) * radius.scale.fac
 		if (nUP) {
 			xUP <- mean( fold[kUP], na.rm=T)
 			yUP <- mean( y[kUP], na.rm=T)
@@ -1705,7 +1709,7 @@
 		kDOWN <- intersect( k, DOWNgenes)
 		nDOWN <- length(kDOWN)
 		pctDOWN <- round( nDOWN * 100 / NG.use, digits=1)
-		radDOWN <- pctDOWN * radius.scale.fac
+		radDOWN <- sqrt(pctDOWN) * radius.scale.fac
 		if (nDOWN) {
 			xDOWN <- mean( fold[kDOWN], na.rm=T)
 			yDOWN <- mean( y[kDOWN], na.rm=T)
@@ -1741,11 +1745,12 @@
 	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
 	plot ( fold[ord], y[ord], type="p", main=mainText, xlab="Log2 Fold Change",
 		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
-		pch=".", col=geneCellColor, cex=1, font.axis=2, font.lab=2, ...)
+		pch=".", col=geneCellColor, cex=1.5, font.axis=2, font.lab=2, ...)
 
 	# now with all known, we can draw them all
 	ord <- order( out$Radius, decreasing=T)
 	out <- out[ ord, ]
+	out$Enrichment.Pvalue <- 1
 	toShow <- vector()
 	for ( i in 1:nrow(out)) {
 		# use the enrichment to decide who to show
@@ -1754,18 +1759,25 @@
 		if ( myUpDown == "UP") {
 			where <- match( myCellType, UPenrich$CellType)
 			myEnrich <- UPenrich$Enrichment[where]
+			myPval <- UPenrich$P_Value[where]
 		} else {
 			where <- match( myCellType, DOWNenrich$CellType)
 			myEnrich <- DOWNenrich$Enrichment[where]
+			myPval <- DOWNenrich$P_Value[where]
 		}
+		out$Enrichment.Pvalue[i] <- myPval
 		if ( ! is.na(where) && myEnrich >= min.enrichment) {
 			draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
 			toShow <- c( toShow, i)
 		}
 	}
-	ctLabels <- paste( out$CellType[toShow], "\nN=", out$N_Genes[toShow], sep="")
-	thigmophobe.labels( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
-				offset=(out$Radius[toShow]*1))
+
+	if ( length( toShow)) {
+		P.text <- as.PvalueText( out$Enrichment.Pvalue[toShow], digits=3) 
+		ctLabels <- paste( out$CellType[toShow], "\n(N=", out$N_Genes[toShow], ", P=", P.text, ")", sep="")
+		thigmophobe.labels( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
+					offset=(out$Radius[toShow]*1))
+	}
 
 	# optional labels to remind which group is which
 	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in Group '", left.label, "'", sep=""), cex=1, font=2)
