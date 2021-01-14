@@ -471,7 +471,7 @@
 		myCol[ whereMarker] <- col[2]
 	} else {
 		# color by P-value
-		myCol[ abs(fold) > cut.fold] <- col[2]
+		myCol[ abs(fold) >= cut.fold & pval <= cut.pvalue] <- col[2]
 	}
 
 	plot ( fold, y, type="p", main=label, xlab="Log2 Fold Change",
@@ -522,8 +522,8 @@
 
 	# optional labels to remind which group is which
 
-	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in", left.label), cex=1, font=2)
-	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in", right.label), cex=1, font=2)
+	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in Group '", left.label, "'", sep=""), cex=1, font=2)
+	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
 
 	return( list( "x"=fold, "y"=y, "id"=genes ))
 }
