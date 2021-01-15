@@ -1035,7 +1035,7 @@
 `fitCellTypeProfileFromFile` <- function( f, sid="Observed", col="orchid1", 
 					geneColumn="GENE_ID", intensityColumn="RPKM_M", 
 					sep="\t", max.iterations=100, rate=1, tolerance=0.01,
-					makePlots=c("all","final","none"), 
+					makePlots=c("all","final","none"), plot.path=".",
 					algorithm=c("steepDescent", "nls"), ...) {
 
 	verifyCellTypeSetup()
@@ -1060,14 +1060,14 @@
 	makePlots <- match.arg( makePlots)
 	algorithm <- match.arg( algorithm)
 	return( fitCellTypeProfile( gset, inten, sid=sid, col=col, max.iterations=max.iterations, rate=rate, 
-				tolerance=tolerance, makePlots=makePlots, algorithm=algorithm, ...))
+				tolerance=tolerance, makePlots=makePlots, plot.path=plot.path, algorithm=algorithm, ...))
 }
 
 
 `fitCellTypeProfileFromFileSet` <- function( fnames, fids, fcolors=1:length(fids), geneColumn="GENE_ID", 
 						intensityColumn="RPKM_M", sep="\t",
 						max.iterations=100, rate=1, tolerance=0.01, 
-						makePlots=c("all","final","none"), 
+						makePlots=c("all","final","none"), plot.path=".",
 						algorithm=c("steepDescent", "nls"), ...) {
 								
 	verifyCellTypeSetup()
@@ -1101,11 +1101,12 @@
 					intensityColumn=intensityColumn, sep=sep,
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, 
-					algorithm=algorithm, ...)
+					plot.path=plot.path, algorithm=algorithm, ...)
 		m[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
-			plotFile <- paste( "CellTypeProportions", fids[i], "png", sep=".")
+			plotFile <- paste( fids[i], "CellTypeProportions", "png", sep=".")
+			plotFile <- file.path( plot.path, plotFile)
 			dev.print( png, plotFile, width=1200)
 		}
 	}
@@ -1117,7 +1118,7 @@
 
 
 `fitCellTypeProfileFromMatrix` <- function( m, fcolors=1:ncol(m),  max.iterations=100, rate=1, tolerance=0.01, 
-						makePlots=c("all","final","none"), 
+						makePlots=c("all","final","none"), plot.path=".", 
 						algorithm=c("steepDescent", "nls"), ...) {
 
 	verifyCellTypeSetup()
@@ -1144,11 +1145,12 @@
 		ans <- fitCellTypeProfile( genes=genes, inten=m[,i], sid=fids[i], col=fcolors[i], 
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, 
-					algorithm=algorithm, ...)
+					plot.path=plot.path, algorithm=algorithm, ...)
 		mOut[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
-			plotFile <- paste( "CellTypeProportions", fids[i], "png", sep=".")
+			plotFile <- paste( fids[i], "CellTypeProportions", "png", sep=".")
+			plotFile <- file.path( plot.path, plotFile)
 			dev.print( png, plotFile, width=1200)
 		}
 	}
@@ -1162,7 +1164,7 @@
 # the function to do the fit to one set of gene intensity
 `fitCellTypeProfile` <- function( genes, inten, sid="Observed", col="orchid1", modelCol='brown',
 					max.iterations=100, rate=1, tolerance=0.01, fit.starts=NULL,
-					makePlots=c("all","final","none"), sleep=0.01, 
+					makePlots=c("all","final","none"), plot.path=".", sleep=0.01, 
 					algorithm=c("steepDescent", "nls"), ...) {
 
 	# grab the Cell Type data we will need:  the gene intensity in all cell types
@@ -1444,7 +1446,7 @@
 	iterations <- ans$iterations
 
 	# once we drop out, assemble the results
-	cellPercents <- round( model.pcts * 100, digits=2)
+	cellPercents <- round( model.pcts * 100, digits=4)
 	names(cellPercents) <- STAGE_NAMES
 		
 	out <- list( "Iterations"=iterations, "RMSD"=rmsd, "CellProportions"=cellPercents)
@@ -1784,7 +1786,7 @@
 	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
 
 	# and show the cell type color legend
-	legend( 'topleft', names(cellColors), fill=cellColors, bg='white')
+	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=0.9)
 	
 	return( invisible( out))
 	

@@ -140,7 +140,8 @@
 					sep="\t", useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA"),
-					startFractions=NULL, plot=TRUE) {
+					startFractions=NULL, plot=TRUE, plot.path=".", plot.col=NULL, 
+					label="", verbose=TRUE) {
 
 	if ( length(files) != length(fids)) {
 		cat( "\nLength mismatch:  'files' and 'fids' must be same length")
@@ -161,7 +162,6 @@
 	colnames(ans) <- fids
 	rownames(ans) <- colnames(targetM)
 
-	verbose <- TRUE
 	algorithm <- match.arg( algorithm)
 	if (algorithm == "GenSA") require( GenSA)
 	if (algorithm == "LM") require( minpack.lm)
@@ -210,7 +210,14 @@
 	pcts <- ans
 	for ( i in 1:NS) pcts[ , i] <- ans[ , i] * 100 / sum( ans[ , i])
 
-	if (plot) plotTranscriptProportions(pcts)
+	if (plot) {
+		if ( label == "") label <- paste( "Sample =", fids[1], "  Algorithm =", algorithm, "  Log =", useLog)
+		plotTranscriptProportions(pcts, col=plot.col, label=label)
+		plotFile <- paste( "TranscriptProportions", algorithm, "png", sep=".")
+		if ( length(fids) == 1) plotFile <- paste( fids[1], if (useLog) "YesLog" else "NoLog", plotFile, sep=".")
+		plotFile <- file.path( plot.path, plotFile)
+		dev.print( png, plotFile, width=900)
+	}
 
 	return( list( "BestFit"=pcts, "Statistics"=out2))
 }
@@ -220,7 +227,7 @@
 					useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA"),
-					plot=TRUE) {
+					plot=TRUE, plot.path=".", plot.col=NULL, label="", verbose=TRUE) {
 
 	NS <- ncol(m)
 	ND <- ncol(targetM)
@@ -231,7 +238,6 @@
 	colnames(ans) <- fids <- colnames(m)
 	rownames(ans) <- colnames(targetM)
 
-	verbose <- TRUE
 	algorithm <- match.arg( algorithm)
 	if (algorithm == "GenSA") require( GenSA)
 	if (algorithm == "LM") require( minpack.lm)
@@ -270,7 +276,14 @@
 	pcts <- ans
 	for ( i in 1:NS) pcts[ , i] <- ans[ , i] * 100 / sum( ans[ , i])
 
-	if (plot) plotTranscriptProportions(pcts)
+	if (plot) {
+		if ( label == "") label <- paste( "Sample =", colnames(m)[1], "  Algorithm =", algorithm, "  Log =", useLog)
+		plotTranscriptProportions(pcts, col=plot.col, label=label)
+		plotFile <- paste( "TranscriptProportions", algorithm, "png", sep=".")
+		if ( ncol(m) == 1) plotFile <- paste( colnames(m)[1], if (useLog) "YesLog" else "NoLog", plotFile, sep=".")
+		plotFile <- file.path( plot.path, plotFile)
+		dev.print( png, plotFile, width=900)
+	}
 
 	return( list( "BestFit"=pcts, "Statistics"=out2))
 }

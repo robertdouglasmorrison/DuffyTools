@@ -199,7 +199,7 @@
 	}
 
 	# set the controls used by NLS
-	controlList <- nls.control( tol=1e-05, maxiter=300, minFactor=1/1024, warnOnly=T)
+	controlList <- nls.control( tol=1e-05, maxiter=500, minFactor=1/2048, warnOnly=T)
 
 	# one call for any number of dimensions
 	# starting guess is 1/K if we were not given anything explicit
