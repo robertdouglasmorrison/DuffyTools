@@ -1530,12 +1530,12 @@
 	pval[ pval < clip.pvalue] <- clip.pvalue
 
 	# add extra room on X for the labels, and the cell types too
-	bigX <- max( abs( fold), na.rm=T)
-	myRangeX <- range( fold, na.rm=T) * 1.15
+	bigX <- max( 1, abs( fold), na.rm=T)
+	myRangeX <- range( c( -1, 1, fold), na.rm=T) * 1.15
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.1
 
 	y <- -( log10( pval))
-	myRangeY <- c( 0, max( y, na.rm=F)*1.05)
+	myRangeY <- c( 0, max( 1, y, na.rm=F)*1.05)
 	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
 
 	# plot so the importent genes get drawn last
@@ -1587,8 +1587,8 @@
 	}
 
 	# optional labels to remind which group is which
-	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in", left.label), cex=1, font=2)
-	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in", right.label), cex=1, font=2)
+	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in Group '", left.label, "'", sep=""), cex=1, font=2)
+	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
 
 	# and show the cell type color legend
 	legend( 'topleft', names(cellColors), fill=cellColors, bg='white')
@@ -1736,10 +1736,10 @@
 
 	# add extra room on X for the labels, and the cell types too
 	# and retune the Y axis limits
-	bigX <- max( quantile( abs(fold), 0.95, na.rm=F), abs(out$Log2Fold)+out$Radius)
+	bigX <- max( 1, quantile( abs(fold), 0.95, na.rm=F), abs(out$Log2Fold)+out$Radius)
 	myRangeX <- c( -bigX, bigX)
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
-	myRangeY <- c( 0, max( quantile( y, 0.95, na.rm=F), out$Log10.Pvalue+out$Radius))
+	myRangeY <- c( 0, max( 1, quantile( y, 0.95, na.rm=F), out$Log10.Pvalue+out$Radius))
 	if ( ! is.null( forceXmax)) myRangeX[2] <- as.numeric(forceXmax)
 	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
 

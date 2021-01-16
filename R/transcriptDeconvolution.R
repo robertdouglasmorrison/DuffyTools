@@ -329,6 +329,7 @@
 			pie( v[toShow], labels=nams[toShow], col=col[toShow], main=paste( maintext, fids[i]), ...)
 		}
 		par( mfcol=c(1,1))
+		dev.flush()
 		return()
 	}
 
@@ -375,6 +376,7 @@
 		}
 
 		legend( "topright", rownames(pcts), fill=col, bg='white', cex=legend.cex)
+		dev.flush()
 		return()
 	}
 	if ( doBars) {
@@ -424,6 +426,7 @@
 				y0 <- y0 + yNow
 			}
 		}
+		dev.flush()
 		return()
 	}
 }

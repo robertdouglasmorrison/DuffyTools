@@ -453,11 +453,12 @@
 	pval[ pval < clip.pvalue] <- clip.pvalue
 
 	# add extra room on X for the labels
-	bigX <- max( abs( fold), na.rm=T)
-	myRangeX <- range( fold, na.rm=T) * 1.15
+	# put some minimums in, so no change is clear
+	bigX <- max( 1, abs( fold), na.rm=T)
+	myRangeX <- range( c( -1, 1, fold), na.rm=T) * 1.15
 
 	y <- -( log10( pval))
-	myRangeY <- c( 0, max( y, na.rm=F)*1.05)
+	myRangeY <- c( 0, max( 1, y, na.rm=F)*1.05)
 	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
 
 	# use color to show when we exceed the wanted fold change
