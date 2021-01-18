@@ -433,7 +433,8 @@
 
 
 `compareTranscriptProportions` <- function( pcts, groups, levels=sort(unique(as.character(groups))), 
-					minPerGroup=3, test=t.test, plot=TRUE, label="", 
+					minPerGroup=3, test=t.test, plot=TRUE, plot.path=".", 
+					plot.mode=c("bars","auto","pie","lines"), label="", 
 					wt.fold=1, wt.pvalue=2, min.percent=0.1, ...) {
 
 	NC <- ncol(pcts)
@@ -505,10 +506,11 @@
 
 	# we have the compares done, draw it too
 	if (plot) {
+		plot.mode <- match.arg( plot.mode)
 		pctsGrp <- t( apply( pcts, 1, function(x) tapply( x, grpFac, mean)))
 		# show the group counts, if not too many
 		if (NG <=12) colnames(pctsGrp) <- paste( colnames(pctsGrp), "\n(N=", as.numeric(table(as.numeric(grpPtrs))), ")", sep="")
-		plotTranscriptProportions( pctsGrp, label=label, ...)
+		plotTranscriptProportions( pctsGrp, label=label, mode=plot.mode, ...)
 	}
 
 	return( if (nOut == 1) bigOut[[1]] else bigOut)
