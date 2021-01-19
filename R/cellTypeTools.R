@@ -1059,8 +1059,15 @@
 
 	makePlots <- match.arg( makePlots)
 	algorithm <- match.arg( algorithm)
-	return( fitCellTypeProfile( gset, inten, sid=sid, col=col, max.iterations=max.iterations, rate=rate, 
-				tolerance=tolerance, makePlots=makePlots, plot.path=plot.path, algorithm=algorithm, ...))
+	ans <-  fitCellTypeProfile( gset, inten, sid=sid, col=col, max.iterations=max.iterations, rate=rate, 
+				tolerance=tolerance, makePlots=makePlots, plot.path=plot.path, algorithm=algorithm, ...)
+	if (makePlots != "none") {
+		plotFile <- paste( sid, "CellTypeProportions", algorithm, "png", sep=".")
+		plotFile <- file.path( plot.path, plotFile)
+		dev.print( png, plotFile, width=900)
+	}
+	
+	return( ans)
 }
 
 
@@ -1105,9 +1112,9 @@
 		m[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
-			plotFile <- paste( fids[i], "CellTypeProportions", "png", sep=".")
+			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, "png", sep=".")
 			plotFile <- file.path( plot.path, plotFile)
-			dev.print( png, plotFile, width=1200)
+			dev.print( png, plotFile, width=900)
 		}
 	}
 	cat( "\nDone.\n")
@@ -1149,9 +1156,9 @@
 		mOut[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
-			plotFile <- paste( fids[i], "CellTypeProportions", "png", sep=".")
+			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, "png", sep=".")
 			plotFile <- file.path( plot.path, plotFile)
-			dev.print( png, plotFile, width=1200)
+			dev.print( png, plotFile, width=900)
 		}
 	}
 	cat( "\nDone.\n")
