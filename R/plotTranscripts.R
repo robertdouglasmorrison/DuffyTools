@@ -349,6 +349,7 @@
 			if (marker.labels) text( a[who], m[who], genes[who], pos=pos, col=marker.col, cex=marker.cex)
 		}}
 	}
+	dev.flush()
 
 	Rpearson <- cor( int1, int2, use="complete", method="pearson")
 	Rspearman <- cor( int1, int2, use="complete", method="spearman")
@@ -434,6 +435,7 @@
 			if (marker.labels) text( int2[who], int1[who], genes[who], pos=pos, col=marker.col, cex=marker.cex)
 		}}
 	}
+	dev.flush()
 
 	return( list( "x"=int2, "y"=int1, "id"=genes, "Pearson_R"=Rpearson, "Spearman_Rho"=Rspearman))
 }
@@ -525,6 +527,7 @@
 
 	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in Group '", left.label, "'", sep=""), cex=1, font=2)
 	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
+	dev.flush()
 
 	return( list( "x"=fold, "y"=y, "id"=genes ))
 }

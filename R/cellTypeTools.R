@@ -1718,6 +1718,7 @@
 
 	# and show the cell type color legend
 	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=0.8)
+	dev.flush()
 	
 	return( invisible( list( "x"=fold, "y"=y, "id"=genes )))
 }
@@ -1913,6 +1914,7 @@
 
 	# and show the cell type color legend
 	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=0.8)
+	dev.flush()
 	
 	return( invisible( out))
 	

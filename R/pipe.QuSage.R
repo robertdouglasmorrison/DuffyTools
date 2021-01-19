@@ -170,6 +170,7 @@
 					group1=group1, group2=group2, path=path, prefix=prefix, makeDownHTML=(Ngroups>2),
 					shortNames=myGeneSetShortNames, longNames=myGeneSetNames, addCellTypes=addCellTypes,
 					addLifeCycle=addLifeCycle, doQuSage=doQuSage, n.points=n.points, ...)
+				return(NULL)
 			}
 		multicore.lapply( allGroups, multicore.qusage)
 	}
