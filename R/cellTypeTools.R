@@ -1254,7 +1254,7 @@
 				xShow <- apply( mp, 2, mean)
 				yShow <- apply( cellM, 1, max) + (max(cellM)*0.03)
 				toShow <- which( cellPercents > 0)
-				text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+				if (length(toShow)) text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
 				dev.flush()
 				if (sleep > 0) Sys.sleep( sleep)
 			}
@@ -1317,7 +1317,7 @@
 			xShow <- apply( mp, 2, mean)
 			yShow <- apply( cellM, 1, max) + (max(cellM)*0.03)
 			toShow <- which( cellPercents > 0)
-			text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+			if (length(toShow)) text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
 			dev.flush()
 		}
 		out <- list( "model.pcts"=model.pcts, "rmsd"=rmsd, "iterations"=i)
@@ -1360,7 +1360,7 @@
 			xShow <- apply( mp, 2, mean)
 			yShow <- apply( cellM, 1, max) + (max(cellM)*0.03)
 			toShow <- which( cellPercents > 0)
-			text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+			if (length(toShow)) text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
 			dev.flush()
 		}
 
@@ -1407,7 +1407,7 @@
 			xShow <- apply( mp, 2, mean)
 			yShow <- apply( cellM, 1, max) + (max(cellM)*0.03)
 			toShow <- which( cellPercents > 0)
-			text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+			if (length(toShow)) text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
 			dev.flush()
 			if (sleep > 0) Sys.sleep( sleep)
 		}
@@ -1460,7 +1460,7 @@
 			xShow <- apply( mp, 2, mean)
 			yShow <- apply( cellM, 1, max) + (max(cellM)*0.03)
 			toShow <- which( cellPercents > 0)
-			text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+			if (length(toShow)) text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
 			dev.flush()
 		}
 		return( out)
