@@ -1717,7 +1717,7 @@
 	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
 
 	# and show the cell type color legend
-	legend( 'topleft', names(cellColors), fill=cellColors, bg='white')
+	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=0.8)
 	
 	return( invisible( list( "x"=fold, "y"=y, "id"=genes )))
 }
@@ -1912,7 +1912,7 @@
 	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
 
 	# and show the cell type color legend
-	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=0.9)
+	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=0.8)
 	
 	return( invisible( out))
 	
