@@ -139,7 +139,7 @@
 					geneColumn="GENE_ID", intensityColumn="RPKM_M",
 					sep="\t", useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
-					algorithm=c("port","default","plinear","LM","GenSA"),
+					algorithm=c("port","default","plinear","LM","GenSA","steepDescent"),
 					startFractions=NULL, plot=TRUE, plot.path=".", plot.col=NULL, 
 					label="", verbose=TRUE) {
 
@@ -226,7 +226,7 @@
 `matrix.TranscriptDeconvolution` <- function( m, targetM=getTranscriptDeconvolutionTargetMatrix(), 
 					useLog=FALSE, normalize=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
-					algorithm=c("port","default","plinear","LM","GenSA"),
+					algorithm=c("port","default","plinear","LM","GenSA","steepDescent"),
 					plot=TRUE, plot.path=".", plot.col=NULL, label="", verbose=TRUE) {
 
 	NS <- ncol(m)

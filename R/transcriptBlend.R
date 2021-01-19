@@ -81,7 +81,7 @@
 `fit.transcriptBlend` <- function( x, m, geneColumn="GENE_ID", intensityColumn="RPKM_M", useLog=FALSE, 
 				normalize=TRUE, minIntensity=0, arrayFloorIntensity=NULL, 
 				dropLowVarianceGenes=NULL, 
-				algorithm=c("port", "default", "plinear", "LM", "GenSA"), 
+				algorithm=c("port", "default", "plinear", "LM", "GenSA", "steepDescent"), 
 				startFractions=NULL, verbose=TRUE) {
 
 	# argument can be a data frame or a file name
@@ -231,8 +231,9 @@
 		lowerBound <- rep.int( 0, NC)
 		upperBound <- rep.int( 100, NC)
 		fitAns <- try( nlsLM( intenUse ~ transcriptBlend( mUse, WTi), start=starts,
-				control=controlList, algorithm="LM"))  #, lower=lowerBound, 
-				# upper=upperBound))
+				control=controlList, algorithm="LM"))  
+	} else if (algorithm == "steepDescent") {
+		fitAns <- try( do.TranscriptBlend.SteepDescent( intenUse, mUse, start=startFractions))
 	} else {
 		fitAns <- try( nls( intenUse ~ transcriptBlend( mUse, WTi), start=starts,
 				control=controlList, algorithm=algorithm))
@@ -244,7 +245,7 @@
 	} 
 
 	# the simulated annealling answer is all set, but the others need the summary done explicitly
-	if ( algorithm == "GenSA") { 
+	if ( algorithm %in% c( "GenSA", "steepDescent")) { 
 		out <- fitAns
 	} else {
 		fractions <- coef( fitAns)
@@ -336,6 +337,118 @@
 	r2.cod <- 1.0 - (SSresid / SStotal)
 
 	out <- list( "BestFit"=fractions, "Observed"=inten, "Residuals"=resids, 
+			"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
+	return( out)
+}
+
+
+`do.TranscriptBlend.SteepDescent` <- function( inten, m, start, max.iterations=200, tolerance=1) {
+
+	# do our own steepest descent optimazation in Gene Intensity space
+	# minimize delta gene expression by adjusting cell type proportions
+
+	# start with given weights, and adjust as we go
+	wts.in <- start
+	wts.in[ wts.in < 0] <- 0
+
+	# OK, iteratively evaluate what genes are out of whack, and try to push them
+
+	# Use the starting percentages
+	model.pcts <- wts.in
+	genes <- rownames(m)
+		
+	# ready to iteratively compare the model to the observed. 
+	# track the best and some metrics for seeing stalling
+	cat( "\n")
+	prevRMSD <- 99999999
+	best.model <- model.pcts
+	best.rmsd <- prevRMSD
+	nTimesStuck <- 0
+	
+	for ( i in 1:max.iterations) {
+			
+		# make the latest model with the current ratios, making sure the percentages sum to exactly one
+		model.pcts <- model.pcts / sum( model.pcts)
+		modelInten <- transcriptBlend( m, model.pcts)
+				
+		# assess the current deviation
+		deltas <- inten - modelInten
+		rmsd <- round( sqrt( mean( deltas^2)), digits=4)
+		cat( "\rIter: ", i, "   RMSD: ", rmsd)
+						
+		if ( rmsd <= tolerance) {
+			cat( "\nConverged..")
+			break
+		}
+		deltaRMSD <- prevRMSD - rmsd
+		if ( abs(deltaRMSD) < 0.01) {
+			nTimesStuck <- nTimesStuck + 1
+		} else {
+			nTimesStuck <- 0
+		}
+		if ( nTimesStuck > 5) {
+			cat( "\nStalled..")
+			break
+		}
+		# we did not bail out, see if we are better
+		if (rmsd < best.rmsd) {
+			best.model <- model.pcts
+			best.rmsd <- rmsd
+			nTimesStuck <- 0
+		}
+		prevRMSD <- rmsd
+			
+		# now use the deltas to push the model percentages
+		# turn the 'too high' gene expression into one set of cell type force vectors
+		# and turn the 'too low' gene expression into a second set of force vectors
+		intenTooHigh <- ifelse( deltas < 0, abs(deltas), 0)
+		intenTooLow <- ifelse( deltas > 0, deltas, 0)
+			
+		# turn these 'residual' intensities into 'residual' cell type percentages
+		tooHighAns <- calcCellTypeProfile( genes, intenTooHigh)
+		profileTooHigh <- tooHighAns$Profile
+		tooLowAns <- calcCellTypeProfile( genes, intenTooLow)
+		profileTooLow <- tooLowAns$Profile
+		# now increase what we need more of, and decrease what we need less of
+		# note that the Profile tool returns 0..100 while our units are 0..1
+		netDiff <- (profileTooLow*0.01) - (profileTooHigh*0.01)
+		# since both deltas may say the same thing, it may be 2x what we want
+		# and then just step 'toward' the goal, not all the way to it
+		netDiff <- netDiff * 0.5 * 0.75
+		model.pcts <- model.pcts + netDiff
+		# prevent negative contributions, and renormalize
+		model.pcts[ model.pcts < 0] <- 0
+		model.pcts <- model.pcts / sum( model.pcts)
+			
+		# and go around again
+	}
+	
+	# fell out of the loop
+	if ( i == max.iterations) cat( "\nMax.iterations..")
+	
+	# regardless of how we ended, use the best we saw
+	model.pcts <- best.model
+	rmsd <- best.rmsd
+
+	# Clean up:  don't let any final calls be below zero percent
+	wts <- model.pcts
+	wts[ wts < 0] <- 0
+	wts <- wts / sum(wts)
+	names( wts) <- colnames(m)
+	model <- transcriptBlend( m, wts)
+	resids <- inten - model
+	rms <- sqrt( mean( resids^2))
+	# let's do a few other stats...
+	cor.ans <- cor.test( inten, model)
+	r2.pearson <- cor.ans$estimate ^ 2
+	pv <- cor.ans$p.value
+	# also do the more general coefficient of determination
+	meanI <- mean( inten, na.rm=T)
+	SStotal <- sum( (inten - meanI) ^ 2)
+	SSresid <- sum( resids ^ 2)
+	r2.cod <- 1.0 - (SSresid / SStotal)
+
+	out <- list( "BestFit"=wts, "Observed"=inten, "Residuals"=resids, 
 			"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
 	return( out)
 }

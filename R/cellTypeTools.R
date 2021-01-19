@@ -1036,7 +1036,7 @@
 					geneColumn="GENE_ID", intensityColumn="RPKM_M", 
 					sep="\t", max.iterations=100, rate=1, tolerance=0.01,
 					makePlots=c("all","final","none"), plot.path=".",
-					algorithm=c("steepDescent", "nls"), ...) {
+					algorithm=c("steepDescent", "nls", "GenSA"), ...) {
 
 	verifyCellTypeSetup()
 
@@ -1068,7 +1068,7 @@
 						intensityColumn="RPKM_M", sep="\t",
 						max.iterations=100, rate=1, tolerance=0.01, 
 						makePlots=c("all","final","none"), plot.path=".",
-						algorithm=c("steepDescent", "nls"), ...) {
+						algorithm=c("steepDescent", "nls", "GenSA"), ...) {
 								
 	verifyCellTypeSetup()
 
@@ -1119,7 +1119,7 @@
 
 `fitCellTypeProfileFromMatrix` <- function( m, fcolors=1:ncol(m),  max.iterations=100, rate=1, tolerance=0.01, 
 						makePlots=c("all","final","none"), plot.path=".", 
-						algorithm=c("steepDescent", "nls"), ...) {
+						algorithm=c("steepDescent", "nls", "GenSA"), ...) {
 
 	verifyCellTypeSetup()
 
@@ -1165,7 +1165,7 @@
 `fitCellTypeProfile` <- function( genes, inten, sid="Observed", col="orchid1", modelCol='brown',
 					max.iterations=100, rate=1, tolerance=0.01, fit.starts=NULL,
 					makePlots=c("all","final","none"), plot.path=".", sleep=0.01, 
-					algorithm=c("steepDescent", "nls"), ...) {
+					algorithm=c("steepDescent", "nls", "GenSA"), ...) {
 
 	# grab the Cell Type data we will need:  the gene intensity in all cell types
 	verifyCellTypeSetup()
@@ -1246,7 +1246,7 @@
 			
 			# plot it to show progress
 			if (makePlots == "all") {
-				labelText <- paste( "Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", rmsd)
+				labelText <- paste( "'SteepDescent' Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", round(rmsd,dig=4))
 				mp <- plotCellTypeProfiles( t(cellM), col=c( col, modelCol), label=labelText, ...)
 	
 				# try to show what we have now?...
@@ -1310,7 +1310,7 @@
 		rmsd <- best.rmsd
 
 		if (makePlots == "final") {
-			labelText <- paste( "Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", rmsd)
+			labelText <- paste( "'SteepDescent' Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", round(rmsd,dig=4))
 			mp <- plotCellTypeProfiles( t(cellM), col=c( col, modelCol), label=labelText, ...)
 			# try to show what we have now?...
 			cellPercents <- round( model.pcts * 100, digits=1)
@@ -1327,7 +1327,7 @@
 
 	nlsFitCellTypeModel <- function() {
 
-		# call the Nonlinear Least Squares, either fitting the floor too or not
+		# call the Nonlinear Least Squares (NLS)
 		controlList <- nls.control( maxiter=max.iterations, minFactor=1/512, warnOnly=TRUE, tol=1e-3)
 		starts <- list( "modelPcts"=fit.starts)
 		lowerBound <- rep.int( -0.0000001, N_STAGES)   # allow a small tolerance, so true zero is a valid answer
@@ -1353,7 +1353,7 @@
 		out <- list( "model.pcts"=model.pcts, "rmsd"=rmsd, "Iterations"=nIter)
 
 		if (makePlots == "final") {
-			labelText <- paste( "Model Fit to:  ", sid, "\nIteration: ", nIter, "    RMS_Deviation: ", rmsd)
+			labelText <- paste( "'NLS' Model Fit to:  ", sid, "\nIteration: ", nIter, "    RMS_Deviation: ", round(rmsd,dig=4))
 			mp <- plotCellTypeProfiles( t(cellM), col=c( col, modelCol), label=labelText, ...)
 			# try to show what we have now?...
 			cellPercents <- round( model.pcts * 100, digits=1)
@@ -1371,8 +1371,6 @@
 	nlsModelCellTypeProfile <- function( modelPcts) {
 
 		# low level function called by NLS to give the current cell type profile of a set of pcts
-		# step 1: force whatever were were given to obey the "unit vector" rule
-		#model.pcts <- modelPcts / sum( modelPcts)
 		model.pcts <- modelPcts
 		modelInten <- rep.int( 0, NG)
 		for ( j in 1:N_STAGES) {
@@ -1381,15 +1379,18 @@
 		}
 			
 		# calculate the profiles of this model using faster code
-		#modelAns <- calcCellTypeProfile( genes, modelInten)
-		#modelProfile <- modelAns$Profile
 		modelProfile <- nlsCalcCellTypeProfile( modelInten)
 
-		# to force the NLS to keep sum to 1.0, penalize for that deviation
-		deltaOne <- sum(modelPcts)
-		modelProfile <- modelProfile / deltaOne
+		# force the NLS to try to keep the percentages near 1.0, but don't let that penalty
+		# affect what we show in the plots
+		totalPct <- sum(modelPcts)
+		modelProfileShow <- modelProfile
+		if ( totalPct > 1.0) {
+			modelProfileShow <- modelProfile / totalPct
+			modelProfile <- modelProfile * totalPct * totalPct
+		}
 
-		cellM[ ,2] <<- modelProfile
+		cellM[ ,2] <<- modelProfileShow
 
 		# plot it to show progress
 		if (makePlots == "all" && any( abs(model.pcts - lastDrawnPcts) > 0.001)) {
@@ -1398,7 +1399,7 @@
 			# remember the internal values are 0..1 while the external are 0..100
 			deltas <- cellM[,1] - cellM[,2]
 			rmsd <- round( sqrt( mean( deltas^2)), digits=4)
-			labelText <- paste( "Model Fit to:  ", sid, "\nIteration: ", nIter, "    RMS_Deviation: ", rmsd)
+			labelText <- paste( "'NLS' Model Fit to:  ", sid, "\nIteration: ", nIter, "    RMS_Deviation: ", round(rmsd,dig=4))
 			mp <- plotCellTypeProfiles( t(cellM), col=c( col, modelCol), label=labelText, ...)
 
 			# try to show what we have now?...
@@ -1431,6 +1432,121 @@
 		ans <- allSums * 100 / bigSum
 		return( ans)
 	}
+	
+
+	GenSA.FitCellTypeModel <- function() {
+
+		# call the Gen Simulated Annealing
+		starts <- fit.starts
+		lowerBound <- rep.int( -0.0000001, N_STAGES)   # allow a small tolerance, so true zero is a valid answer
+		upperBound <- rep.int(  1.0000001, N_STAGES)
+		nIter <<- 0
+		SAV_ANS_MID <<- fitAns <- try( do.FitCellTypeModel.GenSA( obsProfile, start=starts,
+				lower=lowerBound, upper=upperBound))
+		if ( class( fitAns) == "try-error") {
+			cat( "\nFitting of Cell Type Proportions failed...")
+			return(NULL)
+		} 
+
+		model.pcts <-  fitAns$BestFit / sum( fitAns$BestFit)		
+		rmsd <- fitAns$RMS.Deviation
+		out <- list( "model.pcts"=model.pcts, "rmsd"=rmsd, "Iterations"=nIter)
+
+		if (makePlots == "final") {
+			labelText <- paste( "'GenSA' Model Fit to:  ", sid, "\nIteration: ", nIter, "    RMS_Deviation: ", round(rmsd,dig=4))
+			mp <- plotCellTypeProfiles( t(cellM), col=c( col, modelCol), label=labelText, ...)
+			# try to show what we have now?...
+			cellPercents <- round( model.pcts * 100, digits=1)
+			xShow <- apply( mp, 2, mean)
+			yShow <- apply( cellM, 1, max) + (max(cellM)*0.03)
+			toShow <- which( cellPercents > 0)
+			text( xShow[toShow], yShow[toShow], paste(cellPercents[toShow],"%",sep=""), cex=0.7, col=1)
+			dev.flush()
+		}
+		return( out)
+	}
+
+
+	`do.FitCellTypeModel.GenSA` <- function( obsProfile, start, lower, upper, seed=NULL) {
+
+		# wrapper to implement cell type modelling by Generalize Simulated Annealing
+
+		# GenSA as implemented has a hard coded seed for RNG.  We want random behavior each time thru
+		# GEnSA docs suggest using a negative value
+		my.seed <- -(as.integer( Sys.time()))
+
+		# the penalty function that GenSA will minimize
+		genSA.profile.model <- function( wts) {
+
+			# make the model of gene intensity these weights would generate
+			modelInten <- rep.int( 0, NG)
+			for ( j in 1:N_STAGES) {
+				thisV <- intensityVectors[,j] * wts[j]
+				modelInten[ useGene] <- modelInten[ useGene] + thisV[whereGene]
+			}
+			# calculate the cell type profiles of this model
+			modelProfile <- nlsCalcCellTypeProfile( modelInten)
+			return( modelProfile)
+		}
+
+		# the penalty function that GenSA will minimize
+		genSA.profile.residual <- function( wts, obsProfile) {
+
+			modelProfile <- genSA.profile.model( wts)
+			
+			# use residual sum of squares as the penalty
+			resid2 <- (obsProfile - modelProfile) ^ 2
+			rss <- sum( resid2, na.rm=T)
+			
+			# we want the weights to sum to 1.0
+			ttlWt <- sum( wts)
+			if ( ttlWt > 1.0) rss <- rss * ttlWt * ttlWt			
+			return( rss)
+		}
+
+		# set up to call GenSA
+		# say 'good enough' if we explain 99.99% of the profile
+		stopValue <- 0.001
+		control.list <- list( "maxit"=5000, "threshold.stop"=stopValue, 
+				"temperature"=6000, "smooth"=FALSE, "max.call"=10000000,
+				"max.time"=100, "trace.mat"=TRUE, "seed"=my.seed)
+				
+		# starting profile is equal wt for all cell types
+		wts <- start
+
+		# the GenSA tool seems unable to push any parameter all the way to zero, as if it can't 
+		# equal the lower bound, instead must stay above it
+		# so let's let the lower bounds go a bit bit negative, and clean up later
+		lower[ lower == 0] <- -0.01
+		wts[ wts <= lower] <- 0.001
+
+		SAV_ANS_LOW <<- ans <- GenSA( par=wts, lower=lower, upper=upper, fn=genSA.profile.residual, 
+			control=control.list, obsProfile=obsProfile)
+
+		# extract the answers
+		fractions <- ans$par
+		# Clean up:  don't let any final calls be below zero percent, and scale back to exactly 1.0
+		fractions[ fractions < 0] <- 0
+		fractions <- fractions / sum(fractions)
+		names( fractions) <- STAGE_NAMES
+		modelProfile <- genSA.profile.model( fractions)
+		cellM[ ,2] <<- modelProfile
+		resids <- obsProfile - modelProfile
+		rms <- sqrt( mean( resids^2))
+		# let's do a few other stats...
+		cor.ans <- cor.test( obsProfile, modelProfile)
+		r2.pearson <- cor.ans$estimate ^ 2
+		pv <- cor.ans$p.value
+		# also do the more general coefficient of determination
+		meanI <- mean( obsProfile, na.rm=T)
+		SStotal <- sum( (obsProfile - meanI) ^ 2)
+		SSresid <- sum( resids ^ 2)
+		r2.cod <- 1.0 - (SSresid / SStotal)
+
+		out <- list( "BestFit"=fractions, "Observed"=obsProfile, "Model"=modelProfile, "Residuals"=resids, 
+			"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
+		return( out)
+	}
 	# end of local fit functions
 	
 
@@ -1438,8 +1554,11 @@
 	algorithm <- match.arg( algorithm)
 	if ( algorithm == "steepDescent") {
 		ans <- steepDescentFitCellTypeModel()
-	} else {
+	} else if ( algorithm == "nls") {
 		ans <- nlsFitCellTypeModel()
+	} else {
+		require( GenSA)
+		SAV_ANS_HIGH <<- ans <- GenSA.FitCellTypeModel()
 	}
 	model.pcts <- ans$model.pcts
 	rmsd <- ans$rmsd
