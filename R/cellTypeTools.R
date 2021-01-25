@@ -1727,7 +1727,8 @@
 # modified version of a volcano plot, that makes one circle per cell type
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
 					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, 
-					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, ...) {
+					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, 
+					color.alpha=0.5, label.offset.cex=1, ...) {
 
 	require( plotrix)
 
@@ -1778,7 +1779,7 @@
 	allCellColors <- rep( cellColors, times=2)
 	# make some transparent colors too
 	rgbCol <- col2rgb( allCellColors)
-	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=0.4)
+	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
 	geneCellColor <- allCellColors[ match( celltype, longCellNames)]
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
@@ -1905,7 +1906,7 @@
 		P.text <- as.PvalueText( out$Enrichment.Pvalue[toShow], digits=3) 
 		ctLabels <- paste( out$CellType[toShow], "\n(N=", out$N_Genes[toShow], ", P=", P.text, ")", sep="")
 		thigmophobe.labels( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
-					offset=(out$Radius[toShow]*1))
+					offset=(out$Radius[toShow]*label.offset.cex))
 	}
 
 	# optional labels to remind which group is which
