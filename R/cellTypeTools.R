@@ -1875,7 +1875,7 @@
 	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
 	plot ( fold[ord], y[ord], type="p", main=mainText, xlab="Log2 Fold Change",
 		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
-		pch=".", col=geneCellColor, cex=1.5, font.axis=2, font.lab=2, ...)
+		pch=".", col=geneCellColor, cex=1.5, font.axis=2, font.lab=2, cex.main=0.8, ...)
 
 	# now with all known, we can draw them all
 	ord <- order( out$Radius, decreasing=T)
