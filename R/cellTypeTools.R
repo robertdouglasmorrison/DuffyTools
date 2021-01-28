@@ -1728,7 +1728,7 @@
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
 					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, 
 					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, 
-					color.alpha=0.5, label.offset.cex=1, ...) {
+					color.alpha=0.75, label.offset.cex=1, ...) {
 
 	require( plotrix)
 
