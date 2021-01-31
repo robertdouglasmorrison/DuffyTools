@@ -7,7 +7,7 @@
 				geneSets=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				legend.prefix=NULL, legend.order=NULL, legend.cex=1, Nshow=24, 
 				start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
-				radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, 
+				radial.lim=NULL, min.radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, 
 				main=paste( "Comparison:  ",folderName), ...)
 {
 
@@ -58,7 +58,7 @@
 				optionsFile=optionsFile, results.path=results.path, groupColumn=groupColumn,
 				colorColumn=colorColumn, geneSet=geneSets, restrictionSets=restrictionSets,
 				baselineGroup=baselineGroup, reload=FALSE, Nshow=Nshow, start=start, 
-				radial.labels=radial.labels, radial.margin=radial.margin, radial.lim=radial.lim,
+				radial.labels=radial.labels, radial.margin=radial.margin, radial.lim=radial.lim, min.radial.lim=min.radial.lim,
 				boxed.radial=boxed.radial, label.prop=label.prop, lwd=lwd, main=main, 
 				legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, ...)
 		geneSetName <- "Radar"
@@ -93,7 +93,7 @@
 					optionsFile=optionsFile, results.path=results.path, groupColumn=groupColumn,
 					colorColumn=colorColumn, geneSet=gs, restrictionSets=thisRestrictionSet,
 					baselineGroup=baselineGroup, reload=FALSE, Nshow=Nshow, start=start, 
-					radial.labels=radial.labels, radial.margin=radial.margin, radial.lim=radial.lim,
+					radial.labels=radial.labels, radial.margin=radial.margin, radial.lim=radial.lim, min.radial.lim=min.radial.lim,
 					boxed.radial=boxed.radial, label.prop=label.prop, lwd=lwd, main=main, 
 					legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex,
 					wrapParentheses=wrapParentheses, ...)
@@ -133,7 +133,7 @@
 				geneSet=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				reload=FALSE, Nshow=24, 
 				start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
-				radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, main=NULL, 
+				radial.lim=NULL, min.radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, main=NULL, 
 				wrapParentheses=TRUE, ...)
 {
 
@@ -262,6 +262,11 @@
 		# or clip the data to those limits
 		mShow <- pmax( mShow, (radial.lim[1]*0.95))
 		mShow <- pmin( mShow, (radial.lim[2]*0.95))
+	}
+	# perhaps allow a minimum limits
+	if ( ! is.null( min.radial.lim)) {
+		if ( min.radial.lim[1] < radial.lim[1]) radial.lim[1] <- min.radial.lim[1]
+		if ( min.radial.lim[2] > radial.lim[2]) radial.lim[2] <- min.radial.lim[2]
 	}
 	DuffyTools::radial.plot( t(mShow), labels=validModuleNames, radlab=radial.labels, rp.type="p", line.col=mycolors,
 			start=start, clockwise=T, mar=radial.margin, radial.lim=radial.lim, label.prop=label.prop,
