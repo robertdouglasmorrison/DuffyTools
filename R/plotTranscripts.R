@@ -443,7 +443,7 @@
 
 `makeVolcanoPlot` <- function( genes, fold, pval, label="Volcano Plot: ", 
 			pch=21, col=c('blue','red','black'), cut.fold=1, cut.pvalue=0.05,
-			clip.fold=10, clip.pvalue=1e-10, forceYmax=NULL,
+			clip.fold=10, clip.pvalue=1e-10, forceXmax=NULL, forceYmax=NULL,
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, 
 			marker.pch=21, marker.pos=NULL, cex=1, left.label=NULL, right.label=NULL, ...) {
 
@@ -458,10 +458,21 @@
 	# put some minimums in, so no change is clear
 	bigX <- max( 1, abs( fold), na.rm=T)
 	myRangeX <- range( c( -1, 1, fold), na.rm=T) * 1.15
+	if ( ! is.null( forceXmax)) {
+		xMax <- as.numeric(forceXmax)
+		myRangeX[1] <- -xMax
+		myRangeX[2] <- xMax
+		fold[ fold > xMax] <- xMax
+		fold[ fold < -xMax] <- -xMax
+	}
 
 	y <- -( log10( pval))
 	myRangeY <- c( 0, max( 1, y, na.rm=F)*1.05)
-	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
+	if ( ! is.null( forceYmax)) {
+		yMax <- as.numeric(forceYmax)
+		myRangeY[2] <- yMax
+		y[ y > yMax] <- yMax
+	}
 
 	# use color to show when we exceed the wanted fold change
 	N <- length( fold)

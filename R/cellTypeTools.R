@@ -1726,7 +1726,7 @@
 
 # modified version of a volcano plot, that makes one circle per cell type
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
-					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, 
+					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, pt.cex=1.5,
 					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, 
 					color.alpha=0.75, label.offset.cex=1, ...) {
 
@@ -1866,16 +1866,26 @@
 	# and retune the Y axis limits
 	bigX <- max( 1, quantile( abs(fold), 0.95, na.rm=F), abs(out$Log2Fold)+out$Radius)
 	myRangeX <- c( -bigX, bigX)
+	if ( ! is.null( forceXmax)) {
+		bigX <- as.numeric( forceXmax)
+		myRangeX[1] <- -bigX
+		myRangeX[2] <- bigX
+		fold[ fold > bigX] <- bigX
+		fold[ fold < -bigX] <- -bigX
+	}
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
 	myRangeY <- c( 0, max( 1, quantile( y, 0.95, na.rm=F), out$Log10.Pvalue+out$Radius))
-	if ( ! is.null( forceXmax)) myRangeX[2] <- as.numeric(forceXmax)
-	if ( ! is.null( forceYmax)) myRangeY[2] <- as.numeric(forceYmax)
+	if ( ! is.null( forceYmax)) {
+		bigY <- as.numeric(forceYmax)
+		myRangeY[2] <- bigY
+		y[ y > bigY] <- bigY
+	}
 
 	# plot the volcano as a dust cloud, to downplay the genes
 	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
 	plot ( fold[ord], y[ord], type="p", main=mainText, xlab="Log2 Fold Change",
 		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
-		pch=".", col=geneCellColor, cex=1.5, font.axis=2, font.lab=2, cex.main=0.8, ...)
+		pch=".", col=geneCellColor, cex=pt.cex, font.axis=2, font.lab=2, cex.main=0.8, ...)
 
 	# now with all known, we can draw them all
 	ord <- order( out$Radius, decreasing=T)
