@@ -321,7 +321,7 @@
 				legend.prefix=NULL, legend.order=NULL, foldChangeTransform=TRUE,
 				geneSet=defaultGeneSets(), restrictionSets=NULL, baselineGroup=NULL,
 				Nshow=24, start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
-				radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, main=NULL, 
+				radial.lim=NULL, min.radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, main=NULL, 
 				legend.cex=1.1, ...)
 {
 
@@ -435,6 +435,11 @@
 		# or clip the data to those limits
 		mShow <- pmax( mShow, (radial.lim[1]*0.95))
 		mShow <- pmin( mShow, (radial.lim[2]*0.95))
+	}
+	# perhaps allow a minimum limits
+	if ( ! is.null( min.radial.lim)) {
+		if ( min.radial.lim[1] < radial.lim[1]) radial.lim[1] <- min.radial.lim[1]
+		if ( min.radial.lim[2] > radial.lim[2]) radial.lim[2] <- min.radial.lim[2]
 	}
 	DuffyTools::radial.plot( t(mShow), labels=validModuleNames, radlab=radial.labels, rp.type="p", line.col=mycolors,
 			start=start, clockwise=T, mar=radial.margin, radial.lim=radial.lim, label.prop=label.prop,
