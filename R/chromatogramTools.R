@@ -733,7 +733,7 @@
 			kk <- (k-1) * 3 + 1 + AAoffset
 			if (kk > 0 & kk <= length(peakPos)) {
 				axis( side=1, at=peakPos[kk], label=aaCall[k], line=1, col.axis='black', col.ticks=NA, 
-					font=2, lwd.ticks=0, cex.axis=cex*1.4)
+					tick=FALSE, font=2, lwd.ticks=0, cex.axis=cex*1.4)
 			}
 		}
 	}
@@ -748,7 +748,7 @@
 				kk <- (k-1) * 3 + 1 + frame
 				if (kk > 0 & kk <= length(peakPos)) {
 					axis( side=1, at=peakPos[kk], label=aaCall[k], line=lineNow, col.axis='black', col.ticks=NA, 
-							font=1, lwd.ticks=0, cex.axis=cex*1.0)
+							tick=FALSE, font=1, lwd.ticks=0, cex.axis=cex*1.0)
 				}
 			}
 			lineNow <- lineNow + 0.75

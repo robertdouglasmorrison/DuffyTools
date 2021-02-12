@@ -275,5 +275,46 @@ readALN <- function( file, verbose=TRUE) {
 	ylabs <- rev( rownames(aln))
 	if ( ! is.null( y.label.length)) ylabs <- substr( ylabs, 1, y.label.length)
 	axis( side=2, at=1:niso, label=ylabs, cex.axis=cex*cex.label, las=2)
-
+	dev.flush()
 }
+
+
+`summarizeALN` <- function( aln, range=NULL) {
+
+	# we may be given the top level ALN object or just the aligment matrix
+	# or even just the filename
+	if ( length(aln) == 1 && is.character(aln) && file.exists(aln)) {
+		aln <- readALN( aln, verbose=F)
+	}
+	if ( "alignment" %in% names(aln)) {
+		aln <- aln$alignment
+	}
+
+	# OK, we have one matrix of characters from a MSA
+	# allow subsetting on a range of locations
+	if( ! is.null( range)) {
+		low <- max( 1, min(range))
+		high <- min( ncol(aln), max(range))
+		aln <- aln[ , low:high]
+	}
+	aln <- toupper(aln)
+	nch <- ncol(aln)
+	niso <- nrow(aln)
+
+	# tally up the various metrics
+	consensCh <- diversePcts <- character( nch)
+	consensPct <- double( nch)
+	lapply( 1:nch, function(x) {
+		chTbl <- sort( table( aln[,x]), decreasing=T)
+		chSet <- names(chTbl)
+		chCnts <- as.numeric(chTbl)
+		chPcts <- round( chCnts * 100 / niso)
+		consensCh[x] <<- chSet[1]
+		consensPct[x] <<- chPcts[1]
+		diversePcts[x] <<- paste( chSet, ":", chPcts, "%", sep="", collapse="; ")
+		return(NULL)
+	})
+	out <- list( "Consensus.Call"=consensCh, "Pct.Conserved"=consensPct, "Diversity.Calls"=diversePcts)
+	return( out)
+}
+
