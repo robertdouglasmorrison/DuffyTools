@@ -1,9 +1,9 @@
-# scoreMarkerGenes.R -- evaluate transcriptomes based on a set of marker genes
+# pipe.MarkerGenes.R -- evaluate transcriptomes based on a set of marker genes
 
 
-`pipe.ScoreMarkerGenes` <- function( sampleIDset, markerDF, optionsFile="Options.txt", 
-				results.path=NULL, mode=c("absolute", "relative"), 
-				groupOrder=NULL, col=NULL, main="") {
+`pipe.ScoreMarkerGenes` <- function( sampleIDset, markerDF, optionsFile="Options.txt", results.path=NULL, 
+				folder=NULL, mode=c("absolute", "relative"), 
+				groupOrder=NULL, col=NULL, main="", legend.cex=1) {
 	
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optionsFile, "results.path", notfound="./results", verbose=F)
@@ -19,11 +19,22 @@
 
 	prefix <- getCurrentSpeciesFilePrefix()
 
+	# use either transcriptome or DE results
+	if ( is.null(folder)) {
+		myFolder <- "transcript"
+		mySuffix <- paste( prefix, "Transcript.txt", sep=".")
+		intensityColumn <- "RPKM_M"
+	} else {
+		myFolder <- file.path( "MetaResults", paste( prefix, folder, sep="."))
+		mySuffix <- paste( prefix, "Meta.UP.txt", sep=".")
+		intensityColumn <- "LOG2FOLD"
+	}
+
 	for ( i in 1:NS) {
 		s <- sampleIDset[i]
-		f <- file.path( results.path, "transcript", paste( s, prefix, "Transcript.txt", sep="."))
+		f <- file.path( results.path, myFolder, paste( s, mySuffix, sep="."))
 		tbl <- read.delim( f, as.is=T)
-		ans <- scoreMarkerGenes( tbl, markerDF)
+		ans <- scoreMarkerGenes( tbl, markerDF, intensityColumn=intensityColumn)
 		if ( is.null( ans)) next
 		ord <- order( names(ans))
 		m[ , i] <- ans[ ord]
@@ -60,14 +71,14 @@
 	barplot( m, beside=T, col=groupColor, main=paste( "Marker Gene Profile:    ", main),
 			las=if(NS<5) 1 else 3, xlim=c(1,bigX), space=c(0,gap), ylab=ylabel, cex.lab=1.1, cex.axis=1.1,
 			font.lab=2, font.axis=2)
-	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=1.1) 
+	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 
 	return( m)
 }
 
 
-`pipe.ShowMarkerGenes` <- function( sampleID, markerDF, optionsFile="Options.txt", 
-				results.path=NULL, groupOrder=NULL, col=NULL, main="") {
+`pipe.ShowMarkerGenes` <- function( sampleID, markerDF, optionsFile="Options.txt", results.path=NULL, 
+				folder=NULL, groupOrder=NULL, col=NULL, main="", legend.cex=1) {
 	
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optionsFile, "results.path", notfound="./results", verbose=F)
@@ -78,7 +89,20 @@
 
 	prefix <- getCurrentSpeciesFilePrefix()
 
-	f <- file.path( results.path, "transcript", paste( sampleID, prefix, "Transcript.txt", sep="."))
+	# use either transcriptome or DE results
+	if ( is.null(folder)) {
+		myFolder <- "transcript"
+		mySuffix <- paste( prefix, "Transcript.txt", sep=".")
+		intensityColumn <- "RPKM_M"
+		ylabel <- "Gene Rank Percentile in Transcriptome"
+	} else {
+		myFolder <- file.path( "MetaResults", paste( prefix, folder, sep="."))
+		mySuffix <- paste( prefix, "Meta.UP.txt", sep=".")
+		intensityColumn <- "LOG2FOLD"
+		ylabel <- "Gene Rank Percentile in Diff Expression"
+	}
+
+	f <- file.path( results.path, myFolder, paste( sampleID, mySuffix, sep="."))
 	tbl <- read.delim( f, as.is=T)
 	genes <- tbl$GENE_ID
 	isNG <- grep( "(ng)", genes, fixed=T)
@@ -89,7 +113,7 @@
 	genes <- shortGeneName( genes, keep=1)
 
 	# offset for log scale...
-	v <- tbl$RPKM_M
+	v <- tbl[[ intensityColumn]]
 	vRank <- as.rankPercentile(v)
 	Ngenes <- length( genes)
 
@@ -106,13 +130,12 @@
 	}
 
 	xlabel <- if ( NG > 4) NA else "Marker Gene Group Name"
-	ylabel <- "Gene Rank Percentile in Transcriptome"
 
 	plot( 1, 1,  main=paste( "Marker Gene Profile:      SampleID =", sampleID, main), type="n", 
-			xlim=c(0.4,NG*1.3), ylim=c( -5,105), ylab=ylabel, xlab=xlabel, xaxt="n",
+			xlim=c(0.4,NG*1.3), ylim=c( -6,105), ylab=ylabel, xlab=xlabel, xaxt="n",
 			cex.lab=1.1, cex.axis=1.1, font.lab=2, font.axis=2)
 
-	# show the marker genes
+	# calc and show where the marker genes land
 	outX <- outY <- outPCH <- outCol <- vector()
 	for ( j in 1:NG) {
 		myGrp <- levels(grpFac)[ groupOrder[ j]]
@@ -127,21 +150,24 @@
 		outPCH <- c( outPCH, myPCH[use])
 		outCol <- c( outCol, rep.int(myColor,length(use)))
 	}
+
+	# extra annotations at the left edge
+	xLeft <- min( outX) - diff( range(outX))/(NG*1.25)
 	lines( c(-10, NG*2), c(50,50), lty=2, lwd=2, col='gray50')
-	text( c(0.4,0.4), c(80,28), c( "Positive Weighting", "Negative Weighting"), srt=90, 
+	text( c(xLeft,xLeft), c(80,28), c( "Positive Weighting", "Negative Weighting"), srt=90, 
 		col='gray50', cex=1.03, font=2)
 
 	points( jitter(outX, factor=1.5), outY, pch=outPCH, col=outCol, bg=outCol)
 	axis( 1, at=1:NG, levels(grpFac)[groupOrder], font=2, cex.axis=1.2, las=if (NG>4) 3 else 1)
 
-	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=1.1) 
+	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 	legend( "bottomright", c( "Positve Marker", "Negative Marker"), pch=c(24,6), 
 		col="brown", pt.bg="brown", pt.cex=2, bg='white', cex=1.1) 
 
-	ans <- scoreMarkerGenes( tbl, markerDF)
+	ans <- scoreMarkerGenes( tbl, markerDF, intensityColumn=intensityColumn)
 	ord <- match( names( ans), levels(grpFac)[groupOrder])
 
-	text( c( 0.6, ord), -2, c( "SCORE:", as.character(round( ans, digits=2))), font=2, cex=1.15,
+	text( c( xLeft, ord), -3.5, c( "SCORE:", as.character(round( ans, digits=1))), font=2, cex=0.95,
 		srt=if(NG>4) 90 else 0)
 
 	return( ans)
@@ -174,7 +200,7 @@
 	# make sure the transcript is in order
 	ord <- order( inten, decreasing=T)
 	if ( any( ord != 1:nrow(transcript))) {
-		cat( "\nNot in Transciptome Intensity order..  Sorting..")
+		cat( "\nNot in Intensity order..  Resorting..")
 		genes <- genes[ ord]
 		inten <- inten[ ord]
 	}

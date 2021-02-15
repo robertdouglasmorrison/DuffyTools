@@ -484,10 +484,10 @@
 	best <- which.max( scores)
 	bestSeq <- seqs[ best]
 	names(scores) <- names(seqs)
-	if (verbose) {
-		cat( "\nDebug Crop Observed:")
-		cat( "\nBest Ref: ", names(seqs)[best], scores[best], "|", bestSeq)
-	}
+	#if (verbose) {
+	#	cat( "\nDebug Crop Observed:")
+	#	cat( "\nBest Ref: ", names(seqs)[best], scores[best], "|", bestSeq)
+	#}
 	tmpChromo <- stdChromo
 	if (trim.chromatogram && length(stdChromo$PeakPosition) > nchar(bestSeq)) {
 		tmpChromo <- subsetChromatogramBySequence( stdChromo, seq=bestSeq, subset.type=NULL)
@@ -525,7 +525,7 @@
 	observedChromo <- stdChromo
 	lenObs <- length( observedChromo$PeakPosition)
 	lenRef <- nchar( bestSeq)
-	if (verbose) cat( "\nDEBUG LEN 1:  (obs, ref): ", lenObs, lenRef)
+	#if (verbose) cat( "\nDEBUG LEN 1:  (obs, ref): ", lenObs, lenRef)
 	if ( trim.seqs && lenRef > lenObs) {
 		# if we need/want to trim the reference sequences, do that now, and do it the same way to all
 		# and force them all to be exactly the right length
@@ -544,7 +544,7 @@
 		lenRef <- nchar( bestSeq)
 		if (verbose) cat( "\nDebug trim ref seqs: (now): ", lenRef)
 	}
-	if (verbose) cat( "\nDEBUG LEN 2:  (obs, ref): ", lenObs, lenRef)
+	#if (verbose) cat( "\nDEBUG LEN 2:  (obs, ref): ", lenObs, lenRef)
 	if (trim.chromatogram && lenObs > lenRef) {
 		observedChromo <- subsetChromatogramBySequence( observedChromo, seq=bestSeq)	
 		# verify we didn't trim to nothing?
@@ -552,18 +552,18 @@
 		if (verbose) cat( "\nDebug trim Obs: new size of observed chromo (was,now,refSeq): ", lenObs, lenNow, nchar(bestSeq))
 		lenObs <- lenNow
 	}
-	if (verbose) cat( "\nDEBUG LEN 3:  (obs, ref): ", lenObs, lenRef)
+	#if (verbose) cat( "\nDEBUG LEN 3:  (obs, ref): ", lenObs, lenRef)
 	if ( force.jitter.seqs) {
 		if ( verbose) cat( "\nForcing Jitter of Sequences..")
 		seqs <- force.jitter.ChromatogramFit.sequences( observedChromo, seqs)
 	}
 	
 	if (verbose) {
-		cat( "\n\nSetup done.  Current sequences:")
+		cat( "\nSetup done.  Current sequences:")
 		cat( "\nInitial Observed: ", nchar(stdChromo$DNA_Calls[1]), "|", stdChromo$DNA_Calls[1])
 		cat( "\nCropped Observed: ", nchar(tmpChromo$DNA_Calls[1]), "|", tmpChromo$DNA_Calls[1])
 		cat( "\nBest Reference:   ", nchar(bestSeq), "|", bestSeq)
-		cat( "\nAll Seqs:\n", paste( seqs, collapse="\n"), sep="")
+		cat( "\nAll Seqs: ", length(seqs), "\n", paste( seqs, collapse="\t"), sep="")
 	}
 
 	# after all the prep, make sure we still have something to fit

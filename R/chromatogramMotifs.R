@@ -244,6 +244,7 @@
 	ord <- order( fitAns$Percentage, decreasing=T)
 	fitAns <- fitAns[ ord, ]
 	bestConstruct <- fitAns$Construct[1]
+	# these are <prefix>_<AA>_<codon>; so keep the prefix and AA as the 'Construct' ID
 	constructIDs <- sub( "_[ACGT]+$", "", fitAns$Construct)
 	bestID <- constructIDs[1]
 	bestCodon <- sub( ".+_","", bestConstruct)
@@ -264,9 +265,12 @@
 	
 	# how to decipher depends on how many came back
 	if ( nCalls > 1) {
+		# put them is pct sorted order
+		pcts <- sort( pcts, decreasing=T)
 		# we have 2+, so find the best of both groups: Ref & Not Ref
 		isREF <- grep( "^Ref", names(pcts))
-		isMUT <- setdiff( 1:length(pcts), isREF)
+		isMUT <- grep( "^Mut", names(pcts))
+		isOTH <- grep( "^Oth", names(pcts))
 		if ( length(isREF)) {
 			bestRefPtr <- isREF[ which.max( pcts[isREF])]
 			refPct <- pcts[ bestRefPtr]
@@ -283,8 +287,19 @@
 			mutPct <- 0
 			mutName <- ""
 		}
+		if ( length(isOTH)) {
+			bestOthPtr <- isOTH[ which.max( pcts[isOTH])]
+			othPct <- pcts[ bestOthPtr]
+			othName <- names(othPct)
+		} else {
+			othPct <- 0
+			othName <- ""
+		}
 		# lastly with the top 2 known, set the best percentage
 		bestPct <- if ( bestID == refName) refPct else mutPct
+		if (othPct > bestPct) {
+			bestPct <- othPct
+		}
 	} else {
 		# with just the one, which is it...
 		if ( bestAA == ref.AA) {
@@ -292,11 +307,20 @@
 			refName <- names(pcts)[1]
 			mutPct <- 0
 			mutName <- ""
+			othPct <- 0
+			othName <- ""
 		} else {
 			refPct <- 0
 			refName <- ""
-			mutPct <- pcts[1]
-			mutName <- names(pcts)[1]
+			mutPct <- othPct <- 0
+			mutName <- othName <- ""
+			if (grepl("^Oth", names(pcts[1]))) {
+				othPct <- pcts[1]
+				othName <- names(pcts)[1]
+			} else {
+				mutPct <- pcts[1]
+				mutName <- names(pcts)[1]
+			}
 		}
 		bestPct <- pcts[1]
 	}
@@ -313,13 +337,8 @@
 		usr <- par( "usr")
 		myX <- mean(usr[1:2])
 		myY <- max(tm, na.rm=T)
-		# let's make the bigger one be first
-		aaOut <- c( refName, mutName)
-		pctOut <- as.numeric( c( refPct, mutPct))
-		if ( pctOut[1] < pctOut[2]) {
-			aaOut <- rev( aaOut)
-			pctOut <- rev( pctOut)
-		}
+		aaOut <- c( refName, mutName, othName)
+		pctOut <- as.numeric( c( refPct, mutPct, othPct))
 		# we only report those above zero
 		keep <- which( pctOut >= 1)
 		aaOut <- aaOut[keep]
