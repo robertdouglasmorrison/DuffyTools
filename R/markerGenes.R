@@ -2,7 +2,8 @@
 
 
 `showMarkerGenes` <- function( x, markerDF, sampleID="", geneColumn="GENE_ID", intensityColumn="RPKM_M",
-				mode=c("transcriptome","proteome"), groupOrder=NULL, col=NULL, label="", pt.cex=1.0, ...) {
+				mode=c("transcriptome","proteome"), groupOrder=NULL, col=NULL, label="", 
+				pt.cex=1.0, legend.cex=1.0, ...) {
 	
 	grpFac <- factor( markerDF$Group)
 	NG <- nlevels( grpFac)
@@ -98,9 +99,9 @@
 	points( jitter(outX, factor=1.5), outY, pch=outPCH, col=outCol, bg=outCol, cex=pt.cex)
 	axis( 1, at=1:NG, levels(grpFac)[groupOrder], font=2, cex.axis=1.2, las=if (NG>4) 3 else 1)
 
-	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=1.15) 
+	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 	legend( "bottomright", c( "Positve Marker", "Negative Marker"), pch=c(24,6), 
-		col="brown", pt.bg="brown", pt.cex=2, bg='white', cex=1.1) 
+		col="brown", pt.bg="brown", pt.cex=2, bg='white', cex=legend.cex) 
 
 	ans <- calcMarkerGenesScore( tbl, markerDF, geneColumn=geneColumn, 
 				intensityColumn=intensityColumn, mode=mode)
