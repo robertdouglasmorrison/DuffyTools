@@ -28,6 +28,7 @@
 			return(NULL)
 		}
 		tbl <- read.delim( f[1], as.is=T)
+		if ( sampleID == "") sampleID <- basename(f)
 	}
 
 	if ( ! all( c( geneColumn, intensityColumn) %in% colnames(tbl))) {
@@ -304,4 +305,45 @@
 	}
 	return( m)
 }
+
+
+`markerGeneOverlap` <- function( markerDF) {
+
+	# try to summarize how commonly genes are UP markers in 2+ groups
+	neededColumns <- c( "GENE_ID", "Group", "Direction")
+	if ( ! all( neededColumns %in% colnames(markerDF))) {
+		cat( "Expected 'MarkerGene' data frame columns not found.   Need: ", neededColumns)
+		return(NULL)
+	}
+
+	markerDF <- subset( markerDF, Direction == "UP")
+	upGenes <- markerDF$GENE_ID
+	dupGenes <- upGenes[ duplicated( upGenes)]
+
+	dupGroups <- unlist( sapply( dupGenes, function(x) {
+			hits <- which( markerDF$GENE_ID == x)
+			if (length(hits) < 2) return( NA)
+			myGrps <- sort( unique( markerDF$Group[hits]))
+			if ( length( myGrps) > 4) cat( "\nWarn: Very common gene: ", length(myGrps), "|", x, "|", myGrps)
+			return( paste( myGrps, collapse=" = "))
+		}))
+	if ( all( is.na(dupGroups))) return( data.frame())
+
+	# use the aveage number of genes per group to assess how common a duplication event is
+	nGperG <- round( mean( tapply( 1:nrow(markerDF), factor(markerDF$Group), length)))
+
+	dupTbl <- table( dupGroups)
+	dupPcts <- round( as.numeric( dupTbl) * 100 / nGperG, digits=1)
+
+	out <- data.frame( "Groups.Sharing.a.Gene"=names(dupTbl), "Gene.Count"=as.numeric(dupTbl), "Gene.Percentage"=dupPcts, 
+			stringsAsFactors=F)
+	ord <- order( dupPcts, decreasing=T)
+	out <- out[ ord, ]
+	drops <- which( out$Gene.Count < 2)
+	if ( length(drops)) out <- out[ -drops, ]
+	rownames(out) <- 1:nrow(out)
+	
+	out
+}
+
 

@@ -132,7 +132,7 @@
 	xlabel <- if ( NG > 4) NA else "Marker Gene Group Name"
 
 	plot( 1, 1,  main=paste( "Marker Gene Profile:      SampleID =", sampleID, main), type="n", 
-			xlim=c(0.4,NG*1.3), ylim=c( -6,105), ylab=ylabel, xlab=xlabel, xaxt="n",
+			xlim=c(0.4,NG*1.2), ylim=c( -6,105), ylab=ylabel, xlab=xlabel, xaxt="n",
 			cex.lab=1.1, cex.axis=1.1, font.lab=2, font.axis=2)
 
 	# calc and show where the marker genes land

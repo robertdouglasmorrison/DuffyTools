@@ -1,4 +1,5 @@
 # expressionMatrixToDElist.R -- convert one matrix of expression data into a list of DE tables
+#				Like that used for meta rankings, etc.
 
 `expressionMatrixToDElist` <- function( x, groups=colnames(x), minimumValue=NULL, AVG.FUN=mean) {
 
