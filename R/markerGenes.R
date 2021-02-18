@@ -109,6 +109,7 @@
 
 	text( c( 0.6, ord), -9, c( "SCORE:", as.character(round( ans, digits=2))), font=2, cex=1.15,
 		srt=if(NG>4) 90 else 0)
+	dev.flush()
 
 	return( ans)
 }
@@ -308,7 +309,7 @@
 }
 
 
-`markerGeneOverlap` <- function( markerDF) {
+`markerGeneOverlap` <- function( markerDF, min.overlap=2) {
 
 	# try to summarize how commonly genes are UP markers in 2+ groups
 	neededColumns <- c( "GENE_ID", "Group", "Direction")
@@ -317,33 +318,40 @@
 		return(NULL)
 	}
 
+	# get the IDs we see 2+ times
 	markerDF <- subset( markerDF, Direction == "UP")
 	upGenes <- markerDF$GENE_ID
-	dupGenes <- upGenes[ duplicated( upGenes)]
+	dupGenes <- sort( unique( upGenes[ duplicated( upGenes)]))
 
-	dupGroups <- unlist( sapply( dupGenes, function(x) {
+	# see what sets of 2+ cell types each gene was in
+	dupGroups <- sapply( dupGenes, function(x) {
 			hits <- which( markerDF$GENE_ID == x)
-			if (length(hits) < 2) return( NA)
+			if (length(hits) < 2) return("")
 			myGrps <- sort( unique( markerDF$Group[hits]))
 			if ( length( myGrps) > 4) cat( "\nWarn: Very common gene: ", length(myGrps), "|", x, "|", myGrps)
 			return( paste( myGrps, collapse=" = "))
-		}))
+		})
 	if ( all( is.na(dupGroups))) return( data.frame())
 
 	# use the aveage number of genes per group to assess how common a duplication event is
 	nGperG <- round( mean( tapply( 1:nrow(markerDF), factor(markerDF$Group), length)))
 
+	# make the counts are how often each 2+ cell type call was seen
 	dupTbl <- table( dupGroups)
 	dupPcts <- round( as.numeric( dupTbl) * 100 / nGperG, digits=1)
 
-	out <- data.frame( "Groups.Sharing.a.Gene"=names(dupTbl), "Gene.Count"=as.numeric(dupTbl), "Gene.Percentage"=dupPcts, 
-			stringsAsFactors=F)
+	# lastly, make that list of genes that was in each group of cell types
+	dupGrpGeneList <- sapply( names(dupTbl), function(x) { wh <- which( dupGroups == x); 
+					return( paste( sort( unique( dupGenes[wh])), collapse="; "))
+				})
+
+	out <- data.frame( "Groups.Sharing.a.Gene"=names(dupTbl), "Gene.Count"=as.numeric(dupTbl), 
+			"Gene.Percentage"=dupPcts, "Gene.List"=dupGrpGeneList, stringsAsFactors=F)
 	ord <- order( dupPcts, decreasing=T)
 	out <- out[ ord, ]
-	drops <- which( out$Gene.Count < 2)
+	drops <- which( out$Gene.Count < min.overlap)
 	if ( length(drops)) out <- out[ -drops, ]
 	rownames(out) <- 1:nrow(out)
-	
 	out
 }
 
