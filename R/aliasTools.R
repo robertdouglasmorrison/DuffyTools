@@ -66,6 +66,15 @@
 		versionOut[ hasEntry[ okToChange]] <- newVersion[ okToChange]
 	}
 
+	# some aliases may have revision suffixes.  Strip and try one more time
+	notYet <- which( genesOut == genes)
+	if ( length( notYet)) {
+		hasSuffix <- grep( "\\.[1-9]$", genes[notYet])
+		genes2 <- sub( "\\.[1-9]$", "", genes[notYet])
+		where <- base::match( genes2, aliasTable$Alias, nomatch=0)
+		if (any( where > 0)) genesOut[ notYet[ where > 0]] <- aliasTable$GeneID[ where]
+	}
+
 	return( genesOut)
 }
 

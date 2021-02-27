@@ -38,7 +38,7 @@
 		if ( is.null( ans)) next
 		ord <- order( names(ans))
 		m[ , i] <- ans[ ord]
-		cat( "\r", i, s, "\tBest: ", names(ans)[1], ans[1])
+		cat( "\n", i, s, "\tBest: ", names(ans)[1], ans[1])
 	}
 	cat( "\n")
 
@@ -57,7 +57,8 @@
 
 	# spacing for the legend depends on counts and label length...
 	gap <- 2.5
-	bigX <- NS * (NG+gap) * (1 + ((max( nchar(levels(grpFac)))+6)/120))
+	NSsizing <- max( NS, 3)
+	bigX <- NSsizing * (NG+gap) * (1 + ((max( nchar(levels(grpFac)))+6)/120))
 	ylabel <- "Marker Gene Score   (Absolute Scale)"
 	mode <- match.arg( mode)
 	if ( mode == "relative") {
@@ -71,6 +72,7 @@
 	barplot( m, beside=T, col=groupColor, main=paste( "Marker Gene Profile:    ", main),
 			las=if(NS<5) 1 else 3, xlim=c(1,bigX), space=c(0,gap), ylab=ylabel, cex.lab=1.1, cex.axis=1.1,
 			font.lab=2, font.axis=2)
+	lines( c(-10,bigX*2), c(0,0), lwd=1, lty=1, col=1)
 	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 
 	return( m)
@@ -217,7 +219,8 @@
 	markgenes <- markerDF$GENE_ID
 	NMG <- nrow(markerDF)
 	where <- match(markgenes, genes, nomatch=0)
-	if ( sum( where == 0) > NMG*0.5) {
+	if ( sum( where == 0) > NMG*0.75) {
+		cat( "\nDebug:  N_Missing: ", sum( where == 0), " \tN_Found: ", sum( where > 0),"\n")
 		cat( "Too many 'Marker Genes' not in transcriptome..  Check current species..")
 		return( NULL)
 	}

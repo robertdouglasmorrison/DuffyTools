@@ -4,7 +4,7 @@
 `expressionMatrixToDEfiles` <- function( x, groups=colnames(x), folder=".", offset=1.0, AVG.FUN=sqrtmean) {
 
 	gids <- rownames(x)
-	if ( is.null(gids)) stop( "expression matrix must have gene rownames")
+	if ( is.null(gids) || all( gids == 1:nrow(x))) stop( "expression matrix must have gene rownames")
 	NR <- nrow(x)
 	groupIDs <- colnames(x)
 	NC <- ncol(x)
@@ -61,8 +61,9 @@
 		thisPV <- pvM[ ,j]
 		thisPV[ is.na(thisPV)] <- 1
 		thisDF <- data.frame( "GENE_ID"=gids, "PRODUCT"=prods, "CellType"=celltypes, 
-					"LOG2FOLD"=thisFC, "PVALUE"=thisPV, "RPKM"=thisRPKM, 
-					"AVG_RPKM"=gAvg, stringsAsFactors=F)
+					"LOG2FOLD"=round(thisFC,digits=4), "PVALUE"=thisPV, 
+					"RPKM"=round(thisRPKM,digits=2), "AVG_RPKM"=round(gAvg,digits=2), 
+					stringsAsFactors=F)
 		colnames(thisDF)[6] <- paste( thisGrp, "RPKM", sep="_")
 		ord <- diffExpressRankOrder( thisFC, thisPV)
 		thisDF <- thisDF[ ord, ]

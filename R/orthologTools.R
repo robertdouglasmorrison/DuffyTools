@@ -36,7 +36,7 @@
 		cat( "\nKnown strains: ", orthoStrains)
 		return( gOut)
 	}
-
+	
 	genes <- gsub( " ", "", genes)
 	where <- match( genes, orthoTable[ , ifrom], nomatch=0)
 	gOut[ where > 0] <- orthoTable[ where, ito]

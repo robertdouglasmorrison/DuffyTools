@@ -171,7 +171,7 @@
 	} else {
 		where <- match(markgenes, genes, nomatch=Ngenes+1)
 	}
-	if ( sum( where == 0) > NMG*0.5) {
+	if ( sum( where == 0) > NMG*0.75) {
 		cat( "Too many 'Marker Genes' not in transcriptome..  Check current species..")
 		return( NULL)
 	}
