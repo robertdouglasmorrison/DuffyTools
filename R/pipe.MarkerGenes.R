@@ -80,7 +80,8 @@
 
 
 `pipe.ShowMarkerGenes` <- function( sampleID, markerDF, optionsFile="Options.txt", results.path=NULL, 
-				folder=NULL, groupOrder=NULL, col=NULL, main="", legend.cex=1) {
+				folder=NULL, groupOrder=NULL, col=NULL, main="", legend.cex=1,
+				names.cex=1.2) {
 	
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optionsFile, "results.path", notfound="./results", verbose=F)
@@ -160,7 +161,7 @@
 		col='gray50', cex=1.03, font=2)
 
 	points( jitter(outX, factor=1.5), outY, pch=outPCH, col=outCol, bg=outCol)
-	axis( 1, at=1:NG, levels(grpFac)[groupOrder], font=2, cex.axis=1.2, las=if (NG>4) 3 else 1)
+	axis( 1, at=1:NG, levels(grpFac)[groupOrder], font=2, cex.axis=names.cex, las=if (NG>4) 3 else 1)
 
 	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 	legend( "bottomright", c( "Positve Marker", "Negative Marker"), pch=c(24,6), 
