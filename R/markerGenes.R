@@ -3,7 +3,7 @@
 
 `showMarkerGenes` <- function( x, markerDF, sampleID="", geneColumn="GENE_ID", intensityColumn="RPKM_M",
 				mode=c("transcriptome","proteome"), groupOrder=NULL, col=NULL, label="", 
-				pt.cex=1.0, legend.cex=1.0, names.cex=1.2, ...) {
+				pt.cex=1.0, legend.cex=1.0, names.cex=1.2, nFDRsimulations=100, ...) {
 	
 	grpFac <- factor( markerDF$Group)
 	NG <- nlevels( grpFac)
@@ -56,7 +56,7 @@
 		groupColor <- rep( col, length.out=NG)
 	}
 
-	xlabel <- if ( NG > 4) NA else "Marker Gene Group Name"
+	xlabel <- if ( NG > 5) NA else "Marker Gene Group Name"
 	ylabel <- "Gene Rank Percentile"
 
 	if ( mode == "proteome") {
@@ -97,18 +97,22 @@
 		col='gray50', cex=1.03, font=2)
 
 	points( jitter(outX, factor=1.5), outY, pch=outPCH, col=outCol, bg=outCol, cex=pt.cex)
-	axis( 1, at=1:NG, levels(grpFac)[groupOrder], font=2, cex.axis=names.cex, las=if (NG>4) 3 else 1)
+	axis( 1, at=1:NG, levels(grpFac)[groupOrder], font=2, cex.axis=names.cex, las=if (NG>5) 3 else 1)
 
 	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 	legend( "bottomright", c( "Positve Marker", "Negative Marker"), pch=c(24,6), 
 		col="brown", pt.bg="brown", pt.cex=2, bg='white', cex=legend.cex) 
 
 	ans <- calcMarkerGenesScore( tbl, markerDF, geneColumn=geneColumn, 
-				intensityColumn=intensityColumn, mode=mode)
-	ord <- match( names( ans), levels(grpFac)[groupOrder])
+				intensityColumn=intensityColumn, mode=mode, 
+				nFDRsimulations=nFDRsimulations)
+	ord <- match( ans$Group, levels(grpFac)[groupOrder])
 
-	text( c( 0.6, ord), -9, c( "SCORE:", as.character(round( ans, digits=2))), font=2, cex=1.15,
-		srt=if(NG>4) 90 else 0)
+	text( c( 0.6, ord), -9, c( "SCORE:", as.character(round( ans$Score, digits=2))), font=2, cex=1.15,
+		srt=if(NG>5) 90 else 0)
+	if ( nFDRsimulations > 0 && NG <= 5) {
+		text( c( 0.6, ord), -15, c( "P-value:", as.character(round( ans$FDR, digits=3))), font=2, cex=0.97)
+	}
 	dev.flush()
 
 	return( ans)
@@ -116,7 +120,7 @@
 
 
 `calcMarkerGenesScore` <- function( x, markerDF, geneColumn="GENE_ID", intensityColumn="RPKM_M",
-					mode=c("transcriptome","proteome"), sort=TRUE) {
+					mode=c("transcriptome","proteome"), sort=TRUE, nFDRsimulations=100) {
 
 	mode <- match.arg( mode)
 
@@ -167,17 +171,19 @@
 	NMG <- nrow(markerDF)
 
 	if ( mode == "transcriptome") {
-		where <- match(markgenes, genes, nomatch=0)
+		noMatchValue <- 0
 	} else {
-		where <- match(markgenes, genes, nomatch=Ngenes+1)
+		noMatchValue <- Ngenes + 1
 	}
-	if ( sum( where == 0) > NMG*0.75) {
-		cat( "Too many 'Marker Genes' not in transcriptome..  Check current species..")
+	where <- match(markgenes, genes, nomatch=noMatchValue)
+	if ( sum( where != 0) < NMG*0.5) {
+		cat( "Too many 'Marker Genes' not found in transcriptome..  Check current species..")
 		return( NULL)
 	}
 	markerDF$SCORE <- ifelse( toupper( markerDF$Direction) == "UP", 1, -1)
 	markerDF$SCORE[ where == 0] <- 0
 	markerFac <- factor( markerDF$Group)
+	NGRPS <- nlevels( markerFac)
 
 	RANK_MIDPT <- 50
 
@@ -196,8 +202,40 @@
 				return( score)
 			})
 
-	out <- scores
-	if (sort) out <- sort( scores, decreasing=T)
+	# if we do FDR, permute and redo the scoring
+	fdr <- rep.int( NA, NGRPS)
+	if ( nFDRsimulations > 0) {
+		randScores <- matrix( 0, nrow=NGRPS, ncol=nFDRsimulations)
+		for ( j in 1:nFDRsimulations) {
+			randGenes <- sample( genes)
+			where <- match(markgenes, randGenes, nomatch=noMatchValue)
+			randScores[,j] <- tapply( 1:NMG, markerFac, function(x) {
+				mywhere <- where[x]
+				myscores <- markerDF$SCORE[x]
+				myrankPcts <- rep.int( RANK_MIDPT, length(x))
+				myrankPcts[ mywhere > 0] <- generank[ mywhere]
+				myPtiles <- (myrankPcts - RANK_MIDPT) / RANK_MIDPT
+				score <- sum( myPtiles * myscores) * 100 / sum( mywhere > 0)
+				return( score)
+			})
+		}
+		# now count up how often did we do better than real score
+		for ( i in 1:NGRPS) {
+			if ( scores[i] >= 0) {
+				fdr[i] <- sum( randScores[ i, ] >= scores[i]) / nFDRsimulations
+			} else {
+				fdr[i] <- sum( randScores[ i, ] <= scores[i]) / nFDRsimulations
+			}
+		}
+	}
+
+	out <- data.frame( "Group"=levels(markerFac), "Score"=round(scores,digits=2), 
+			"FDR"=round( fdr, digit=4), stringsAsFactors=F)
+	if (sort) {
+		ord <- order( scores, decreasing=T)
+		out <- out[ ord, ]
+		rownames(out) <- 1:NGRPS
+	}
 
 	return( out)
 }
@@ -207,7 +245,7 @@
 				mode=c("transcriptome","proteome"), displayMode=c("absolute", "relative"), 
 				groupOrder=NULL, geneColumn="GENE_ID", intensityColumn="RPKM_M",
 				col=NULL, label="", plotMode=c("lines", "bars", "none"), 
-				pch=22, pt.cex=2.5, lwd=4, label.cex=1, legend.cex=1.1, ...) {
+				pch=22, pt.cex=2.5, lwd=4, label.cex=1, legend.cex=1.1, nFDRsimulations=100, ...) {
 	
 	mode <- match.arg( mode)
 
@@ -233,11 +271,12 @@
 		if ( is.na(s) || is.na(f)) next
 		tbl <- read.delim( f, as.is=T)
 		ans <- calcMarkerGenesScore( tbl, markerDF, geneColumn=geneColumn, 
-					intensityColumn=intensityColumn, mode=mode)
+					intensityColumn=intensityColumn, mode=mode,
+					nFDRsimulations=nFDRsimulations)
 		if ( is.null( ans)) next
-		ord <- order( names(ans))
-		m[ , i] <- ans[ ord]
-		cat( "\r", i, s, "\tBest: ", names(ans)[1], ans[1])
+		ord <- order( ans$Group)
+		m[ , i] <- ans$Score[ ord]
+		cat( "\r", i, s, "\tBest: ", ans$Group[1], ans$Score[1])
 	}
 	cat( "\n")
 

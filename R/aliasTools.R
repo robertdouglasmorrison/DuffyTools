@@ -75,6 +75,22 @@
 		if (any( where > 0)) genesOut[ notYet[ where > 0]] <- aliasTable$GeneID[ where]
 	}
 
+	# one more thing to try:  many aliases have various special characters, that can break the full equality test
+	# try to turn the aliases in the table into just the alphanumeric core.
+	notYet <- which( genesOut == genes)
+	if ( length( notYet)) {
+		# the grep substitution on the full alias table may be super slow, can we only do those with a chance...
+		firstLetters <- unique( substr( genes[notYet], 1, 1))
+		myPattern <- paste( "^[", paste( firstLetters, collapse=""), "]", sep="")
+		toTest <- grep( myPattern, aliasTable$Alias)
+		if ( length( toTest)) {
+			testAlias <- gsub( "[^A-z0-9]", "", aliasTable$Alias[toTest])
+			testGenes <- gsub( "[^A-z0-9]", "", genesOutUP[notYet])
+			where <- base::match( testGenes, toupper(testAlias), nomatch=0)
+			if (any( where > 0)) genesOut[ notYet[ where > 0]] <- aliasTable$GeneID[ toTest[ where]]
+		}
+	}
+
 	return( genesOut)
 }
 

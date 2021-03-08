@@ -3,7 +3,7 @@
 
 `pipe.ScoreMarkerGenes` <- function( sampleIDset, markerDF, optionsFile="Options.txt", results.path=NULL, 
 				folder=NULL, mode=c("absolute", "relative"), 
-				groupOrder=NULL, col=NULL, main="", legend.cex=1) {
+				groupOrder=NULL, col=NULL, main="", legend.cex=1, nFDRsimulations=100) {
 	
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optionsFile, "results.path", notfound="./results", verbose=F)
@@ -13,9 +13,11 @@
 	grpFac <- factor( markerDF$Group)
 	NG <- nlevels( grpFac)
 
-	m <- matrix( NA, nrow=NG, ncol=NS)
-	rownames(m) <- levels(grpFac)
+	m <- pvm <- matrix( NA, nrow=NG, ncol=NS)
+	rownames(m) <- rownames(pvm) <- levels(grpFac)
+	colnames(m) <- colnames(pvm) <- sampleIDset
 	colnames(m) <- sampleIDset
+	colnames(pvm) <- paste( "FDR", sampleIDset, sep="_")
 
 	prefix <- getCurrentSpeciesFilePrefix()
 
@@ -34,17 +36,19 @@
 		s <- sampleIDset[i]
 		f <- file.path( results.path, myFolder, paste( s, mySuffix, sep="."))
 		tbl <- read.delim( f, as.is=T)
-		ans <- scoreMarkerGenes( tbl, markerDF, intensityColumn=intensityColumn)
+		ans <- scoreMarkerGenes( tbl, markerDF, intensityColumn=intensityColumn, nFDRsimulations=nFDRsimulations)
 		if ( is.null( ans)) next
-		ord <- order( names(ans))
-		m[ , i] <- ans[ ord]
-		cat( "\n", i, s, "\tBest: ", names(ans)[1], ans[1])
+		ord <- order( ans$Group)
+		m[ , i] <- ans$Score[ ord]
+		pvm[ , i] <- ans$FDR[ ord]
+		cat( "\n", i, s, "\tBest: ", ans$Group[1], ans$Score[1])
 	}
 	cat( "\n")
 
 	if ( ! is.null( groupOrder)) {
 		if ( length(groupOrder) != NG) stop( "'groupOrder' length does not match group count")
-		m <- m[ groupOrder, ]
+		m <- m[ groupOrder, , drop=F]
+		pvm <- pvm[ groupOrder, , drop=F]
 	} else {
 		groupOrder <- 1:NG
 	}
@@ -69,19 +73,22 @@
 		ylabel <- "Marker Gene Score   (Relative to Group Means)"
 	}
 
-	barplot( m, beside=T, col=groupColor, main=paste( "Marker Gene Profile:    ", main),
-			las=if(NS<5) 1 else 3, xlim=c(1,bigX), space=c(0,gap), ylab=ylabel, cex.lab=1.1, cex.axis=1.1,
-			font.lab=2, font.axis=2)
+	barAns <- barplot( m, beside=T, col=groupColor, main=paste( "Marker Gene Profile:    ", main),
+			las=if(NS<5) 1 else 3, xlim=c(1,bigX), ylim=range(m,0)*1.1, space=c(0,gap), 
+			ylab=ylabel, cex.lab=1.1, cex.axis=1.1, font.lab=2, font.axis=2)
 	lines( c(-10,bigX*2), c(0,0), lwd=1, lty=1, col=1)
+	if ( nFDRsimulations > 0) {
+		text( as.vector(barAns), as.vector(m), paste( "P=",as.vector(pvm),sep=""), pos=ifelse( as.vector(m) > 0, 3, 1), cex=0.75)
+	}
 	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 
-	return( m)
+	return( data.frame( "Group"=rownames(m), m, pvm, row.names=1:NG, stringsAsFactors=F))
 }
 
 
 `pipe.ShowMarkerGenes` <- function( sampleID, markerDF, optionsFile="Options.txt", results.path=NULL, 
 				folder=NULL, groupOrder=NULL, col=NULL, main="", legend.cex=1,
-				names.cex=1.2) {
+				names.cex=1.2, nFDRsimulations=100) {
 	
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optionsFile, "results.path", notfound="./results", verbose=F)
@@ -167,17 +174,21 @@
 	legend( "bottomright", c( "Positve Marker", "Negative Marker"), pch=c(24,6), 
 		col="brown", pt.bg="brown", pt.cex=2, bg='white', cex=1.1) 
 
-	ans <- scoreMarkerGenes( tbl, markerDF, intensityColumn=intensityColumn)
-	ord <- match( names( ans), levels(grpFac)[groupOrder])
+	ans <- scoreMarkerGenes( tbl, markerDF, intensityColumn=intensityColumn, nFDRsimulations=nFDRsimulations)
+	ord <- match( ans$Group, levels(grpFac)[groupOrder])
 
-	text( c( xLeft, ord), -3.5, c( "SCORE:", as.character(round( ans, digits=1))), font=2, cex=0.95,
-		srt=if(NG>4) 90 else 0)
+	text( c( xLeft, ord), -3.5, c( "SCORE:", as.character(round( ans$Score, digits=1))), font=2, cex=0.95,
+		srt=if(NG>5) 90 else 0)
+	if ( nFDRsimulations > 0 && NG <= 5) {
+		text( c( xLeft, ord), -6, c( "P-value:", as.character(round( ans$FDR, digits=3))), font=2, cex=0.75)
+	}
 
 	return( ans)
 }
 
 
-`scoreMarkerGenes` <- function( transcript, markerDF, geneColumn="GENE_ID", intensityColumn="RPKM_M") {
+`scoreMarkerGenes` <- function( transcript, markerDF, geneColumn="GENE_ID", intensityColumn="RPKM_M",
+				nFDRsimulations=100) {
 
 	genes <- transcript[[ geneColumn]]
 	if ( is.null( genes)) {
@@ -220,14 +231,15 @@
 	markgenes <- markerDF$GENE_ID
 	NMG <- nrow(markerDF)
 	where <- match(markgenes, genes, nomatch=0)
-	if ( sum( where == 0) > NMG*0.75) {
+	if ( sum( where != 0) < NMG*0.5) {
 		cat( "\nDebug:  N_Missing: ", sum( where == 0), " \tN_Found: ", sum( where > 0),"\n")
-		cat( "Too many 'Marker Genes' not in transcriptome..  Check current species..")
+		cat( "Too many 'Marker Genes' not found in transcriptome..  Check current species..")
 		return( NULL)
 	}
 	markerDF$SCORE <- ifelse( toupper( markerDF$Direction) == "UP", 1, -1)
 	markerDF$SCORE[ where == 0] <- 0
 	markerFac <- factor( markerDF$Group)
+	NGRPS <- nlevels( markerFac)
 
 	RANK_MIDPT <- 50
 
@@ -246,5 +258,37 @@
 				return( score)
 			})
 
-	return( sort( scores, decreasing=T))
+	# if we do FDR, permute and redo the scoring
+	fdr <- rep.int( NA, NGRPS)
+	if ( nFDRsimulations > 0) {
+		randScores <- matrix( 0, nrow=NGRPS, ncol=nFDRsimulations)
+		for ( j in 1:nFDRsimulations) {
+			randGenes <- sample( genes)
+			where <- match(markgenes, randGenes, nomatch=0)
+			randScores[,j] <- tapply( 1:NMG, markerFac, function(x) {
+				mywhere <- where[x]
+				myscores <- markerDF$SCORE[x]
+				myrankPcts <- rep.int( RANK_MIDPT, length(x))
+				myrankPcts[ mywhere > 0] <- generank[ mywhere]
+				myPtiles <- (myrankPcts - RANK_MIDPT) / RANK_MIDPT
+				score <- sum( myPtiles * myscores) * 100 / sum( mywhere > 0)
+				return( score)
+			})
+		}
+		# now count up how often did we do better than real score
+		for ( i in 1:NGRPS) {
+			if ( scores[i] >= 0) {
+				fdr[i] <- sum( randScores[ i, ] >= scores[i]) / nFDRsimulations
+			} else {
+				fdr[i] <- sum( randScores[ i, ] <= scores[i]) / nFDRsimulations
+			}
+		}
+	}
+	
+	out <- data.frame( "Group"=levels(markerFac), "Score"=round(scores,digits=2), 
+			"FDR"=round( fdr, digit=4), stringsAsFactors=F)
+	ord <- order( scores, decreasing=T)
+	out <- out[ ord, ]
+	rownames(out) <- 1:NGRPS
+	return( out)
 }
