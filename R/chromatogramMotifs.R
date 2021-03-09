@@ -176,7 +176,7 @@
 
 
 
-`modelFitOneCodon` <- function( chromoObj, ref.AA, alt.AA, min.percent=1, plot=T, verbose=T) {
+`modelFitOneCodon` <- function( chromoObj, ref.AA, alt.AA, min.percent=1, plot=T, visualize.fit=F, verbose=T) {
 
 	# given a tiny chromatogram that spans just a single codon, fit this to the
 	# expected amino acid calls being searched for.  The fit tool will search for any codons
@@ -230,12 +230,18 @@
 	}
 	if (verbose) cat( "\nN_Model_Seq: ", length(modelSeqs), "\n  ", names(modelSeqs))
 	
+	# perhaps generate images of the codon fit inputs
+	if ( visualize.fit) plotCodonFitInputs( chromoObj, modelSeqs)
+	
 	# call the modeler
 	ans <- modelBlendChromatogram( chromoObj, modelSeqs, plot.chromatograms=F, 
 				synthetic.width="fit", noise.seqs=FALSE, verbose=verbose)
 	if ( is.null( ans)) return( NULL)
 	fitAns <- ans$Model.Estimates
 	if ( is.null( fitAns)) return( failAns)
+	
+	# perhaps generate images of the codon fit inputs
+	if ( visualize.fit) plotCodonFitResults( chromoObj, modelSeqs, fitAns)
 	
 	# recombine what we got back into a format that best answers the question about what we saw
 	# the P-values are useless since the data is so small we have no power.  
@@ -409,3 +415,101 @@
 	}
 	return( conf)
 }
+
+
+`plotCodonFitInputs` <- function( chromoObj, modelSeqs) {
+	
+	# given a tiny chromatogram of a single codon, and all the candidate codons that will go into a fit
+	# try to make one image that conveys it all
+	Nseq <- length( modelSeqs)
+	Nplots <- Nseq + 1
+	sqrtN <- ceiling( sqrt(Nplots))
+	
+	# use a new window
+	X11( type="dbcairo", bg='white', width=12, height=8)
+	
+	# set up to draw many small plots
+	savMAI <- par('mai')
+	on.exit( par(mai=savMAI))
+	par( mai=c(0.6,0.7,0.5,0.2))
+	mf <- c( sqrtN, sqrtN)
+	if ( Nplots < 21) mf <- c(4,5)
+	if ( Nplots < 17) mf <- c(4,4)
+	if ( Nplots < 13) mf <- c(3,4)
+	if ( Nplots < 10) mf <- c(3,3)
+	if ( Nplots < 7) mf <- c(2,3)
+	if ( Nplots < 5) mf <- c(2,2)
+	par( mfcol=mf)
+	
+	# start with the observed data
+	plotChromatogram( chromoObj, label="Observed_Codon", showAA=T, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
+			main.prefix="")
+
+	# now make and draw every model
+	bigHeight <- max( chromoObj$TraceM)
+	for ( i in 1:Nseq) {
+		thisSeq <- modelSeqs[i]
+		thisName <- names( modelSeqs)[i]
+		thisObj <- syntheticChromatogram( thisSeq, height=bigHeight)
+		plotChromatogram( thisObj, label=thisName, showAA=T, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
+				main.prefix="Model:  ")
+	}
+	dev.flush()
+	Sys.sleep(1)
+	dev.print( pdf, "Chromatogram.Codon.Fit.Inputs.pdf", width=12)
+	dev.off()
+}
+
+
+`plotCodonFitResults` <- function( chromoObj, modelSeqs, fitAns) {
+	
+	# given a tiny chromatogram of a single codon, and all the candidate codons that will go into a fit
+	# try to make one image that conveys it all
+	Nseq <- length( modelSeqs)
+	Nplots <- Nseq + 1
+	sqrtN <- ceiling( sqrt(Nplots))
+	
+	# use a new window
+	X11( type="dbcairo", bg='white', width=12, height=8)
+	
+	# set up to draw many small plots
+	savMAI <- par('mai')
+	on.exit( par(mai=savMAI))
+	par( mai=c(0.6,0.7,0.5,0.2))
+	mf <- c( sqrtN, sqrtN)
+	if ( Nplots < 21) mf <- c(4,5)
+	if ( Nplots < 17) mf <- c(4,4)
+	if ( Nplots < 13) mf <- c(3,4)
+	if ( Nplots < 10) mf <- c(3,3)
+	if ( Nplots < 7) mf <- c(2,3)
+	if ( Nplots < 5) mf <- c(2,2)
+	par( mfcol=mf)
+
+	bigHeight <- max( chromoObj$TraceM)
+	yMax <- bigHeight * 1.1
+	
+	# start with the observed data
+	plotChromatogram( chromoObj, label="Observed_Codon", showAA=T, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
+			forceYmax=yMax, main.prefix="")
+
+	# grab the model estimates, we will use the percentages.  Put them back into input order
+	ord <- match( names(modelSeqs), fitAns$Construct)
+	fitAns <- fitAns[ ord, ]
+	cat( "\nDebug 2: ", names( fitAns), "\n")
+	print( fitAns)
+	
+	# now make and draw every model
+	for ( i in 1:Nseq) {
+		thisSeq <- modelSeqs[i]
+		thisPct <- fitAns$Percentage[i]
+		thisName <- paste( names( modelSeqs)[i], "  ", round(thisPct,digits=1), "%", sep="")
+		thisObj <- syntheticChromatogram( thisSeq, height=(bigHeight*thisPct/100))
+		plotChromatogram( thisObj, label=thisName, showAA=T, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
+				forceYmax=yMax, main.prefix="Fit:  ")
+	}
+	dev.flush()
+	Sys.sleep(1)
+	dev.print( pdf, "Chromatogram.Codon.Fit.Results.pdf", width=12)
+	dev.off()
+}
+

@@ -651,7 +651,8 @@
 `plotChromatogram` <- function( chromoObj, label="", seq=NULL, range=NULL, 
 				lwd=2, lty=1, cex=1, font=2, add=FALSE, forceYmax=NULL, 
 				showAA=TRUE, showTraceRowNumbers=FALSE, showConfidence=FALSE,
-				min.unit.score=NULL, xlim=NULL, ...) {
+				min.unit.score=NULL, xlim=NULL, shiftAA=0, 
+				main.prefix="Chromatogram:  ", ...) {
 
 	# allow being given a filename of a chromatogram
 	if ( is.character(chromoObj) && file.exists( chromoObj[1])) {
@@ -707,7 +708,7 @@
 		AAoffset <- showAA
 	}
 
-	mainText <- paste( "Chromatogram:  ", label)
+	mainText <- paste( main.prefix, label)
 	x <- 1 : NT
 	yLimits <- c( 0, max( traceM[ firstTracePoint:lastTracePoint, ], na.rm=T) * 1.1)
 	if ( ! is.null(forceYmax)) yLimits[2] <- as.numeric( forceYmax[1])
@@ -726,13 +727,13 @@
 	for (k in 1:NB) axis( side=1, at=peakPos[k], label=baseCall[k], col.axis=baseColor[k], 
 				col.ticks=baseColor[k], font=font, cex.axis=cex)
 
-	if ( AAtoShow != "" && nchar(AAtoShow) >= 3) {
+	if ( AAtoShow != "" && nchar(AAtoShow) >= 1) {
 		aaCall <- strsplit( AAtoShow, split="")[[1]]
 		NAA <- min( length(aaCall), round(NB/3))
 		for (k in 1:NAA) {
 			kk <- (k-1) * 3 + 1 + AAoffset
 			if (kk > 0 & kk <= length(peakPos)) {
-				axis( side=1, at=peakPos[kk], label=aaCall[k], line=1, col.axis='black', col.ticks=NA, 
+				axis( side=1, at=peakPos[kk]+shiftAA, label=aaCall[k], line=1, col.axis='black', col.ticks=NA, 
 					tick=FALSE, font=2, lwd.ticks=0, cex.axis=cex*1.4)
 			}
 		}
@@ -747,7 +748,7 @@
 			if ( NAA > 1) for (k in 1:NAA) {
 				kk <- (k-1) * 3 + 1 + frame
 				if (kk > 0 & kk <= length(peakPos)) {
-					axis( side=1, at=peakPos[kk], label=aaCall[k], line=lineNow, col.axis='black', col.ticks=NA, 
+					axis( side=1, at=peakPos[kk]+shiftAA, label=aaCall[k], line=lineNow, col.axis='black', col.ticks=NA, 
 							tick=FALSE, font=1, lwd.ticks=0, cex.axis=cex*1.0)
 				}
 			}
