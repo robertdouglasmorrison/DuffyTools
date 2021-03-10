@@ -208,16 +208,16 @@ errorBar <- function( x, mode=c("se", "sd", "mad"), average.FUN=mean, plot=TRUE,
 	}
 
 	if (plot && horiz) {
-		xlo <- mn - se
-		xhi <- mn + se
+		lo <- xlo <- mn - se
+		hi <- xhi <- mn + se
 		lines( y=c( at,at), x=c( xlo, xhi), col=error.col, lty=error.lty)
 		if ( whisker > 0) {
 			lines( y=c( at-whisker,at+whisker), x=c( xlo, xlo), col=error.col, lty=error.lty)
 			lines( y=c( at-whisker,at+whisker), x=c( xhi, xhi), col=error.col, lty=error.lty)
 		}
 	} else {
-		ylo <- mn - se
-		yhi <- mn + se
+		lo <- ylo <- mn - se
+		hi <- yhi <- mn + se
 		lines( c( at,at), c( ylo, yhi), col=error.col, lty=error.lty)
 		if ( whisker > 0) {
 			lines( c( at-whisker,at+whisker), c( ylo, ylo), col=error.col, lty=error.lty)
@@ -225,7 +225,7 @@ errorBar <- function( x, mode=c("se", "sd", "mad"), average.FUN=mean, plot=TRUE,
 		}
 	}
 
-	return( invisible( se))
+	return( invisible( c("min"=lo, "mid"=mn, "max"=hi)))
 }
 		
 
@@ -236,12 +236,22 @@ averageLineWithErrorBars <- function( x, y, average.FUN=mean, col=1, error.col=1
 	avgY <- tapply( y, xfac, FUN=average.FUN, na.rm=T)
 
 	lines( levels(xfac), avgY, col=col, ...)
+
+	out <- matrix( NA, 3, nlevels(xfac))
+	colnames(out) <- levels(xfac)
+	rownames(out) <- c( "min", "mid", "max")
+	nOut <- 0
+
 	tapply( ptrs, xfac, function(x) {
 			at <- as.numeric( levels(xfac)[ x[1]])
 			myYs <- y[ ptrs == x[1]]
-			errorBar( myYs, "se", average.FUN=average.FUN, at=at, whisker=whisker, 
+			ans <- errorBar( myYs, "se", average.FUN=average.FUN, at=at, whisker=whisker, 
 					error.col=error.col, error.lty=error.lty)
+			nOut <<- nOut + 1
+			out[ , nOut] <<- ans
+			return(NULL)
 		})
 
-	return()
+	return( invisible( out))
 }
+
