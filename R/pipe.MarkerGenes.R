@@ -3,7 +3,8 @@
 
 `pipe.ScoreMarkerGenes` <- function( sampleIDset, markerDF, optionsFile="Options.txt", results.path=NULL, 
 				folder=NULL, mode=c("absolute", "relative"), 
-				groupOrder=NULL, col=NULL, main="", legend.cex=1, nFDRsimulations=100) {
+				groupOrder=NULL, col=NULL, main="", legend.cex=1, nFDRsimulations=100,
+				forceYmax=NULL) {
 	
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optionsFile, "results.path", notfound="./results", verbose=F)
@@ -72,9 +73,14 @@
 		}
 		ylabel <- "Marker Gene Score   (Relative to Group Means)"
 	}
+	yLimits <- range(m,0) * 1.15
+	if ( ! is.null(forceYmax)) {
+		yLimits[2] <- as.numeric( forceYmax)
+		if ( yLimits[1] < -1.0) yLimits[1] <- -(as.numeric(forceYmax))
+	}
 
 	barAns <- barplot( m, beside=T, col=groupColor, main=paste( "Marker Gene Profile:    ", main),
-			las=if(NS<5) 1 else 3, xlim=c(1,bigX), ylim=range(m,0)*1.1, space=c(0,gap), 
+			las=if(NS<5) 1 else 3, xlim=c(1,bigX), ylim=yLimits, space=c(0,gap), 
 			ylab=ylabel, cex.lab=1.1, cex.axis=1.1, font.lab=2, font.axis=2)
 	lines( c(-10,bigX*2), c(0,0), lwd=1, lty=1, col=1)
 	if ( nFDRsimulations > 0) {
