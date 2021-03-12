@@ -193,6 +193,11 @@
 	conf <- chromoObj$PeakConfidence
 	tm <- chromoObj$TraceM
 	calledAA <- substr( chromoObj$AA_Calls[1], 1, 1)
+	
+	# do a simple fit to get the optimal peak width
+	fit0 <- modelFitChromatogram( chromoObj, fixedPeaks=TRUE, 
+				effort=1, doStandardize=T, doSubset=F, algorithm="GenSA")
+	bestPeakWidth <- fit0$FitPeakWidth
 
 	# we will use the model fit tools that expect the model sequences to be explicitly given.
 	# use the codon map and trim down to just the non-degenerate AA of interest
@@ -231,17 +236,17 @@
 	if (verbose) cat( "\nN_Model_Seq: ", length(modelSeqs), "\n  ", names(modelSeqs))
 	
 	# perhaps generate images of the codon fit inputs
-	if ( visualize.fit) plotCodonFitInputs( chromoObj, modelSeqs)
+	if ( visualize.fit) plotCodonFitInputs( chromoObj, modelSeqs, width=bestPeakWidth)
 	
 	# call the modeler
 	ans <- modelBlendChromatogram( chromoObj, modelSeqs, plot.chromatograms=F, 
-				synthetic.width="fit", noise.seqs=FALSE, verbose=verbose)
+				synthetic.width=bestPeakWidth, noise.seqs=FALSE, verbose=verbose)
 	if ( is.null( ans)) return( NULL)
 	fitAns <- ans$Model.Estimates
 	if ( is.null( fitAns)) return( failAns)
 	
 	# perhaps generate images of the codon fit inputs
-	if ( visualize.fit) plotCodonFitResults( chromoObj, modelSeqs, fitAns)
+	if ( visualize.fit) plotCodonFitResults( chromoObj, modelSeqs, fitAns, width=bestPeakWidth)
 	
 	# recombine what we got back into a format that best answers the question about what we saw
 	# the P-values are useless since the data is so small we have no power.  
@@ -417,12 +422,12 @@
 }
 
 
-`plotCodonFitInputs` <- function( chromoObj, modelSeqs) {
+`plotCodonFitInputs` <- function( chromoObj, modelSeqs, width=2.5) {
 	
 	# given a tiny chromatogram of a single codon, and all the candidate codons that will go into a fit
 	# try to make one image that conveys it all
 	Nseq <- length( modelSeqs)
-	Nplots <- Nseq + 1
+	Nplots <- Nseq + 1 + 1 # leave a space for the final fit residual
 	sqrtN <- ceiling( sqrt(Nplots))
 	
 	# use a new window
@@ -450,7 +455,7 @@
 	for ( i in 1:Nseq) {
 		thisSeq <- modelSeqs[i]
 		thisName <- names( modelSeqs)[i]
-		thisObj <- syntheticChromatogram( thisSeq, height=bigHeight)
+		thisObj <- syntheticChromatogram( thisSeq, height=bigHeight, width=width)
 		plotChromatogram( thisObj, label=thisName, showAA=T, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
 				main.prefix="Model:  ")
 	}
@@ -461,12 +466,12 @@
 }
 
 
-`plotCodonFitResults` <- function( chromoObj, modelSeqs, fitAns) {
+`plotCodonFitResults` <- function( chromoObj, modelSeqs, fitAns, width=2.5) {
 	
 	# given a tiny chromatogram of a single codon, and all the candidate codons that will go into a fit
 	# try to make one image that conveys it all
 	Nseq <- length( modelSeqs)
-	Nplots <- Nseq + 1
+	Nplots <- Nseq + 1 + 1  # leava space for the final fit residual
 	sqrtN <- ceiling( sqrt(Nplots))
 	
 	# use a new window
@@ -491,22 +496,35 @@
 	# start with the observed data
 	plotChromatogram( chromoObj, label="Observed_Codon", showAA=T, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
 			forceYmax=yMax, main.prefix="")
+			
+	# save a copy for showing the final residual
+	residObj <- standardizeChromatogram( chromoObj, call.Ns=F)
+	residTM <- obsTM <- residObj$TraceM
 
 	# grab the model estimates, we will use the percentages.  Put them back into input order
 	ord <- match( names(modelSeqs), fitAns$Construct)
 	fitAns <- fitAns[ ord, ]
-	cat( "\nDebug 2: ", names( fitAns), "\n")
-	print( fitAns)
 	
 	# now make and draw every model
 	for ( i in 1:Nseq) {
 		thisSeq <- modelSeqs[i]
 		thisPct <- fitAns$Percentage[i]
 		thisName <- paste( names( modelSeqs)[i], "  ", round(thisPct,digits=1), "%", sep="")
-		thisObj <- syntheticChromatogram( thisSeq, height=(bigHeight*thisPct/100))
-		plotChromatogram( thisObj, label=thisName, showAA=T, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
+		thisObj <- syntheticChromatogram( thisSeq, height=(bigHeight*thisPct/100), width=width)
+		plotChromatogram( thisObj, label=thisName, showAA=(thisPct>=0.5), cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
 				forceYmax=yMax, main.prefix="Fit:  ")
+		thisTM <- thisObj$TraceM
+		residTM <- residTM - thisTM
+		residTM[ residTM < 0] <- 0
 	}
+	
+	# lastly show the final residual
+	residObj$TraceM <- residTM
+	residPct <- sum(residTM) / sum(obsTM)
+	residName <- paste( "Residual after Fit  ", round(residPct,digits=2), "%", sep="")
+	plotChromatogram( residObj, label=residName, showAA=F, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
+			forceYmax=yMax, main.prefix="")
+	# done
 	dev.flush()
 	Sys.sleep(1)
 	dev.print( pdf, "Chromatogram.Codon.Fit.Results.pdf", width=12)

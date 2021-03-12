@@ -651,7 +651,7 @@
 `plotChromatogram` <- function( chromoObj, label="", seq=NULL, range=NULL, 
 				lwd=2, lty=1, cex=1, font=2, add=FALSE, forceYmax=NULL, 
 				showAA=TRUE, showTraceRowNumbers=FALSE, showConfidence=FALSE,
-				min.unit.score=NULL, xlim=NULL, shiftAA=0, 
+				min.unit.score=NULL, xlim=NULL, shiftAA=0, min.intensity.plot=0.1,
 				main.prefix="Chromatogram:  ", ...) {
 
 	# allow being given a filename of a chromatogram
@@ -718,6 +718,7 @@
 
 	for ( j in 1:4) {
 		y <- traceM[ ,j]
+		if ( all( y <= min.intensity.plot)) next
 		lines( x, y, col=acgtColors[j], lwd=lwd, lty=lty)
 	}
 	baseColor <- acgtColors[ match( baseCall, acgtBases)]
