@@ -513,15 +513,17 @@
 		thisObj <- syntheticChromatogram( thisSeq, height=(bigHeight*thisPct/100), width=width)
 		plotChromatogram( thisObj, label=thisName, showAA=(thisPct>=0.5), cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
 				forceYmax=yMax, main.prefix="Fit:  ")
-		thisTM <- thisObj$TraceM
-		residTM <- residTM - thisTM
-		residTM[ residTM < 0] <- 0
+		if ( thisPct > 0) {
+			thisTM <- thisObj$TraceM
+			residTM <- residTM - thisTM
+			residTM[ residTM < 0] <- 0
+		}
 	}
 	
 	# lastly show the final residual
 	residObj$TraceM <- residTM
-	residPct <- sum(residTM) / sum(obsTM)
-	residName <- paste( "Residual after Fit  ", round(residPct,digits=2), "%", sep="")
+	residPct <- sum(residTM) * 100 / sum(obsTM)
+	residName <- paste( "Residual after Fit  ", round(residPct,digits=1), "%", sep="")
 	plotChromatogram( residObj, label=residName, showAA=F, cex=1.4, cex.main=1.25, lwd=3, shiftAA=2,
 			forceYmax=yMax, main.prefix="")
 	# done
