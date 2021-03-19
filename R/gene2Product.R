@@ -1,9 +1,14 @@
 # gene2Product.R
 
-`gene2Product` <- function( gNames) {
+`gene2Product` <- function( gNames, speciesID=getCurrentSpecies()) {
 
 	# default behavior is to return empty character strings
 	out <- rep( "", times=length( gNames))
+
+	if ( speciesID != (curSpeciesID <- getCurrentSpecies())) {
+		setCurrentSpecies(speciesID)
+		on.exit( setCurrentSpecies(curSpeciesID))
+	}
 
 	# make sure set up
 	geneMap <- getCurrentGeneMap()

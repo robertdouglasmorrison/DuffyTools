@@ -106,6 +106,8 @@
 	ans <- calcMarkerGenesScore( tbl, markerDF, geneColumn=geneColumn, 
 				intensityColumn=intensityColumn, mode=mode, 
 				nFDRsimulations=nFDRsimulations)
+	if ( is.null(ans)) return(NULL)
+
 	ord <- match( ans$Group, levels(grpFac)[groupOrder])
 
 	text( c( 0.6, ord), -9, c( "SCORE:", as.character(round( ans$Score, digits=2))), font=2, cex=1.15,
@@ -176,8 +178,11 @@
 		noMatchValue <- Ngenes + 1
 	}
 	where <- match(markgenes, genes, nomatch=noMatchValue)
-	if ( sum( where != 0) < NMG*0.5) {
-		cat( "Too many 'Marker Genes' not found in transcriptome..  Check current species..")
+	if ( sum( where != 0) < NMG*0.1) {
+		cat( "\nToo many 'Marker Genes' not found in transcriptome..  Check current species..")
+		cat( "\nN_Genes in data set: ", Ngenes)
+		cat( "\nN_MarkerGenes:       ", NMG)
+		cat( "\nN_MarkerGenes found: ", sum( where != 0))
 		return( NULL)
 	}
 	markerDF$SCORE <- ifelse( toupper( markerDF$Direction) == "UP", 1, -1)

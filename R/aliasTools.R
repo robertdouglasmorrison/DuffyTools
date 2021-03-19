@@ -31,7 +31,12 @@
 }
 
 
-`alias2Gene` <- function( genes) {
+`alias2Gene` <- function( genes, speciesID=getCurrentSpecies()) {
+
+	if ( speciesID != (curSpeciesID <- getCurrentSpecies())) {
+		setCurrentSpecies(speciesID)
+		on.exit( setCurrentSpecies(curSpeciesID))
+	}
 
 	aliasTable <- loadAliasTable()
 

@@ -188,6 +188,10 @@
 				"Mutant_Percent"=NA, "Confidence"=0, stringsAsFactors=F)
 	if ( is.null( chromoObj)) return( failAns)
 	
+	# do an initial standardization, to give the fit tool the best chance
+	# save a copy for showing the final residual
+	chromoObj <- standardizeChromatogram( chromoObj, constant.height=F, call.Ns=F)
+
 	# start with what is given
 	peaks <- chromoObj$PeakPosition
 	conf <- chromoObj$PeakConfidence
