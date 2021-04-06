@@ -36,7 +36,8 @@
 		  		 boxwid=0.2, names=NULL, pars=NULL, col=NULL, border=par('fg'),
 		  		 n.density=128, cut.density=0, bw.density="nrd0",
 		  		 xlim=NULL, ylim=NULL, log="", main=NULL, sub=NULL, 
-		  		 xlab=NULL, ylab=NULL, ann=par("ann"), axes=TRUE, frame.plot=axes, ...) {
+		  		 xlab=NULL, ylab=NULL, ann=par("ann"), axes=TRUE, frame.plot=axes, 
+				 pch=NULL, ...) {
 	 
 	 # deduce which args get passed where	 		 
 	args <- list(x, ...)
@@ -106,6 +107,7 @@
 	border <- rep( border, length.out=nGroups)
 	if ( is.null(col)) col <- par('bg')
 	col <- rep( col, length.out=nGroups)
+	if ( ! is.null(pch)) pch <- rep( pch, length.out=nGroups)
 
 	# store the location data to return
 	vioPts <- matrix( NA, nrow=5, ncol=nGroups)
@@ -115,9 +117,9 @@
 				 orientation=orientation, ...)
 		vioPts[1,i] <- ans1[1]
 		vioPts[5,i] <- ans1[2]
-		if (boxwid > 0) {
+		if (boxwid > 0 || !is.null(pch)) {
 			ans2 <- vlnbxp( groups[[i]], center[i], border=border[i], width=boxwid,
-				 	orientation=orientation, ...)
+				 	orientation=orientation, pch=if (is.null(pch)) NULL else pch[i], ...)
 			vioPts[2:4,i] <- ans2
 		}
 	}
@@ -168,22 +170,32 @@
 
 ## Make a simple boxplot on the violin
 `vlnbxp` <- function( x, center, orientation=c("vertical","horizontal"),
- 			border='black', width=0.2, lwd=1, ...) {
+ 			border='black', width=0.2, lwd=1, pch=NULL, ...) {
 
 	orientation <- match.arg( orientation)
 	hw <- width / 2
 	## get the stats
 	z <- boxplot.stats(x)$stats
-	if (orientation == "vertical") {
-		rect( center-hw, z[2], center+hw, z[4], border=border, lwd=lwd, ...)
-		lines( c( center, center, NA, center, center), c( z[1], z[2], NA, z[4], z[5]), 
-				col=border, lwd=lwd, ...)
-		lines( c(center-hw, center+hw), c( z[3], z[3]), lwd=lwd*2, col=border, ...)
-	} else {
-		rect( z[2], center-hw, z[4], center+hw, border=border, ...)
-		lines( c( z[1], z[2], NA, z[4], z[5]), c( center, center, NA, center, center), 
-				col=border, lwd=lwd, ...)
-		lines( c( z[3], z[3]), c(center-hw, center+hw), lwd=lwd*2, col=border, ...)
+	if ( hw > 0) {
+		if (orientation == "vertical") {
+			rect( center-hw, z[2], center+hw, z[4], border=border, lwd=lwd, ...)
+			lines( c( center, center, NA, center, center), c( z[1], z[2], NA, z[4], z[5]), 
+					col=border, lwd=lwd, ...)
+			lines( c(center-hw, center+hw), c( z[3], z[3]), lwd=lwd*2, col=border, ...)
+		} else {
+			rect( z[2], center-hw, z[4], center+hw, border=border, ...)
+			lines( c( z[1], z[2], NA, z[4], z[5]), c( center, center, NA, center, center), 
+					col=border, lwd=lwd, ...)
+			lines( c( z[3], z[3]), c(center-hw, center+hw), lwd=lwd*2, col=border, ...)
+		}
+	}
+	if ( ! is.null( pch)) {
+		ctr <- rep.int( center, length(x))
+		if (orientation == "vertical") {
+			points( jitter(ctr,amount=hw*0.5), x, pch=pch, col=border, ...)
+		} else {
+			points( x, jitter(ctr,amount=hw*0.5), pch=pch, col=border, ...)
+		}
 	}
 	return( z[2:4])
 }  
