@@ -1,13 +1,16 @@
 # expressionMatrixToDEfiles.R -- convert one matrix of expression data into a folder of DE files
 #				 where each group is compared against the mean of all groups
 
-`expressionMatrixToDEfiles` <- function( x, groups=colnames(x), folder=".", offset=1.0, AVG.FUN=sqrtmean) {
+`expressionMatrixToDEfiles` <- function( x, groups=colnames(x), folder=".", offset=1.0, AVG.FUN=sqrtmean,
+					sep="\t") {
 
 	gids <- rownames(x)
 	if ( is.null(gids) || all( gids == 1:nrow(x))) stop( "expression matrix must have gene rownames")
 	NR <- nrow(x)
 	groupIDs <- colnames(x)
 	NC <- ncol(x)
+	prefix <- getCurrentSpeciesFilePrefix()
+	suffix <- if ( sep == ",") "csv" else "txt"
 
 	if ( ! file.exists( folder)) dir.create( folder, recursive=T)
 
@@ -68,8 +71,8 @@
 		ord <- diffExpressRankOrder( thisFC, thisPV)
 		thisDF <- thisDF[ ord, ]
 		rownames(thisDF) <- 1:nrow(thisDF)
-		outfile <- file.path( folder, paste( thisGrp, "Ratio.txt", sep="."))
-		write.table( thisDF, outfile, sep="\t", quote=F, row.names=F)
+		outfile <- file.path( folder, paste( thisGrp, prefix, "Ratio", suffix, sep="."))
+		write.table( thisDF, outfile, sep=sep, quote=(suffix == "csv"), row.names=F)
 		cat( "\rWrote: ", j, thisGrp, outfile)
 	}
 	cat( "\nDone.\n")

@@ -93,11 +93,13 @@
 }
 
 
-`expressionMatrixToFileSet` <- function( m, geneColumn="GENE_ID", intensityColumn=c("INTENSITY","RPKM_M", "READS_M"),
-					path=".", sep="\t", verbose=FALSE) {
+`expressionMatrixToFileSet` <- function( m, groups=colnames(m), geneColumn="GENE_ID", 
+					intensityColumn=c("INTENSITY","RPKM_M","READS_M"),
+					path=".", sep="\t", AVG.FUN=sqrtmean, verbose=FALSE) {
 
 	intensityColumn <- match.arg( intensityColumn)
 	prefix <- getCurrentSpeciesFilePrefix()
+	suffix <- if ( sep == ",") "csv" else "txt"
 
 	# make sure we can write those files
 	if ( ! file.exists( path)) dir.create( path, recursive=T)
@@ -108,6 +110,20 @@
 	sids <- colnames(m)
 	prods <- gene2Product(genes)
 
+	# see if we reduce replicates by group
+	if ( ! all( colnames(m) == groups)) {
+		groupFac <- factor( groups)
+		groupIDs <- levels( groupFac)
+		NC <- nlevels(groupFac)
+		cat( "\nReducing", ncol(m), "samples down to", NC, "groups..")
+		m2 <- matrix( NA, NG, NC)
+		colnames(m2) <- groupIDs
+		rownames(m2) <- genes
+		for ( i in 1:NG) m2[ i, ] <- tapply( m[i,], groupFac, FUN=AVG.FUN)
+		m <- m2
+		sids <- groupIDs
+	}
+
 	for ( i in 1:NC) {
 		v <- m[,i]
 		v <- round( v, digits=4)
@@ -116,8 +132,8 @@
 		sml <- sml[ ord, ]
 		rownames(sml) <- 1:NG
 		colnames(sml) <- c( geneColumn, "PRODUCT", intensityColumn)
-		outfile <- file.path( path, paste( sids[i], prefix, "Transcript.txt", sep="."))
-		write.table( sml, outfile, sep=sep, quote=F, row.names=F)
+		outfile <- file.path( path, paste( sids[i], prefix, "Transcript", suffix, sep="."))
+		write.table( sml, outfile, sep=sep, quote=(suffix == "csv"), row.names=F)
 		if (verbose) cat( "\r", i, sids[i])
 	}
 	return( NC)
