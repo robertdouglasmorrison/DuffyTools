@@ -2,7 +2,7 @@
 #				 where each group is compared against the mean of all groups
 
 `expressionMatrixToDEfiles` <- function( x, groups=colnames(x), folder=".", offset=1.0, AVG.FUN=sqrtmean,
-					sep="\t") {
+					sep="\t", units="RKPM") {
 
 	gids <- rownames(x)
 	if ( is.null(gids) || all( gids == 1:nrow(x))) stop( "expression matrix must have gene rownames")
@@ -49,13 +49,14 @@
 			myFC <- fcM[i,j]
 			useV <- otherV[-j]
 			if ( all( abs( useV) < 0.05)) next
-			pvM[ i, j] <- t.test( useV, mu=myFC)$p.value
+			# small chance of not enough data for T test...
+			pvM[ i, j] <- sparse.t.test( useV, mu=myFC)$p.value
 		}
 	}
 
 	# make the results
 	cat( "\nMaking result DE files..")
-	prods <- gene2Product(gids)
+	prods <- gene2ProductAllSpecies(gids)
 	celltypes <- gene2CellType(gids)
 	for( j in 1:NC) {
 		thisGrp <- groupIDs[j]
@@ -67,7 +68,7 @@
 					"LOG2FOLD"=round(thisFC,digits=4), "PVALUE"=thisPV, 
 					"RPKM"=round(thisRPKM,digits=2), "AVG_RPKM"=round(gAvg,digits=2), 
 					stringsAsFactors=F)
-		colnames(thisDF)[6] <- paste( thisGrp, "RPKM", sep="_")
+		colnames(thisDF)[6:7] <- paste( c(thisGrp,"AVG"), units, sep="_")
 		ord <- diffExpressRankOrder( thisFC, thisPV)
 		thisDF <- thisDF[ ord, ]
 		rownames(thisDF) <- 1:nrow(thisDF)
