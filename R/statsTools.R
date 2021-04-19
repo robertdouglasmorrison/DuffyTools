@@ -22,14 +22,15 @@
 }
 
 
-`sparse.t.test` <- function( x, y=NULL, min.obs=3, ...) {
+`sparse.t.test` <- function( x, y=NULL, min.obs=3, ..., min.random.value=NULL) {
 
 	# make extra observed values using sensible constraints
 	myX <- x[ ! is.na(x)]
 	if ( length(myX) < min.obs) {
 		meanX <- mean( myX)
-		sdX <- sqrt( abs( meanX/2))
+		sdX <- min( sqrt( abs( meanX/2)), abs( meanX/2))
 		extraX <- rnorm( min.obs, mean=meanX, sd=sdX)
+		if ( ! is.null( min.random.value)) extraX[ extraX < min.random.value] <- min.random.value
 		x <- c( x, extraX)
 	}
 	if ( is.null(y)) return( t.test( x, ...))
@@ -37,8 +38,9 @@
 	myY <- y[ ! is.na(y)]
 	if ( length(myY) < min.obs) {
 		meanY <- mean( myY)
-		sdY <- sqrt( abs( meanY/2))
+		sdY <- min( sqrt( abs( meanY/2)), abs( meanY/2))
 		extraY <- rnorm( min.obs, mean=meanY, sd=sdY)
+		if ( ! is.null( min.random.value)) extraY[ extraY < min.random.value] <- min.random.value
 		y <- c( y, extraY)
 	}
 	return( t.test( x, y, ...))
