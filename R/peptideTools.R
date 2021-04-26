@@ -20,7 +20,7 @@ UNION <- base::union
 
 `DNAtoBestPeptide` <- function( dnaSet, clipAtStop=FALSE, readingFrames=1:6,
 				tieBreakMode=c("evalue","sample","reference"), reference=NULL,
-				substitutionMatrix=NULL) {
+				substitutionMatrix=NULL, breakAtStops=TRUE) {
 
 	tieBreakMode <- match.arg( tieBreakMode)
 	if ( tieBreakMode == "reference") {
@@ -37,7 +37,7 @@ UNION <- base::union
 			pepsIn <- DNAtoAA( dna, clipAtStop=clipAtStop, readingFrames=readingFrames)
 
 			# if ignoring stop codons, break into all coding fragments of each
-			if ( ! clipAtStop) {
+			if ( ! clipAtStop && breakAtStops) {
 				pepFrags <- unlist( STRSPLIT( pepsIn, split=STOP_CODON_PATTERN, fixed=FALSE), use.names=F)
 			} else {
 				pepFrags <- pepsIn
