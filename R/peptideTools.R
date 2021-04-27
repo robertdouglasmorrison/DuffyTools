@@ -30,6 +30,7 @@ UNION <- base::union
 			substitutionMatrix <- BLOSUM62
 		}
 		refAA <- base::toupper( as.character( reference))
+		refAAxstring <- AAString( refAA)
 	}
 
 	out <- SAPPLY( as.character( dnaSet), function( dna) {
@@ -61,7 +62,7 @@ UNION <- base::union
 				for ( i in seq_along(pepFrags)) {
 					if ( grepl( pepFrags[i], refAA, fixed=T)) return( pepFrags[i])
 				}
-				paScores <- pairwiseAlignment( pepFrags, refAA, type="local", 
+				paScores <- pairwiseAlignment( pepFrags, refAAxstring, type="local", 
 								substitutionMatrix=substitutionMatrix, scoreOnly=T)
 				return( pepFrags[ WHICH.MAX( paScores)])
 			}
