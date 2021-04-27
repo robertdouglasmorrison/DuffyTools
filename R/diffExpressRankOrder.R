@@ -8,6 +8,12 @@
 	N <- length( folds)
 	if ( length( pvalues) != N) stop( "FoldChange and Pvalue vectors must be same length")
 
+	# safely catch invalid values
+	folds[ is.na(folds)] <- notDE.value
+	folds[ is.nan(folds)] <- notDE.value
+	pvalues[ is.na(pvalues)] <- 1
+	pvalues[ is.nan(pvalues)] <- 1
+
 	# we sort them in 3 groups,  the ups, the downs, the rest...
 	ranks <- 1:N
 	whoUp <- which( folds > notDE.value)
