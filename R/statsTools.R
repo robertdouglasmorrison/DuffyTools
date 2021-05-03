@@ -26,23 +26,34 @@
 
 	# make extra observed values using sensible constraints
 	myX <- x[ ! is.na(x)]
+	meanX <- mean( myX)
 	if ( length(myX) < min.obs) {
-		meanX <- mean( myX)
 		sdX <- min( sqrt( abs( meanX/2)), abs( meanX/2))
 		extraX <- rnorm( min.obs, mean=meanX, sd=sdX)
 		if ( ! is.null( min.random.value)) extraX[ extraX < min.random.value] <- min.random.value
 		x <- c( x, extraX)
 	}
-	if ( is.null(y)) return( t.test( x, ...))
+	if ( is.null(y)) {
+		ans <- t.test( x, ...)
+		# put the true estimate back in
+		names(meanX) <- names(ans$estimate)
+		ans$estimate <- meanX
+		return( ans)
+	}
 
 	myY <- y[ ! is.na(y)]
+	meanY <- mean( myY)
 	if ( length(myY) < min.obs) {
-		meanY <- mean( myY)
 		sdY <- min( sqrt( abs( meanY/2)), abs( meanY/2))
 		extraY <- rnorm( min.obs, mean=meanY, sd=sdY)
 		if ( ! is.null( min.random.value)) extraY[ extraY < min.random.value] <- min.random.value
 		y <- c( y, extraY)
 	}
-	return( t.test( x, y, ...))
+	# put the true estimate back in
+	ans <- t.test( x, y, ...)
+	myMeans <- c( meanX, meanY)
+	names(myMeans) <- names(ans$estimate)
+	ans$estimate <- myMeans
+	return( ans)
 }
 
