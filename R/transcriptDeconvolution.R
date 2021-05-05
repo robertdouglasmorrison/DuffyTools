@@ -397,7 +397,7 @@
 				nextra <- nextra + 1
 			}
 		}
-		xLimits <- c( 0.2, max(barAts)+1.15)
+		xLimits <- c( 0.2, max(barAts) + 1.15 + ( 0.75 * (NS-1)))
 		ans <- barplot( pcts, col=col, main=paste( "Transcript Proportions:   ", label), 
 			ylab="Proportion per Component", las=LAS, 
 			xlim=xLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
