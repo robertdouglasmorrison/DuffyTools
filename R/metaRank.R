@@ -97,12 +97,12 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 			ptile[ isMissing] <- 0
 			rankM[ , i] <- ptile
 		}
-		logFoldColumn <- grep( valueColumn, colnames(thisDF))
+		logFoldColumn <- if ( is.null(valueColumn)) integer(0) else grep( valueColumn, colnames(thisDF))
 		if ( length( logFoldColumn) > 0) {
 			foldM[ where > 0, i] <- thisDF[[ logFoldColumn[1]]][where]
 			foldM[ isMissing, i] <- missingFold
 		}
-		pvalColumn <- grep( pvalueColumn, colnames(thisDF))
+		pvalColumn <- if ( is.null(pvalueColumn)) integer(0) else grep( pvalueColumn, colnames(thisDF))
 		if ( length( pvalColumn) > 0) {
 			pvalM[ where > 0, i] <- thisDF[[ pvalColumn[1]]][where]
 			pvalM[ isMissing, i] <- missingPval
@@ -197,7 +197,8 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 	}
 
 	avgFold <- apply( foldM, MARGIN=1, FUN=value.average.FUN, na.rm=T)
-	if (pvalueColumn != "") {
+	if ( is.null( valueColumn)) valueColumn <- "VALUE"
+	if ( !is.null(pvalueColumn) && pvalueColumn != "") {
 		#avgPval <- apply( pvalM, MARGIN=1, FUN=logmean, na.rm=T)
 		avgPval <- apply( pvalM, MARGIN=1, FUN=p.combine)
 	} else {
@@ -366,7 +367,7 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 	for( i in 1:nDF) {
 		thisDF <- allDF[[i]]
 		hasPROD <- ( !is.na(productColumn) && (productColumn %in% colnames(thisDF)))
-		hasPVAL <- ( !is.na(pvalueColumn) && (pvalueColumn %in% colnames(thisDF)))
+		hasPVAL <- ( !is.null(pvalueColumn) && !is.na(pvalueColumn) && (pvalueColumn %in% colnames(thisDF)))
 		theseGenes <- thisDF[[geneColumn]]
 		nGenes.thisDF <- length(theseGenes)
 		where <- match( allG, theseGenes, nomatch=0)
@@ -375,7 +376,7 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 			ptile <- ((nGenes.thisDF - rankM[ , i] + 1) / nGenes.thisDF) * 100
 			rankM[ , i] <- ptile
 		}
-		logFoldColumn <- grep( valueColumn, colnames(thisDF))
+		logFoldColumn <- if ( is.null(valueColumn)) integer(0) else grep( valueColumn, colnames(thisDF))
 		if ( length( logFoldColumn) > 0) {
 			foldM[ where > 0, i] <- thisDF[[ logFoldColumn[1]]][where]
 		}
@@ -474,6 +475,7 @@ metaRank.data.frames <- function( df.list, weightset=rep(1, length(df.list)),
 	avgFold <- apply( foldM, MARGIN=1, FUN=value.average.FUN, na.rm=T)
 	#avgPval <- apply( pvalM, MARGIN=1, FUN=logmean, na.rm=T)
 	avgPval <- apply( pvalM, MARGIN=1, FUN=p.combine)
+	if ( is.null( valueColumn)) valueColumn <- "VALUE"
 	if ( ! is.na(productColumn)) {
 		out <- data.frame( allG, allProds, avgFold, avgRank, avgPval, rankM, stringsAsFactors=FALSE)
 		colnames(out) <- c( geneColumn, productColumn, valueColumn, "AVG_RANK", "AVG_PVALUE", colnames( rankM))

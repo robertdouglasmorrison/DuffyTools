@@ -397,10 +397,23 @@
 				nextra <- nextra + 1
 			}
 		}
+		xLimits <- c( 0.2, max(barAts)+1.15)
 		ans <- barplot( pcts, col=col, main=paste( "Transcript Proportions:   ", label), 
 			ylab="Proportion per Component", las=LAS, 
-			xlim=c(0.2,(NS+nextra+1)*X_LIM_SCALE+0.5), font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
+			xlim=xLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
 			legend=TRUE, args.legend=list( "cex"=legend.cex, "bg"='white'), ...)
+
+		# calc the center of each band, to send back to caller
+		bandCtr <- matrix( 0, nrow(pcts), ncol(pcts))
+		rownames(bandCtr) <- rownames(pcts)
+		colnames(bandCtr) <- colnames(pcts)
+		for ( k in 1:ncol(pcts)) {
+			myTops <- cumsum( pcts[,k])
+			myDiffs <- diff( c( 0, myTops))
+			bandCtr[,k] <- myTops - (myDiffs/2)
+		}
+
+		# draw some labels where we can
 		samplesToLabel <- barAts
 		if ( text.rotation == 0) {
 			if ( NS > 16) samplesToLabel <- samplesToLabel[ seq( 1, NS, by=2)]
@@ -429,7 +442,11 @@
 			}
 		}
 		dev.flush()
-		return()
+
+		# package up a bit to send back
+		barAts <- ans
+		names(barAts) <- colnames(pcts)
+		return( list( "bar.centers"=barAts, "band.centers"=bandCtr))
 	}
 }
 
@@ -517,7 +534,22 @@
 		pctsGrp <- t( apply( pcts, 1, function(x) tapply( x, grpFac, mean)))
 		# show the group counts, if not too many
 		if (NG <=12) colnames(pctsGrp) <- paste( colnames(pctsGrp), "\n(N=", as.numeric(table(as.numeric(grpPtrs))), ")", sep="")
-		plotTranscriptProportions( pctsGrp, label=label, mode=plot.mode, ...)
+		plotAns <- plotTranscriptProportions( pctsGrp, label=label, mode=plot.mode, ...)
+
+		# perhaps try to show the significance? Only when we drew 2 bars of info
+		if ( NG == 2) {
+			myStats <- bigOut[[1]]
+			myBarCenters <- plotAns$bar.centers
+			myBandCenters <- plotAns$band.centers
+			toShow <- which( myStats$Signif != "")
+			if ( length(toShow)) {
+				where <- match( myStats$Component[toShow], rownames(myBandCenters))
+				myX <- myBarCenters[2] + 0.6
+				myY <- myBandCenters[ where, 2]
+				textToShow <- myStats$Signif[toShow]
+				text( myX, myY, textToShow, cex=1.95)
+			}
+		}
 	}
 
 	return( if (nOut == 1) bigOut[[1]] else bigOut)

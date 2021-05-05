@@ -6,6 +6,7 @@
 				value1Column="RPKM_M", value2Column=value1Column, 
 				minValue1=1, minValue2=minValue1, extraColumns=NULL,
 				minCount=NULL, maxCount=NULL, keepIntergenics=FALSE, 
+				geneUniverse=NULL,
 				label="Your label goes here...", sep1="\t", sep2=sep1, cex=2,
 				col1='blue', col2='red') {
 
@@ -28,6 +29,7 @@
 				value1Column=value1Column, value2Column=value2Column, 
 				minValue1=minValue1, minValue2=minValue2, extraColumns=extraColumns,
 				minCount=minCount, maxCount=maxCount, keepIntergenics=keepIntergenics, 
+				geneUniverse=geneUniverse,
 				label=label, cex=cex, col1=col1, col2=col2))
 }
 
@@ -45,13 +47,19 @@
 	# local function
 	`gatherWantedSubset` <- function( df, geneColumn, valueColumn, minValue=1, minCount=NULL, maxCount=NULL) {
 
-		if ( !( all( c( geneColumn, valueColumn) %in% colnames(df)))) {
-			cat( "\nMissing columns:  looked for: ", geneColumn, valueColumn, "\nFound: ", colnames(df))
+		if ( ! geneColumn %in% colnames(df)) {
+			cat( "\nMissing GENE_ID column:  looked for: ", geneColumn, "\nFound: ", colnames(df))
 			stop()
 		}
-		# order by the value column
-		ord <- order( df[[valueColumn]], decreasing=T)
-		df <- df[ ord, ]
+		if ( ! is.null( valueColumn)) {
+			if ( ! valueColumn %in% colnames(df)) {
+				cat( "\nMissing VALUE column:  looked for: ", valueColumn, "\nFound: ", colnames(df))
+				stop()
+			}
+			# order by the value column
+			ord <- order( df[[valueColumn]], decreasing=T)
+			df <- df[ ord, ]
+		}
 
 		# only the real genes?
 		if ( ! keepIntergenics) {
@@ -63,7 +71,11 @@
 		}
 
 		# main selection is by value
-		want <- which( df[[valueColumn]] >= minValue)
+		if ( is.null( valueColumn)) {
+			want <- 1:nrow(df)
+		} else {
+			want <- which( df[[valueColumn]] >= minValue)
+		}
 		if ( ! is.null( maxCount)) {
 			if ( length(want) > maxCount) want <- want[ 1:maxCount]
 		}
@@ -121,13 +133,15 @@
 		# and then keep just the intersection, and both edge groups too...
 		who <- which( metaAns[[gene1Column]] %in% both)
 		intersectDF <- metaAns[ who, ]
+		who <- which( metaAns[[gene1Column]] %in% only1)
+		only1DF <- metaAns[ who, ]
+		who <- which( metaAns[[gene1Column]] %in% only2)
+		only2DF <- metaAns[ who, ]
 	} else {
 		intersectDF <- data.frame()
+		only1DF <- smlDF1
+		only2DF <- smlDF2
 	}
-	who <- which( metaAns[[gene1Column]] %in% only1)
-	only1DF <- metaAns[ who, ]
-	who <- which( metaAns[[gene1Column]] %in% only2)
-	only2DF <- metaAns[ who, ]
 	# we can be more precise than the Meta Rank tool, as to where these genes were in the other data
 	where2 <- match( only1DF[[gene1Column]], df2[[gene2Column]], nomatch=0)
 	only1DF[[ncol(only1DF)]][where2 > 0] <- where2[ where2 > 0]
@@ -175,12 +189,12 @@
 	for ( extraCol in extras) {
 		where1 <- match( extraCol, colnames(df1), nomatch=0)
 		where2 <- match( extraCol, colnames(df2), nomatch=0)
-		if (where2 > 0) {
+		if (where2 > 0 && length(both)) {
 			intersectDF <- mergeExtraColumn( intersectDF, df2, column=where2, geneColumn=gene2Column, suffix=fid2)
 			only1DF <- mergeExtraColumn( only1DF, df2, column=where2, geneColumn=gene2Column, suffix=fid2)
 			only2DF <- mergeExtraColumn( only2DF, df2, column=where2, geneColumn=gene2Column, suffix=fid2)
 		}
-		if (where1 > 0) {
+		if (where1 > 0 && length(both)) {
 			intersectDF <- mergeExtraColumn( intersectDF, df1, column=where1, geneColumn=gene1Column, suffix=fid1)
 			only1DF <- mergeExtraColumn( only1DF, df1, column=where1, geneColumn=gene1Column, suffix=fid1)
 			only2DF <- mergeExtraColumn( only2DF, df1, column=where1, geneColumn=gene1Column, suffix=fid1)
@@ -210,10 +224,10 @@
 	powerFactor <- 1 / (2 - ratio)
 	pctOverlap1 <- Nboth / N1
 	shift1 <- pctOverlap1 ^ powerFactor
-	x1 <- x1 + (sqrt(shift1)*r1)
+	x1 <- x1 + if (shift1 > 0) (sqrt(shift1)*r1) else -(r1*0.1)
 	pctOverlap2 <- Nboth / N2
 	shift2 <- pctOverlap2 ^ powerFactor
-	x2 <- x2 - (sqrt(shift2)*r2)
+	x2 <- x2 - if (shift2 > 0) (sqrt(shift2)*r2) else -(r2*0.1)
 	#cat( "\nDebug: ratio,power,shift1, shift2: ", ratio, powerFactor, shift1, shift2)
 
 	# draw them
@@ -224,7 +238,8 @@
 	#subTextGiven <- paste( "Given Genes Only:   Likelihood of  ", Nboth, "  in common:   P = ", 
 	#			formatC(pvalGiven, format='e', digits=2),
 	#			"    (Expected = ", formatC( nExpectGiven, format='f', digits=2), ")", sep="")
-	subText1 <- paste( "Gene Selection Criteria:   Value of '", value1Column, "' >= ", minValue1, sep="")
+	subText1 <- ""
+	if ( ! is.null( value1Column)) subText1 <- paste( "Gene Selection Criteria:   Value of '", value1Column, "' >= ", minValue1, sep="")
 	if ( ! is.null( minCount)) subText1 <- paste( subText1, "   Min_Genes = ", minCount, sep="")
 	if ( ! is.null( maxCount)) subText1 <- paste( subText1, "   Max_Genes = ", maxCount, sep="")
 
@@ -252,6 +267,7 @@
 	text( x1-r1*0.5, r1*1.005, fid1, col=col1, font=2, cex=cex*0.5)
 	text( x2+r2*0.5, r2*1.005, fid2, col=col2, font=2, cex=cex*0.5)
 
+	dev.flush()
 	return( list( "intersection"=intersectDF, "only1"=only1DF, "only2"=only2DF, 
 			"overlap"=Nboth, "PercentOverlap"=PctBoth, "Percent1"=Pct1, "Percent2"=Pct2, 
 			"expected"=nExpectGenome, "p.value"=pvalGenome))
