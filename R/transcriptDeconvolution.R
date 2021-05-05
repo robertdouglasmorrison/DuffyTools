@@ -138,7 +138,7 @@
 `fileSet.TranscriptDeconvolution` <- function( files, fids, targetM=getTranscriptDeconvolutionTargetMatrix(), 
 					geneColumn="GENE_ID", intensityColumn="RPKM_M",
 					sep="\t", useLog=FALSE, normalize=FALSE, minIntensity=0, 
-					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
+					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL, geneUniverse=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA","steepDescent"),
 					startFractions=NULL, plot=TRUE, plot.path=".", plot.col=NULL, 
 					label="", verbose=TRUE) {
@@ -186,6 +186,7 @@
 					normalize=normalize, minIntensity=minIntensity, 
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
+					geneUniverse=geneUniverse,
 					algorithm=algorithm, startFractions=myStarts, verbose=verbose)
 			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "RMS.Dev=", round(fitAns$RMS.Deviation,digits=3))
 			return( fitAns)
@@ -225,7 +226,7 @@
 
 `matrix.TranscriptDeconvolution` <- function( m, targetM=getTranscriptDeconvolutionTargetMatrix(), 
 					useLog=FALSE, normalize=FALSE, minIntensity=0, 
-					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL,
+					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL, geneUniverse=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA","steepDescent"),
 					plot=TRUE, plot.path=".", plot.col=NULL, label="", verbose=TRUE) {
 
@@ -252,6 +253,7 @@
 					normalize=normalize, minIntensity=minIntensity, 
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
+					geneUniverse=geneUniverse,
 					algorithm=algorithm, verbose=verbose)
 			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "RMS.Dev=", round(fitAns$RMS.Deviation,digits=3))
 			return( fitAns)

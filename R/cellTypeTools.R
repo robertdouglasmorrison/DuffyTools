@@ -900,6 +900,7 @@
 	if ( ! is.na( legend) && length(who)) {
 		legend( x=legend, legend=gSet[who], col=colUse[who], lwd=3, cex=legend.cex)
 	}
+	dev.flush()
 	
 	# send back useful info
 	units <- vectorSpace[ where, ]
@@ -1036,7 +1037,8 @@
 					geneColumn="GENE_ID", intensityColumn="RPKM_M", 
 					sep="\t", max.iterations=100, rate=1, tolerance=0.01,
 					makePlots=c("all","final","none"), plot.path=".",
-					algorithm=c("steepDescent", "nls", "GenSA"), ...) {
+					algorithm=c("steepDescent", "nls", "GenSA"), 
+					geneUniverse=NULL, ...) {
 
 	verifyCellTypeSetup()
 
@@ -1060,7 +1062,8 @@
 	makePlots <- match.arg( makePlots)
 	algorithm <- match.arg( algorithm)
 	ans <-  fitCellTypeProfile( gset, inten, sid=sid, col=col, max.iterations=max.iterations, rate=rate, 
-				tolerance=tolerance, makePlots=makePlots, plot.path=plot.path, algorithm=algorithm, ...)
+				tolerance=tolerance, makePlots=makePlots, plot.path=plot.path, algorithm=algorithm, 
+				geneUniverse=geneUniverse, ...)
 	if (makePlots != "none") {
 		plotFile <- paste( sid, "CellTypeProportions", algorithm, "png", sep=".")
 		plotFile <- file.path( plot.path, plotFile)
@@ -1075,7 +1078,8 @@
 						intensityColumn="RPKM_M", sep="\t",
 						max.iterations=100, rate=1, tolerance=0.01, 
 						makePlots=c("all","final","none"), plot.path=".",
-						algorithm=c("steepDescent", "nls", "GenSA"), ...) {
+						algorithm=c("steepDescent", "nls", "GenSA"), 
+						geneUniverse=NULL, ...) {
 								
 	verifyCellTypeSetup()
 
@@ -1108,7 +1112,8 @@
 					intensityColumn=intensityColumn, sep=sep,
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, 
-					plot.path=plot.path, algorithm=algorithm, ...)
+					plot.path=plot.path, algorithm=algorithm, 
+					geneUniverse=geneUniverse, ...)
 		m[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
@@ -1126,7 +1131,8 @@
 
 `fitCellTypeProfileFromMatrix` <- function( m, fcolors=1:ncol(m),  max.iterations=100, rate=1, tolerance=0.01, 
 						makePlots=c("all","final","none"), plot.path=".", 
-						algorithm=c("steepDescent", "nls", "GenSA"), ...) {
+						algorithm=c("steepDescent", "nls", "GenSA"), 
+						geneUniverse=NULL, ...) {
 
 	verifyCellTypeSetup()
 
@@ -1152,7 +1158,8 @@
 		ans <- fitCellTypeProfile( genes=genes, inten=m[,i], sid=fids[i], col=fcolors[i], 
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, 
-					plot.path=plot.path, algorithm=algorithm, ...)
+					plot.path=plot.path, algorithm=algorithm, 
+					geneUniverse=geneUniverse, ...)
 		mOut[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
@@ -1172,7 +1179,8 @@
 `fitCellTypeProfile` <- function( genes, inten, sid="Observed", col="orchid1", modelCol='brown',
 					max.iterations=100, rate=1, tolerance=0.01, fit.starts=NULL,
 					makePlots=c("all","final","none"), plot.path=".", sleep=0.01, 
-					algorithm=c("steepDescent", "nls", "GenSA"), ...) {
+					algorithm=c("steepDescent", "nls", "GenSA"), 
+					geneUniverse=NULL, ...) {
 
 	# grab the Cell Type data we will need:  the gene intensity in all cell types
 	verifyCellTypeSetup()
@@ -1184,13 +1192,19 @@
 	vectorMatrix <- as.matrix( vectorVectors)
 	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
 	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
-	NG <- nrow( intensityMatrix)
 
 	# start with the calculated profile for this transcriptome
 	genes <- shortGeneName( genes, keep=1)
+
+	# allow being passed in a gene universe of a subset of genes to use in the fit
+	if ( ! is.null( geneUniverse)) {
+		keep <- which( genes %in% as.character( geneUniverse))
+		genes <- genes[ keep]
+		inten <- inten[ keep]
+	}
+	NG <- length( genes)
 	obsAns <- calcCellTypeProfile( genes, inten)
 	obsProfile <- obsAns$Profile
-	NG <- length( genes)
 	whereGene <- match( genes, intensitySpace$GENE_ID, nomatch=0)
 	useGene <- which( whereGene > 0)
 	makePlots <- match.arg( makePlots)

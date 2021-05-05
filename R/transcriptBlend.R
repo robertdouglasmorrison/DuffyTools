@@ -80,7 +80,7 @@
 # the NLS fit function:  find the optimal blend
 `fit.transcriptBlend` <- function( x, m, geneColumn="GENE_ID", intensityColumn="RPKM_M", useLog=FALSE, 
 				normalize=TRUE, minIntensity=0, arrayFloorIntensity=NULL, 
-				dropLowVarianceGenes=NULL, 
+				dropLowVarianceGenes=NULL, geneUniverse=NULL,
 				algorithm=c("port", "default", "plinear", "LM", "GenSA", "steepDescent"), 
 				startFractions=NULL, verbose=TRUE) {
 
@@ -169,6 +169,14 @@
 			mUse <- mUse[ whoToKeep, ]
 			genesUse <- genesUse[ whoToKeep]
 		}
+	}
+
+	# we may be asked to use just a explicit subset of genes, from a smaller gene universe
+	if ( ! is.null( geneUniverse)) {
+		keep <- which( shortGeneName(genesUse,keep=1) %in% as.character( geneUniverse))
+		intenUse <- intenUse[ keep]
+		mUse <- mUse[ keep, ]
+		genesUse <- genesUse[ keep]
 	}
 
 	# ready to do the fit
