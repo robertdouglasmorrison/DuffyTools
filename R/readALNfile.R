@@ -194,7 +194,7 @@ readALN <- function( file, verbose=TRUE) {
 
 
 `plotALN` <- function( aln, type=c("fill","dots"), cex.letter=1, cex.label=1, y.label.length=NULL, 
-			codonMap=getCodonMap(), ref.row=1, range=NULL, ...) {
+			codonMap=getCodonMap(), ref.row=1, number.from=NULL, range=NULL, ...) {
 
 	# we may be given the top level ALN object or just the aligment matrix
 	# or even just the filename
@@ -207,16 +207,50 @@ readALN <- function( file, verbose=TRUE) {
 
 	# OK, we have one matrix of characters from a MSA
 	# allow subsetting on a range of locations
+	# if we were given an explicit numbering start, then the range is in those units
+	range.offset <- 0
+	referenceRowChars <- aln[ ref.row, ]
+	refGaps <- which( referenceRowChars == "-")
+	if ( ! is.null(range) && ! is.null(number.from)) {
+		range <- range - as.integer(number.from) + 1
+		# we need to account for gaps when we set the true local range
+		nGapLeft <- sum( refGaps <= min(range))
+		nGapRight <- sum( refGaps <= max(range))
+		range[1] <- min(range) + nGapLeft
+		range[length(range)] <- max(range) + nGapRight
+		number.from <- number.from + range[1] - 1
+	}
 	if( ! is.null( range)) {
 		low <- max( 1, min(range))
 		high <- min( ncol(aln), max(range))
 		aln <- aln[ , low:high]
+		range.offset <- low - 1
 	}
 	aln <- toupper(aln)
 	nch <- ncol(aln)
 	niso <- nrow(aln)
-	plot( 1,1, type="n", xlim=c(0,nch+1), ylim=c(1,niso), xlab="Amino Acid Location", ylab=NA, yaxt="n", 
-			xaxs="i", ...)
+	plot( 1,1, type="n", xlim=c(0,nch+1), ylim=c(0,niso+1), xlab="Amino Acid Location", 
+			xaxs="i", xaxt="n", ylab=NA, yaxs="i", yaxt="n", ...)
+	if ( is.null( number.from)) {
+		axis( side=1, ...)
+		axis( side=3, ...)
+	} else {
+		# when given a explicit starting number, we need to do a bunch of math to keep that numbering system consistent
+		number.from <- as.integer( number.from)
+		tickStep <- 10
+		shown.ats <-  unique( floor( ((number.from+tickStep):(number.from+nch+range.offset)) / tickStep) * tickStep)
+		xAts <- shown.ats - number.from + 1
+		# we need to count and deal with gaps in the reference row
+		prevGaps <- 0
+		for ( k in 1:length(xAts)) {
+			nGapNow <- sum( refGaps <= (xAts[k] + range.offset + prevGaps))
+			xAts[k] <- xAts[k] + nGapNow
+			prevGaps <- nGapNow
+		}
+		# make the axis that shows the given numbering with all it's  gaps
+		axis( side=1, at=xAts, label=as.character(shown.ats), ...)
+		axis( side=3, at=xAts, label=as.character(shown.ats), ...)
+	}
 
 	# allow a few types of plot images
 	type <- match.arg( type)
@@ -279,6 +313,42 @@ readALN <- function( file, verbose=TRUE) {
 }
 
 
+`renumberALN` <- function( aln, number.from, ref.row=1) {
+
+	# we may be given the top level ALN object or just the aligment matrix
+	out <- aln
+	isObject <- FALSE
+	if ( "alignment" %in% names(aln)) {
+		aln <- aln$alignment
+		isObject <- TRUE
+	}
+
+	# OK, we have one matrix of characters from a MSA
+	# see where the gaps are
+	referenceRowChars <- aln[ ref.row, ]
+	refGaps <- which( referenceRowChars == "-")
+
+	# we need to count and deal with gaps in the reference row as we hand out new numbers
+	NC <- ncol(aln)
+	prevGaps <- 0
+	newColNames <- rep.int( "", NC)
+	for ( k in 1:NC) {
+		nGapNow <- sum( refGaps <= (k))
+		isGapNow <- (k %in% refGaps)
+		if (isGapNow) {
+			newColNames[k] <- paste( "G", as.character(prevGaps+1),sep="")
+		} else {
+			newColNames[k] <- as.character( number.from + k - 1 - nGapNow)
+		}
+		prevGaps <- nGapNow
+	}
+	
+	colnames(aln) <- newColNames
+	if (isObject) out$alignment <- aln
+	return(out)
+}
+
+
 `summarizeALN` <- function( aln, range=NULL) {
 
 	# we may be given the top level ALN object or just the aligment matrix
@@ -314,7 +384,13 @@ readALN <- function( file, verbose=TRUE) {
 		diversePcts[x] <<- paste( chSet, ":", chPcts, "%", sep="", collapse="; ")
 		return(NULL)
 	})
-	out <- list( "Consensus.Call"=consensCh, "Pct.Conserved"=consensPct, "Diversity.Calls"=diversePcts)
+
+	# put the column names on these
+	names(consensCh) <- colnames(aln)
+	names(consensPct) <- colnames(aln)
+	names(diversePcts) <- colnames(aln)
+	out <- data.frame( "Location"=colnames(aln), "Consensus.Call"=consensCh, "Pct.Conserved"=consensPct, 
+			"Diversity.Calls"=diversePcts, stringsAsFactors=F)
 	return( out)
 }
 
