@@ -397,7 +397,7 @@
 				nextra <- nextra + 1
 			}
 		}
-		xLimits <- c( 0.2, max(barAts) + 1.15 + ( 0.5 * (NS-1)))
+		xLimits <- c( 0, max(barAts) + 1.15 + ( 0.5 * (NS-1)))
 		ans <- barplot( pcts, col=col, main=paste( "Transcript Proportions:   ", label), 
 			ylab="Proportion per Component", las=LAS, 
 			xlim=xLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
@@ -544,9 +544,10 @@
 			toShow <- which( myStats$Signif != "")
 			if ( length(toShow)) {
 				where <- match( myStats$Component[toShow], rownames(myBandCenters))
-				myX <- myBarCenters[2] + 0.6
-				myY <- myBandCenters[ where, 2]
 				textToShow <- myStats$Signif[toShow]
+				upDownCall <- myStats$Log2Fold[toShow]
+				myX <- ifelse( upDownCall > 0, myBarCenters[2] + 0.6, myBarCenters[1] - 0.6)
+				myY <- ifelse( upDownCall > 0, myBandCenters[ where, 2], myBandCenters[ where, 1])
 				text( myX, myY, textToShow, cex=1.95)
 			}
 		}
