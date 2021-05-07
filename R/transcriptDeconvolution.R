@@ -350,7 +350,7 @@
 		axis( 1, at=1:NS, colnames(pcts), las=LAS, font=2, cex=1.05)
 		for ( i in 1:NS) {
 			v <- pcts[ ,i]
-			toShow <- which( v > 0.25)
+			toShow <- which( v > 0.05)
 			ord <- order( v[toShow])
 			points( rep.int(i,length(toShow)), v[toShow[ord]], bg=col[toShow[ord]], pch=pch, cex=pt.cex)
 		}
@@ -369,9 +369,11 @@
 			}
 			NSpts <- ncol(pcts)
 		}
-
-		for( j in 1:ND) {
-			if ( max( pcts[ j, ], na.rm=T) < 2) next
+		# try to draw the line in order of pct
+		pctMeans <- apply( pcts, 1, mean, na.rm=T)
+		lineOrd <- order( pctMeans)
+		for( j in lineOrd) {
+			if ( max( pcts[ j, ], na.rm=T) < 1.0) next
 			lines( linePts, pcts[ j, ], col=col[j], lwd=lwd)
 			text( 0.9, pcts[j,1], rownames(pcts)[j], pos=2, cex=label.cex)
 			text( NS+0.1, pcts[j,NS+nextra], rownames(pcts)[j], pos=4, cex=label.cex)
@@ -443,7 +445,7 @@
 		}
 		dev.flush()
 
-		# package up a bit to send back
+		# package up a bit of context to send back
 		barAts <- ans
 		names(barAts) <- colnames(pcts)
 		return( list( "bar.centers"=barAts, "band.centers"=bandCtr))
@@ -452,6 +454,7 @@
 
 
 `compareTranscriptProportions` <- function( pcts, groups, levels=sort(unique(as.character(groups))), 
+					col=rainbow(nrow(pcts),end=0.8),
 					minPerGroup=3, test=t.test, plot=TRUE, plot.path=".", 
 					plot.mode=c("bars","auto","pie","lines"), label="", 
 					wt.fold=1, wt.pvalue=2, min.percent=0.1, ...) {
@@ -534,10 +537,11 @@
 		pctsGrp <- t( apply( pcts, 1, function(x) tapply( x, grpFac, mean)))
 		# show the group counts, if not too many
 		if (NG <=12) colnames(pctsGrp) <- paste( colnames(pctsGrp), "\n(N=", as.numeric(table(as.numeric(grpPtrs))), ")", sep="")
-		plotAns <- plotTranscriptProportions( pctsGrp, label=label, mode=plot.mode, ...)
+		plotAns <- plotTranscriptProportions( pctsGrp, label=label, col=col, mode=plot.mode, ...)
 
-		# perhaps try to show the significance? Only when we drew 2 bars of info
-		if ( NG == 2) {
+		# perhaps try to show the significance? 
+		# various code for some of the modes
+		if ( plot.mode == "bars" && NG == 2) {
 			myStats <- bigOut[[1]]
 			myBarCenters <- plotAns$bar.centers
 			myBandCenters <- plotAns$band.centers
@@ -549,6 +553,24 @@
 				myX <- ifelse( upDownCall > 0, myBarCenters[2] + 0.6, myBarCenters[1] - 0.6)
 				myY <- ifelse( upDownCall > 0, myBandCenters[ where, 2], myBandCenters[ where, 1])
 				text( myX, myY, textToShow, cex=1.95)
+			}
+		}
+		if ( plot.mode == "lines") {
+			# we can show the stats between adjacent groups, step along the list of stats
+			iList <- 0
+			for ( i1 in 1:(NG-1)) for (i2 in (i1+1):NG) {
+				iList <- iList + 1
+				if ( i2 - i1 != 1) next  # not an adjacent pair
+				myStats <- bigOut[[iList]]
+				toShow <- which( myStats$Signif != "")
+				if ( length(toShow)) {
+					where <- match( myStats$Component[toShow], rownames(pctsGrp))
+					textToShow <- myStats$Signif[toShow]
+					upDownCall <- myStats$Log2Fold[toShow]
+					myX <-rep.int( i2 - 0.15, length(toShow))
+					myY <-ifelse( upDownCall > 0, pctsGrp[where,i2]+0.5, pctsGrp[where,i2]-0.5)
+					text( myX, myY, textToShow, col=col[where], cex=1.95)
+				}
 			}
 		}
 	}

@@ -628,9 +628,9 @@ geneSetFitDataFrame <- function( tbl, geneSets=defaultGeneSets(), speciesID=getC
 	# OK, ready to do a linear model of gene sets to best describe the fold change we see
 	cat( "\nCalling 'stepAIC()' to find the best linear model..")
 	require( MASS)
-	SAVEformula <<- formula <- reformulate( termlabels=colnames(geneCalls), response="obsFolds", intercept=FALSE)
-	SAVEans1 <<- lmAns1 <- lm( formula, data=as.data.frame(geneCalls))
-	SAVEans2 <<- lmAns2 <- stepAIC( lmAns1, trace=0)
+	formula <- reformulate( termlabels=colnames(geneCalls), response="obsFolds", intercept=FALSE)
+	lmAns1 <- lm( formula, data=as.data.frame(geneCalls))
+	lmAns2 <- stepAIC( lmAns1, trace=0)
 	cat( "  Done.")
 
 	# extract the coefficients

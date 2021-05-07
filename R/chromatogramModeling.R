@@ -646,7 +646,6 @@
 	if ( class( nlsAns) != "try-error") {
 		nlsAns2 <- try( summary( nlsAns))
 	}
-	SAV_NLS <<- nlsAns
 
 	# extract the results if successful
 	if ( class(nlsAns) == "try-error" || class(nlsAns2) == "try-error") {

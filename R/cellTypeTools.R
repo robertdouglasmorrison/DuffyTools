@@ -1462,7 +1462,7 @@
 		lowerBound <- rep.int( -0.0000001, N_STAGES)   # allow a small tolerance, so true zero is a valid answer
 		upperBound <- rep.int(  1.0000001, N_STAGES)
 		nIter <<- 0
-		SAV_ANS_MID <<- fitAns <- try( do.FitCellTypeModel.GenSA( obsProfile, start=starts,
+		fitAns <- try( do.FitCellTypeModel.GenSA( obsProfile, start=starts,
 				lower=lowerBound, upper=upperBound))
 		if ( class( fitAns) == "try-error") {
 			cat( "\nFitting of Cell Type Proportions failed...")
@@ -1541,7 +1541,7 @@
 		lower[ lower == 0] <- -0.01
 		wts[ wts <= lower] <- 0.001
 
-		SAV_ANS_LOW <<- ans <- GenSA( par=wts, lower=lower, upper=upper, fn=genSA.profile.residual, 
+		ans <- GenSA( par=wts, lower=lower, upper=upper, fn=genSA.profile.residual, 
 			control=control.list, obsProfile=obsProfile)
 
 		# extract the answers
@@ -1579,7 +1579,7 @@
 		ans <- nlsFitCellTypeModel()
 	} else {
 		require( GenSA)
-		SAV_ANS_HIGH <<- ans <- GenSA.FitCellTypeModel()
+		ans <- GenSA.FitCellTypeModel()
 	}
 	model.pcts <- ans$model.pcts
 	rmsd <- ans$rmsd
