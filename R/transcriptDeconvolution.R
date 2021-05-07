@@ -557,6 +557,7 @@
 		}
 		if ( plot.mode == "lines") {
 			# we can show the stats between adjacent groups, step along the list of stats
+			smallY <- diff( range( as.vector( pctsGrp), na.rm=T)) * 0.01
 			iList <- 0
 			for ( i1 in 1:(NG-1)) for (i2 in (i1+1):NG) {
 				iList <- iList + 1
@@ -568,7 +569,7 @@
 					textToShow <- myStats$Signif[toShow]
 					upDownCall <- myStats$Log2Fold[toShow]
 					myX <-rep.int( i2 - 0.15, length(toShow))
-					myY <-ifelse( upDownCall > 0, pctsGrp[where,i2]+0.5, pctsGrp[where,i2]-0.5)
+					myY <-ifelse( upDownCall > 0, pctsGrp[where,i2]+smallY, pctsGrp[where,i2]-smallY)
 					text( myX, myY, textToShow, col=col[where], cex=1.95)
 				}
 			}
