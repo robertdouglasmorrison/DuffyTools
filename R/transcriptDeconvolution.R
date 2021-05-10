@@ -568,8 +568,9 @@
 		}
 		if ( plot.mode == "lines") {
 			# we can show the stats between adjacent groups, step along the list of stats
-			smallY <- diff( range( as.vector( pctsGrp), na.rm=T)) * 0.01
 			smallX <- if ( NG > 2) 0.15 else -0.075
+			smallY <- diff( range( as.vector( pctsGrp), na.rm=T)) * 0.01
+			if ( useLog) smallY <- 0
 			iList <- 0
 			for ( i1 in 1:(NG-1)) for (i2 in (i1+1):NG) {
 				iList <- iList + 1
