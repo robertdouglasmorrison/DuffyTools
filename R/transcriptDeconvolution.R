@@ -342,10 +342,11 @@
 	if ( doLines) {
 		# more than 2, so try colored points
 		par( mfcol=c(1,1))
-		ylim <- range( pcts)
+		xLimits <- c( 0, NS + 1.15 + ( 0.3 * (NS-1)))
+		yLimits <- range( pcts)
 		plot( 1, 1, type="n", main=paste( "Transcript Proportions:   ", label), 
 			ylab="Proportion per Component", 
-			xlim=c(0.2,(NS+nextra)*X_LIM_SCALE+0.5), ylim=ylim, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
+			xlim=xLimits, ylim=yLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
 			xaxt="n", xlab=NA, ...)
 		axis( 1, at=1:NS, colnames(pcts), las=LAS, font=2, cex=1.05)
 		for ( i in 1:NS) {
@@ -399,7 +400,7 @@
 				nextra <- nextra + 1
 			}
 		}
-		xLimits <- c( 0, max(barAts) + 1.15 + ( 0.5 * (NS-1)))
+		xLimits <- c( 0, max(barAts) + 1.15 + ( 0.3 * (NS-1)))
 		ans <- barplot( pcts, col=col, main=paste( "Transcript Proportions:   ", label), 
 			ylab="Proportion per Component", las=LAS, 
 			xlim=xLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
