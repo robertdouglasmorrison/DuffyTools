@@ -1199,6 +1199,10 @@
 	# allow being passed in a gene universe of a subset of genes to use in the fit
 	if ( ! is.null( geneUniverse)) {
 		keep <- which( genes %in% as.character( geneUniverse))
+		if ( length( keep) < length(geneUniverse)/2) cat( "\nWarnings:  Trimming to given Gene Universe removed too many genes..")
+		if ( length( keep) < N_STAGES*2) {
+			stop( "\nError:  Too few genes to run cell type fit modelling.")
+		}
 		genes <- genes[ keep]
 		inten <- inten[ keep]
 	}
