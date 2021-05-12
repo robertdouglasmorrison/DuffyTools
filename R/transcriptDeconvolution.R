@@ -344,15 +344,15 @@
 		par( mfcol=c(1,1))
 		xLimits <- c( 0, NS + 1.15 + ( 0.3 * (NS-1)))
 		yLimits <- range( pcts)
+		yLabel <- "Proportion per Component" 
+		Log=""
 		if (useLog) {
 			Log <- 'y'
 			yLimits[1] <- min.value.show
 			pcts[ pcts < min.value.show] <- NA
-		} else {
-			Log=""
+			yLabel <- "Proportion per Component  (log scale)" 
 		}
-		plot( 1, 1, type="n", main=paste( "Transcript Proportions:   ", label), 
-			ylab="Proportion per Component", 
+		plot( 1, 1, type="n", main=paste( "Transcriptome Proportions:   ", label), ylab=yLabel,
 			xlim=xLimits, ylim=yLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
 			xaxt="n", xlab=NA, log=Log, ...)
 		axis( 1, at=1:NS, colnames(pcts), las=LAS, font=2, cex=1.05)
@@ -381,7 +381,7 @@
 		pctMeans <- apply( pcts, 1, mean, na.rm=T)
 		lineOrd <- order( pctMeans)
 		for( j in lineOrd) {
-			if ( max( pcts[ j, ], na.rm=T) < min.value.show) next
+			if ( all(is.na(pcts[j,])) || max(pcts[j,],na.rm=T) < min.value.show) next
 			lines( linePts, pcts[ j, ], col=col[j], lwd=lwd)
 			text( 0.9, pcts[j,1], rownames(pcts)[j], pos=2, cex=label.cex)
 			text( NS+0.1, pcts[j,NS+nextra], rownames(pcts)[j], pos=4, cex=label.cex)
@@ -408,7 +408,7 @@
 			}
 		}
 		xLimits <- c( 0, max(barAts) + 1.15 + ( 0.3 * (NS-1)))
-		ans <- barplot( pcts, col=col, main=paste( "Transcript Proportions:   ", label), 
+		ans <- barplot( pcts, col=col, main=paste( "Transcriptome Proportions:   ", label), 
 			ylab="Proportion per Component", las=LAS, 
 			xlim=xLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
 			legend=TRUE, args.legend=list( "cex"=legend.cex, "bg"='white'), ...)
