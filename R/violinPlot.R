@@ -37,7 +37,7 @@
 		  		 n.density=128, cut.density=0, bw.density="nrd0",
 		  		 xlim=NULL, ylim=NULL, log="", main=NULL, sub=NULL, 
 		  		 xlab=NULL, ylab=NULL, ann=par("ann"), axes=TRUE, frame.plot=axes, 
-				 pch=NULL, ...) {
+				 pch=NULL, lwd=1, lty=1, ...) {
 	 
 	 # deduce which args get passed where	 		 
 	args <- list(x, ...)
@@ -108,18 +108,20 @@
 	if ( is.null(col)) col <- par('bg')
 	col <- rep( col, length.out=nGroups)
 	if ( ! is.null(pch)) pch <- rep( pch, length.out=nGroups)
+	lty <- rep( lty, length.out=nGroups)
 
 	# store the location data to return
 	vioPts <- matrix( NA, nrow=5, ncol=nGroups)
 	for (i in 1:nGroups) {
 		if ( all( is.na( xvals[,i]))) next
 		ans1 <- vlnplt( xvals[,i], yvals[,i], center[i], border=border[i], col=col[i],
-				 orientation=orientation, ...)
+				 orientation=orientation, lwd=lwd, lty=lty[i], ...)
 		vioPts[1,i] <- ans1[1]
 		vioPts[5,i] <- ans1[2]
 		if (boxwid > 0 || !is.null(pch)) {
 			ans2 <- vlnbxp( groups[[i]], center[i], border=border[i], width=boxwid,
-				 	orientation=orientation, pch=if (is.null(pch)) NULL else pch[i], ...)
+				 	orientation=orientation, pch=if (is.null(pch)) NULL else pch[i], 
+					lwd=lwd, lty=lty[i], ...)
 			vioPts[2:4,i] <- ans2
 		}
 	}
@@ -170,7 +172,7 @@
 
 ## Make a simple boxplot on the violin
 `vlnbxp` <- function( x, center, orientation=c("vertical","horizontal"),
- 			border='black', width=0.2, lwd=1, pch=NULL, ...) {
+ 			border='black', width=0.2, lwd=1, lty=1, pch=NULL, ...) {
 
 	orientation <- match.arg( orientation)
 	hw <- width / 2
@@ -178,15 +180,15 @@
 	z <- boxplot.stats(x)$stats
 	if ( hw > 0) {
 		if (orientation == "vertical") {
-			rect( center-hw, z[2], center+hw, z[4], border=border, lwd=lwd, ...)
+			rect( center-hw, z[2], center+hw, z[4], border=border, lwd=lwd, lty=lty, ...)
 			lines( c( center, center, NA, center, center), c( z[1], z[2], NA, z[4], z[5]), 
-					col=border, lwd=lwd, ...)
-			lines( c(center-hw, center+hw), c( z[3], z[3]), lwd=lwd*2, col=border, ...)
+					col=border, lwd=lwd, lty=lty, ...)
+			lines( c(center-hw, center+hw), c( z[3], z[3]), lwd=lwd*2, lty=lty, col=border, ...)
 		} else {
-			rect( z[2], center-hw, z[4], center+hw, border=border, ...)
+			rect( z[2], center-hw, z[4], center+hw, border=border, lwd=lwd, lty=lty, ...)
 			lines( c( z[1], z[2], NA, z[4], z[5]), c( center, center, NA, center, center), 
-					col=border, lwd=lwd, ...)
-			lines( c( z[3], z[3]), c(center-hw, center+hw), lwd=lwd*2, col=border, ...)
+					col=border, lwd=lwd, lty=lty, ...)
+			lines( c( z[3], z[3]), c(center-hw, center+hw), lwd=lwd*2, lty=lty, col=border, ...)
 		}
 	}
 	if ( ! is.null( pch)) {
