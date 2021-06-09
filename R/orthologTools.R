@@ -1,4 +1,4 @@
-# orthologTools.R
+# orthologTools.R -- tools for handling orthologging between species
 
 
 `ortholog` <- function( genes, from="Pf3D7", to="Py17X") {
