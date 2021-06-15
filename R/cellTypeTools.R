@@ -1839,9 +1839,11 @@
 		
 		# given all the genes for one cell type
 		ct <- celltype[k[1]]
-		if ( ct == "") return()
+		cat( "\nDebug1: ", ct)
+		if ( is.null(ct) || is.na(ct) || ct == "") return()
 		ct <- shortCellNames[ ct == longCellNames]
-		if ( is.na(ct) || ct == "") return()
+		cat( "\nDebug2: ", ct)
+		if ( is.null(ct) || is.na(ct) || ct == "") return()
 		ctColor <- allCellTransparentColors[ match( ct, allCellNames)]
 
 		# see how many and where each group falls
