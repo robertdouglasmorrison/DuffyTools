@@ -1934,8 +1934,13 @@
 	if ( length( toShow)) {
 		P.text <- as.PvalueText( out$Enrichment.Pvalue[toShow], digits=3) 
 		ctLabels <- paste( out$CellType[toShow], "\n(N=", out$N_Genes[toShow], ", P=", P.text, ")", sep="")
-		thigmophobe.labels( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
+		if ( length(toShow) > 2) {
+			thigmophobe.labels( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
 					offset=(out$Radius[toShow]*label.offset.cex))
+		} else {
+			text( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
+					offset=(out$Radius[toShow]*label.offset.cex), pos=c(2,4))
+		}
 	}
 
 	# optional labels to remind which group is which
