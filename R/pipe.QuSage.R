@@ -201,7 +201,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 
 	if (doQuSage) {
 
-		ans <- qusage( eset=eset, labels=labels, contrast=contrast, geneSets=geneSets, n.points=n.points, ...)
+		ans <- qusage( eset=eset, labels=labels, contrast=contrast, geneSets=geneSets, n.points=n.points)
 
 		# modify and clean up the results
 		pval <- pdf.pVal(ans)
