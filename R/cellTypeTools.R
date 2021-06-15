@@ -1841,6 +1841,7 @@
 		ct <- celltype[k[1]]
 		if ( ct == "") return()
 		ct <- shortCellNames[ ct == longCellNames]
+		if ( is.na(ct) || ct == "") return()
 		ctColor <- allCellTransparentColors[ match( ct, allCellNames)]
 
 		# see how many and where each group falls
