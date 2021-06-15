@@ -64,6 +64,7 @@
 			startN <- round( (stopN*0.25) / 10) * 10
 		}
 		stepN <- startN
+		cat( "\nDebug step sizes: ", startN, stopN, stepN)
 		steps <- seq( startN, stopN, by=stepN)
 
 		# do those enrichment calls
