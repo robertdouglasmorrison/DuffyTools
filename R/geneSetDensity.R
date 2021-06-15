@@ -19,8 +19,6 @@
 	geneMap <- subset.data.frame( geneMap, REAL_G == TRUE)
 	rownames(geneMap) <- 1:nrow(geneMap)
 
-	if ( is.null(cutRankShift)) cutRankShift <- sum( geneMap$REAL_G) * 0.05
-
 	subsetNames <- names( geneSets)
 
 	# try to catch and drop any missing results
@@ -35,6 +33,13 @@
 	cat( "\n\nGene Sets for:   ", descriptor, "\n\nAnalyzing ", length(subsetNames), 
 		" gene sets for significance among ", Ngrps, " groups:  ", groupIDs, "\n")
 
+	# set a sensible minimum shift
+	if ( is.null(cutRankShift)) {
+		# use 5% of the number of genes
+		nGenomeGenes <- nrow( geneMap)
+		nDElistGenes <- nrow( deList[[1]])
+		cutRankShift <- min(nGenomeGenes,nDElistGenes) * 0.05
+	}
 
 	# see how many genes per set,... compare needs at least 2
 	# use actual number of genes in the geneMap, not just the length of the given list
