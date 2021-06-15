@@ -27,6 +27,7 @@
 
 	setCurrentSpecies( speciesID)
 	prefix <- getCurrentSpeciesFilePrefix()
+	nGenomeGenes <- nrow( subset.data.frame( getCurrentGeneMap(), REAL_G == TRUE))
 
 	# make the paths to where we read gene lists and write results
 	optT <- readOptionsTable( optionsFile)
@@ -53,9 +54,15 @@
 		geneList <- tbl[[ geneColumn]]
 		Ngenes <- length( geneList)
 
-		# do about 4 iterations, covering the first 10% of the genome.
-		stopN <- round( (Ngenes*0.1) / 100) * 100
-		startN <- round( (stopN*0.25) / 50) * 50
+		# when given a full genome, do about 4 iterations, covering the first 10% of the genome.
+		if ( Ngenes >= nGenomeGenes/2) {
+			stopN <- round( (Ngenes*0.1) / 100) * 100
+			startN <- round( (stopN*0.25) / 50) * 50
+		} else {
+			# given a smaller set of genes, use up to the first third
+			stopN <- round( (Ngenes*0.333) / 10) * 10
+			startN <- round( (stopN*0.25) / 10) * 10
+		}
 		stepN <- startN
 		steps <- seq( startN, stopN, by=stepN)
 
