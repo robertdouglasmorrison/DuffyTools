@@ -1839,10 +1839,8 @@
 		
 		# given all the genes for one cell type
 		ct <- celltype[k[1]]
-		cat( "\nDebug1: ", ct)
 		if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
 		ct <- shortCellNames[ ct == longCellNames]
-		cat( "\nDebug2: ", ct)
 		if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
 		ctColor <- allCellTransparentColors[ match( ct, allCellNames)]
 
