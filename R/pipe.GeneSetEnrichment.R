@@ -64,7 +64,6 @@
 			startN <- round( (stopN*0.25) / 10) * 10
 		}
 		stepN <- startN
-		cat( "\nDebug step sizes: ", startN, stopN, stepN)
 		steps <- seq( startN, stopN, by=stepN)
 
 		# do those enrichment calls
@@ -75,8 +74,10 @@
 
 		# turn it to a HTML result
 		outfile <- file.path( outPath, paste( thisGroup, "UP", "Enrichment.html", sep="."))
-		title <- paste( "Pathway Enrichment: &nbsp; Meta Results: &nbsp; UP in '", thisGroup, "'", 
-				" &nbsp;  Species: ", speciesID, sep="")
+		otherGrps <- setdiff( allGroups, thisGroup)
+		if ( length(otherGrps) > 1) otherGrps <- paste( "{", paste(otherGrps,collapse=" + "), "}", sep="")
+		title <- paste( "Enrichment: &nbsp; Gene Sets most UP in &nbsp; ", thisGroup, " &nbsp; vs &nbsp; ", 
+				otherGrps, " <br> Comparison Folder: &nbsp; ", folderName, " <br> Species: ", speciesID, sep="")
 		metaEnrichment2html( ans, file=outfile, title=title)
 		cat( "\nWrote file: ", outfile)
 
