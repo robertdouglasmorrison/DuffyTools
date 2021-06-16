@@ -3,7 +3,7 @@
 `pipe.RadarPlots` <- function( sampleIDset, speciesID=getCurrentSpecies(), annotationFile="Annotation.txt",
 				optionsFile="Options.txt", results.path=NULL, folderName=NULL,
 				tool=c( "MetaResults", "DESeq", "EdgeR", "RankProduct", "RoundRobin", "SAM"),
-				groupColumn="Group", colorColumn="Color", 
+				groupColumn="Group", colorColumn="Color", average.FUN=median,
 				geneSets=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				legend.prefix=NULL, legend.order=NULL, legend.cex=1, Nshow=24, 
 				start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
@@ -47,7 +47,7 @@
 		files <- file.path( results.path, "transcript", files)
 		radarM <<- expressionFileSetToMatrix( files, allSamples, intensityColumn=intensityColumn, verbose=T)
 		cat( "\nConverting Expression Abundance to M-values..")
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=median)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN)
 		cat( "  Done.\n")
 	}
 
@@ -128,7 +128,7 @@
 
 `pipe.OneRadarPlot` <- function( sampleIDset, speciesID=getCurrentSpecies(), annotationFile="Annotation.txt",
 				optionsFile="Options.txt", results.path=NULL,  
-				groupColumn="Group", colorColumn="Color", 
+				groupColumn="Group", colorColumn="Color", average.FUN=median,
 				legend.prefix=NULL, legend.order=NULL, legend.cex=1.0,
 				geneSet=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				reload=FALSE, Nshow=24, 
@@ -185,7 +185,7 @@
 		files <- paste( allSamples, prefix, "Transcript.txt", sep=".")
 		files <- file.path( results.path, "transcript", files)
 		radarM <<- expressionFileSetToMatrix( files, allSamples, verbose=T)
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=median)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN)
 	}
 
 	# try to standarize the names of the gene sets to keep them easy to view
@@ -207,7 +207,7 @@
 
 	# do the reduction & grouping
 	radarAns <- reduceMatrixToModules( radarMA, geneModules=allGeneSets, sampleTraits=allGroups,
-				gene.names=shortGeneName( rownames( radarMA), keep=1), 
+				gene.names=shortGeneName( rownames( radarMA), keep=1), average.FUN=average.FUN,
 				sample.names=colnames(radarMA), baselineTrait=baselineGroup)
 	mShow <- radarMOD <- radarAns$matrix
 	pShow <- radarPvalue <- radarAns$p.value
@@ -319,6 +319,7 @@
 
 `radarPlot` <- function( m, row.names=rownames(m), colGroups=colnames(m), colors=1:ncol(m),
 				legend.prefix=NULL, legend.order=NULL, foldChangeTransform=TRUE,
+				average.FUN=median,
 				geneSet=defaultGeneSets(), restrictionSets=NULL, baselineGroup=NULL,
 				Nshow=24, start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
 				radial.lim=NULL, min.radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, main=NULL, 
@@ -348,7 +349,7 @@
 
 	if ( foldChangeTransform) {
 		radarM <<- m
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=median)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN)
 	} else {
 		radarMA <<- m
 	}
@@ -375,7 +376,8 @@
 	# do the reduction & grouping
 	if ( ! is.null( geneSet)) {
 		radarAns <- reduceMatrixToModules( radarMA, geneModules=allGeneSets, sampleTraits=allGroups,
-						gene.names=shortGeneName(row.names,keep=1), baselineTrait=baselineGroup)
+						gene.names=shortGeneName(row.names,keep=1), baselineTrait=baselineGroup,
+						average.FUN=average.FUN)
 		mShow <- radarMOD <- radarAns$matrix
 		pShow <- radarPvalue <- radarAns$p.value
 		validModuleNames <- radarAns$moduleNames

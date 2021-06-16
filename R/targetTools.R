@@ -214,8 +214,14 @@
 	addTarget( "AgPf", "Pf3D7,Agam", "Pf,Ag")
 	addTarget( "AgPv", "PvSal1,Agam", "Pv,Ag")
 	addTarget( "AgPy", "Py17X,Agam", "Py17X,Ag")
+	addTarget( "Asteph", "Asteph", "Asteph")
+	addTarget( "AstephPf", "Pf3D7,Asteph", "Pf,Asteph")
 
 	addTarget( "Ecoli", "Ecoli", "Eco")
+
+	addTarget( "Dmel", "Dmel", "Dmel")
+	# for Sanaria SPX, a blend of PF + A.steph + Drosophila
+	addTarget( "AstephDmelPf", "Pf3D7,Dmel,Asteph", "Pf,Dmel,Asteph")
 
 	addTarget( "MT_H37", "MT_H37", "MTb")
 	addTarget( "MT_HN878", "MT_HN878", "MTbHN878")
