@@ -34,7 +34,7 @@
 
 	# some organisms have the biggest chromosomes first, others last
 	# re-order to put the biggest first, so long running chromosomes start sooner
-	if ( getCurrentSpecies() %in% MAMMAL_SPECIES) {
+	if ( getCurrentSpecies() %in% c( MAMMAL_SPECIES, INSECT_SPECIES)) {
 		return( seqIDs)
 	} else {
 		return( rev( seqIDs))

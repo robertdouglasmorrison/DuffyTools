@@ -45,7 +45,11 @@ validateGeneMap <- function( mydf, seqMap, checkOverlaps=FALSE) {
 		print( head( mydf[ whoBad, ]))
 		anyBad <- TRUE
 	}
-	if ( ! all( unique.default( mydf$SEQ_ID) %in% seqMap$SEQ_ID)) stop( "some geneMap SEQ_ID entries not in seqMap")
+	if ( ! all( unique.default( mydf$SEQ_ID) %in% seqMap$SEQ_ID)) {
+		bad <- setdiff( mydf$SEQ_ID, seqMap$SEQ_ID)
+		cat( "\nError: Unexpected gene SEQ_ID terms: ", bad)
+		stop( "some geneMap SEQ_ID entries not in seqMap")
+	}
 	if ( ! all( unique.default( mydf$STRAND) %in% c("+","-","",NA))) stop( "some geneMap STRAND entries not valid")
 	if ( any( is.na( as.integer( mydf$POSITION)))) stop( "geneMap has non-integer POSITION entries")
 	if ( any( is.na( as.integer( mydf$END)))) stop( "geneMap has non-integer END entries")
