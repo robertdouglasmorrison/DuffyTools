@@ -576,8 +576,12 @@
 	comps <- bigOut[[1]]$Component
 	nComps <- length(comps)
 	bestPvals <- rep.int( 1, nComps)
-	for ( i in 1:length(bigOut)) {
-		smlDF <- bigOut[[i]]
+	for ( i1 in 1:(NG-1)) for (i2 in (i1+1):NG) {
+		iList <- iList + 1
+		if ( i2 - i1 != 1) next  # not an adjacent pair
+		# don't use stats where the caller put gaps in the plot
+		if ( ! is.null(gaps) && (i1 %in% gaps)) next
+		smlDF <- bigOut[[iList]]
 		wh <- match( comps, smlDF$Component)
 		thisP <- smlDF$P.value[wh]
 		bestPvals <- pmin( bestPvals, thisP, na.rm=T)
