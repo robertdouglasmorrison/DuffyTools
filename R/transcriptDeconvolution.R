@@ -356,17 +356,17 @@
 			mySignif <- rep.int( 0.001, ND)
 			mySignif[ whSig > 0] <- significance.values[whSig]
 			# best significance keep the given weight/color scheme, worse get less
+			whNow <- which( mySignif > 0.01)
+			myCEX[whNow] <- myCEX[whNow] * 0.8
+			myLWD[whNow] <- myLWD[whNow]  * 0.7
+			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.9
+			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.18)
 			whNow <- which( mySignif > 0.05)
 			myCEX[whNow] <- myCEX[whNow] * 0.8
 			myLWD[whNow] <- myLWD[whNow]  * 0.7
 			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.9
 			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.18)
 			whNow <- which( mySignif > 0.1)
-			myCEX[whNow] <- myCEX[whNow] * 0.8
-			myLWD[whNow] <- myLWD[whNow]  * 0.7
-			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.9
-			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.18)
-			whNow <- which( mySignif > 0.25)
 			myCEX[whNow] <- myCEX[whNow] * 0.7
 			myLWD[whNow] <- myLWD[whNow]  * 0.6
 			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.9
