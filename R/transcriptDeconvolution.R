@@ -295,7 +295,7 @@
 					col=rainbow( nrow(pcts), end=0.82), label="", useLog=FALSE, min.value.show=0.2,
 					pch=22, pt.cex=2.5, lwd=4, legend.cex=0.9, label.cex=0.9, 
 					text.rotation=if( ncol(pcts) < 9) 0 else 90, 
-					gaps=NULL, ...) {
+					gaps=NULL, significance.values=NULL, ...) {
 
 	# evaluate all files, and then decide how to visualize
 	NS <- ncol(pcts)
@@ -346,6 +346,33 @@
 		yLimits <- range( pcts)
 		yLabel <- "Proportion per Component" 
 		Log=""
+		# perhaps we were given some P values, to weight how we draw things
+		myCEX <- rep.int( pt.cex, ND)
+		myLWD <- rep.int( lwd, ND)
+		myTXTCEX <- rep.int( label.cex, ND)
+		myTXTCOL <- rep.int( 'black', ND)
+		if ( ! is.null( significance.values)) {
+			whSig <- match( rownames(pcts), names(significance.values), nomatch=0)
+			mySignif <- rep.int( 0.001, ND)
+			mySignif[ whSig > 0] <- significance.values[whSig]
+			# best significance keep the given weight/color scheme, worse get less
+			whNow <- which( mySignif > 0.05)
+			myCEX[whNow] <- myCEX[whNow] * 0.8
+			myLWD[whNow] <- myLWD[whNow]  * 0.7
+			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.9
+			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.18)
+			whNow <- which( mySignif > 0.1)
+			myCEX[whNow] <- myCEX[whNow] * 0.8
+			myLWD[whNow] <- myLWD[whNow]  * 0.7
+			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.9
+			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.18)
+			whNow <- which( mySignif > 0.25)
+			myCEX[whNow] <- myCEX[whNow] * 0.7
+			myLWD[whNow] <- myLWD[whNow]  * 0.6
+			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.9
+			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.18)
+		}
+
 		if (useLog) {
 			Log <- 'y'
 			yLimits[1] <- min.value.show
@@ -360,7 +387,7 @@
 			v <- pcts[ ,i]
 			toShow <- which( v > min.value.show)
 			ord <- order( v[toShow])
-			points( rep.int(i,length(toShow)), v[toShow[ord]], bg=col[toShow[ord]], pch=pch, cex=pt.cex)
+			points( rep.int(i,length(toShow)), v[toShow[ord]], bg=col[toShow[ord]], pch=pch, cex=myCEX[toShow[ord]])
 		}
 		# if gaps are wanted, that inserts breaks (NAs) in the lines
 		nextra <- 0
@@ -382,11 +409,11 @@
 		lineOrd <- order( pctMeans)
 		for( j in lineOrd) {
 			if ( all(is.na(pcts[j,])) || max(pcts[j,],na.rm=T) < min.value.show) next
-			lines( linePts, pcts[ j, ], col=col[j], lwd=lwd)
-			text( 0.9, pcts[j,1], rownames(pcts)[j], pos=2, cex=label.cex)
-			text( NS+0.1, pcts[j,NS+nextra], rownames(pcts)[j], pos=4, cex=label.cex)
+			lines( linePts, pcts[ j, ], col=col[j], lwd=myLWD[j])
+			text( 0.9, pcts[j,1], rownames(pcts)[j], pos=2, cex=myTXTCEX[j], col=myTXTCOL[j])
+			text( NS+0.1, pcts[j,NS+nextra], rownames(pcts)[j], pos=4, cex=myTXTCEX[j], col=myTXTCOL[j])
 		}
-		# the barplot is bottom up w.r.t. labels, to that here to
+		# the barplot is bottom up w.r.t. labels, do that here too
 		legend( "topright", rev(rownames(pcts)), fill=rev(col), bg='white', cex=legend.cex)
 		dev.flush()
 		return()
@@ -465,7 +492,8 @@
 					col=rainbow(nrow(pcts),end=0.8),
 					minPerGroup=3, test=t.test, plot=TRUE, plot.path=".", 
 					plot.mode=c("bars","auto","pie","lines"), label="", useLog=FALSE,
-					wt.fold=1, wt.pvalue=2, min.percent=0.1, gaps=NULL, ...) {
+					wt.fold=1, wt.pvalue=2, min.percent=0.1, gaps=NULL, 
+					stats.color=NULL, ...) {
 
 	NC <- ncol(pcts)
 	NR <- nrow(pcts)
@@ -543,12 +571,26 @@
 	}
 
 	# we have the compares done, draw it too
+
+	# try to pass info about how significant each was down to the plot tool, to weight/color accordingly
+	comps <- bigOut[[1]]$Component
+	nComps <- length(comps)
+	bestPvals <- rep.int( 1, nComps)
+	for ( i in 1:length(bigOut)) {
+		smlDF <- bigOut[[i]]
+		wh <- match( comps, smlDF$Component)
+		thisP <- smlDF$P.value[wh]
+		bestPvals <- pmin( bestPvals, thisP, na.rm=T)
+	}
+	names(bestPvals) <- comps
+
 	if (plot) {
 		plot.mode <- match.arg( plot.mode)
 		pctsGrp <- t( apply( pcts, 1, function(x) tapply( x, grpFac, mean)))
 		# show the group counts, if not too many
 		if (NG <=12) colnames(pctsGrp) <- paste( colnames(pctsGrp), "\n(N=", as.numeric(table(as.numeric(grpPtrs))), ")", sep="")
-		plotAns <- plotTranscriptProportions( pctsGrp, label=label, col=col, mode=plot.mode, gaps=gaps, useLog=useLog, ...)
+		plotAns <- plotTranscriptProportions( pctsGrp, label=label, col=col, mode=plot.mode, gaps=gaps, useLog=useLog, 
+							significance.values=bestPvals, ...)
 
 		# perhaps try to show the significance? 
 		# various code for some of the modes
@@ -563,12 +605,15 @@
 				upDownCall <- myStats$Log2Fold[toShow]
 				myX <- ifelse( upDownCall > 0, myBarCenters[2] + 0.6, myBarCenters[1] - 0.6)
 				myY <- ifelse( upDownCall > 0, myBandCenters[ where, 2], myBandCenters[ where, 1])
-				text( myX, myY, textToShow, col=col[where], cex=1.95)
+				statsColor <- col[where]
+				if ( ! is.null(stats.color)) statsColor <- stats.color[1]
+				text( myX, myY, textToShow, col=statsColor, cex=1.95)
 			}
 		}
 		if ( plot.mode == "lines") {
 			# we can show the stats between adjacent groups, step along the list of stats
 			smallX <- if ( NG > 2) 0.15 else -0.075
+			if ( NG > 8) smallX <- 0.28
 			smallY <- diff( range( as.vector( pctsGrp), na.rm=T)) * 0.01
 			if ( useLog) smallY <- 0
 			iList <- 0
@@ -585,7 +630,9 @@
 					upDownCall <- myStats$Log2Fold[toShow]
 					myX <-rep.int( i2 - smallX, length(toShow))
 					myY <-ifelse( upDownCall > 0, pctsGrp[where,i2]+smallY, pctsGrp[where,i2]-smallY)
-					text( myX, myY, textToShow, col=col[where], cex=1.95)
+					statsColor <- col[where]
+					if ( ! is.null(stats.color)) statsColor <- stats.color[1]
+					text( myX, myY, textToShow, col=statsColor, cex=1.95)
 				}
 			}
 		}
