@@ -576,6 +576,7 @@
 	comps <- bigOut[[1]]$Component
 	nComps <- length(comps)
 	bestPvals <- rep.int( 1, nComps)
+	iList <- 0
 	for ( i1 in 1:(NG-1)) for (i2 in (i1+1):NG) {
 		iList <- iList + 1
 		if ( i2 - i1 != 1) next  # not an adjacent pair
