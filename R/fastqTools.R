@@ -458,9 +458,11 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 }
 
 
-`fastqPatternSearch` <- function( filein, patterns, max.mismatch=0, chunkSize=400000) {
+`fastqPatternSearch` <- function( filein, patterns, max.mismatch=0, chunkSize=1000000,
+				mode=c("count","fastq")) {
 
 	require( Biostrings)
+	mode <- match.arg( mode)
 
 	fileToUse <- allowCompressedFileName( filein)
 	if ( ! file.exists( fileToUse)) stop( paste("Can't find input file: ", fileToUse))
@@ -471,6 +473,8 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 
 	nPatt <- length( patterns)
 	findCounts <- rep( 0, times=nPatt)
+	findIDs <- findSeqs <- findQuals <- vector()
+	nFound <- 0
 
 	repeat {
 		chunk <- readLines( conIn, n=chunkSize)
@@ -482,24 +486,40 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 		N <- length( ids)
 
 		# turn these into a serchable string
-		subject <- DNAString( paste( seqs, collapse="N"))
+		subjects <- DNAStringSet( seqs)
 		for ( k in 1:nPatt) {
-			v <- countPattern( patterns[k], subject, max.mismatch=max.mismatch)
-			findCounts[k] <- findCounts[k] + v
-			if ( k %% 20 == 0) cat( "\r", k, v, sum( findCounts[1:k]))
+			v <- vcountPattern( patterns[k], subjects, max.mismatch=max.mismatch)
+			nHits <- sum(v)
+			if ( ! nHits) next
+			# we got at least one hit
+			findCounts[k] <- findCounts[k] + nHits
+			if (mode == "fastq") {
+				# we need to know which one(s) got hit
+				isHit <- which( v > 0)
+				now <- (nFound + 1) : (nFound + nHits)
+				findIDs[now] <- ids[ isHit]
+				findSeqs[now] <- seqs[ isHit]
+				quals <- chunk[ seq( 4, length(chunk), by=4)]
+				findQuals[now] <- quals[ isHit]
+				nFound <- nFound + nHits
+			}
 		}
 		nread <- nread + N
-		cat( "\nReads: ", formatC( as.integer(nread), big.mark=","), "\tHits: ", sum( findCounts))
+		cat( "\rReads: ", formatC( as.integer(nread), big.mark=","), "\tHits: ", sum( findCounts))
 	}
 	cat( "\n")
 
 	close( conIn)
 
-	out <- findCounts
-	names(out) <- patterns
+	if ( mode == "count") {
+		out <- findCounts
+		names(out) <- patterns
+	} else {
+		out <- ""
+		if (nFound > 0) out <- paste( "@", findIDs, "\n", findSeqs, "\n+\n", findQuals, sep="")
+	}
 	return( out)
 }
-
 
 
 `bam2fastq` <- function( bamfile, outfile=sub( ".bam$", "", bamfile), verbose=TRUE) {
