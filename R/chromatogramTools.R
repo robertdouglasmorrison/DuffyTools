@@ -699,7 +699,7 @@
 	AAoffset <- 1
 	showAllAA <- ( is.character(showAA) && showAA =="all")
 	if ( showAllAA || (is.logical(showAA) && showAA)) AAtoShow <- chromoObj$AA_Calls[AAoffset]
-	if ( "BestAAframe" %in% colnames(chromoObj)) {
+	if ( "BestAAframe" %in% names(chromoObj)) {
 		AAoffset <- as.integer( chromoObj$BestAAframe)
  		AAtoShow <- chromoObj$AA_Calls[AAoffset]
 	}
@@ -782,7 +782,22 @@
 			lines( confX, moveAvg, lty=1, lwd=1, col='black')
 		}
 	}
+	dev.flush()
 }
+
+
+`setChromatogramBestAAframe` <- function( chromoObj, referenceAAseq) {
+
+	# given a expected protein sequence, set the internal object pointer to 
+	# which AA frame is best match	
+	require( Biostrings)
+	data( BLOSUM62)
+	mySeqs <- chromoObj$AA_Calls
+	scores <- pairwiseAlignment( mySeqs, referenceAAseq, type="local", scoreOnly=T, substitutionMatrix=BLOSUM62)
+	chromoObj$BestAAframe <- which.max( scores)
+	return( chromoObj)
+}
+
 
 
 `plotMultipleChromatograms` <- function( chromoSet, label="", seq=NULL, showAA=TRUE, 
