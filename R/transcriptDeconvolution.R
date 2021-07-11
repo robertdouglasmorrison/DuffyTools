@@ -381,7 +381,7 @@
 		if (useLog) {
 			Log <- 'y'
 			yLimits[1] <- min.value.show
-			pcts[ pcts < min.value.show] <- NA
+			pcts[ pcts < min.value.show] <- min.value.show
 			yLabel <- "Proportion per Component  (log scale)" 
 		}
 		plot( 1, 1, type="n", main=paste( "Transcriptome Proportions:   ", label), ylab=yLabel,
@@ -390,7 +390,7 @@
 		axis( 1, at=1:NS, colnames(pcts), las=LAS, font=2, cex=1.05)
 		for ( i in 1:NS) {
 			v <- pcts[ ,i]
-			toShow <- which( v > min.value.show)
+			toShow <- which( v >= min.value.show)
 			ord <- order( v[toShow])
 			points( rep.int(i,length(toShow)), v[toShow[ord]], bg=col[toShow[ord]], pch=pch, cex=myCEX[toShow[ord]])
 		}
@@ -439,7 +439,7 @@
 				nextra <- nextra + 1
 			}
 		}
-		xLimits <- c( 0, max(barAts) + 1.15 + ( 0.3 * (NS-1)))
+		xLimits <- c( 0, max(barAts) + 1.15 + ( 0.3 * (NS+length(gaps)-1)))
 		ans <- barplot( pcts, col=col, main=paste( "Transcriptome Proportions:   ", label), 
 			ylab="Proportion per Component", las=LAS, 
 			xlim=xLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
