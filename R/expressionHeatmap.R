@@ -1,14 +1,14 @@
 # expressionHeatmap.R -- turn abundance into a log 2 fold change heatmap
 
 
-`expressionHeatmap` <- function( m, Ngenes=NULL, minIntensity=0, small.offset=1, 
+`expressionHeatmap` <- function( m, Ngenes=NULL, average.FUN=median, minIntensity=0, small.offset=1, 
 				heatColors=redgreen(75), ...) {
 
 
 	require( gplots)
 	require( heatmap.plus)
 
-	mv <- expressionMatrixToMvalue( m, minIntensity=minIntensity, small.offset=small.offset)
+	mv <- expressionMatrixToMvalue( m, average.FUN=average.FUN, minIntensity=minIntensity, small.offset=small.offset)
 
 	difs <- apply( mv, MARGIN=1, function(x) diff( range( x, na.rm=T)))
 	difs[ is.na(difs)] <- 0

@@ -324,8 +324,8 @@
 		if (myYrange[1] < (-maxYmax)) myYrange[1] <- (-maxYmax)
 	}
 
-	plot ( a, m, main=label, xlab=paste( "A  log_2( Average",units,")"), 
-		ylab=paste("M  log_2( Ratio",units,")"), ylim=myYrange, cex=cex, font.axis=2, font.lab=2, ...)
+	plot ( a, m, main=label, xlab=paste( "A:  log_2( Average",units,")"), 
+		ylab=paste("M:  log_2( Ratio",units,")"), ylim=myYrange, cex=cex, font.axis=2, font.lab=2, ...)
 
 #	addConfidenceLines( a, m, conf=0.95)
 
