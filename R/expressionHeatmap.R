@@ -30,6 +30,10 @@
 
 	# lastly, the colors will be divided linearly, but there may be outliers at the edges
 	limits <- quantile( as.vector(mv), c(0.02, 0.98))
+	# force these to be symmetric
+	useLimit <- min( abs( limits))
+	limits[1] <- -useLimit
+	limits[2] <- useLimit
 	cat( "\nClipping extreme M-values to limits: ", limits)
 	mv[ mv < limits[1]] <- limits[1]
 	mv[ mv > limits[2]] <- limits[2]
