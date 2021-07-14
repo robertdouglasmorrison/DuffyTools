@@ -295,7 +295,7 @@
 					col=rainbow( nrow(pcts), end=0.82), label="", useLog=FALSE, min.value.show=0.2,
 					pch=22, pt.cex=2.5, lwd=4, legend.cex=0.9, label.cex=0.9, 
 					text.rotation=if( ncol(pcts) < 9) 0 else 90, 
-					gaps=NULL, significance.values=NULL, ...) {
+					gaps=NULL, significance.values=NULL, significance.scaling=FALSE, ...) {
 
 	# evaluate all files, and then decide how to visualize
 	NS <- ncol(pcts)
@@ -356,26 +356,28 @@
 			mySignif <- rep.int( 0.001, ND)
 			mySignif[ whSig > 0] <- significance.values[whSig]
 			# best significance keep the given weight/color scheme, worse get less
-			whNow <- which( mySignif > 0.01)
-			myCEX[whNow] <- myCEX[whNow] * 0.7
-			myLWD[whNow] <- myLWD[whNow]  * 0.6
-			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.8
-			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.2)
-			whNow <- which( mySignif > 0.05)
-			myCEX[whNow] <- myCEX[whNow] * 0.7
-			myLWD[whNow] <- myLWD[whNow]  * 0.6
-			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.8
-			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.2)
-			whNow <- which( mySignif > 0.1)
-			myCEX[whNow] <- myCEX[whNow] * 0.7
-			myLWD[whNow] <- myLWD[whNow]  * 0.6
-			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.8
-			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.2)
-			whNow <- which( mySignif > 0.2)
-			myCEX[whNow] <- myCEX[whNow] * 0.7
-			myLWD[whNow] <- myLWD[whNow]  * 0.6
-			myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.8
-			myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.2)
+			if (significance.scaling) {
+				whNow <- which( mySignif > 0.01)
+				myCEX[whNow] <- myCEX[whNow] * 0.7
+				myLWD[whNow] <- myLWD[whNow]  * 0.6
+				myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.8
+				myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.2)
+				whNow <- which( mySignif > 0.05)
+				myCEX[whNow] <- myCEX[whNow] * 0.7
+				myLWD[whNow] <- myLWD[whNow]  * 0.6
+				myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.8
+				myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.2)
+				whNow <- which( mySignif > 0.1)
+				myCEX[whNow] <- myCEX[whNow] * 0.7
+				myLWD[whNow] <- myLWD[whNow]  * 0.6
+				myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.8
+				myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.2)
+				whNow <- which( mySignif > 0.2)
+				myCEX[whNow] <- myCEX[whNow] * 0.7
+				myLWD[whNow] <- myLWD[whNow]  * 0.6
+				myTXTCEX[whNow] <- myTXTCEX[whNow] * 0.8
+				myTXTCOL[whNow] <- adjustColor( myTXTCOL[whNow], 0.2)
+			}
 		}
 
 		if (useLog) {
@@ -498,7 +500,7 @@
 					minPerGroup=3, test=t.test, plot=TRUE, plot.path=".", 
 					plot.mode=c("bars","auto","pie","lines"), label="", useLog=FALSE,
 					wt.fold=1, wt.pvalue=2, min.percent=0.1, gaps=NULL, 
-					stats.color=NULL, ...) {
+					stats.color=NULL, significance.scaling=FALSE, ...) {
 
 	NC <- ncol(pcts)
 	NR <- nrow(pcts)
@@ -600,7 +602,7 @@
 		# show the group counts, if not too many
 		if (NG <=12) colnames(pctsGrp) <- paste( colnames(pctsGrp), "\n(N=", as.numeric(table(as.numeric(grpPtrs))), ")", sep="")
 		plotAns <- plotTranscriptProportions( pctsGrp, label=label, col=col, mode=plot.mode, gaps=gaps, useLog=useLog, 
-							significance.values=bestPvals, ...)
+							significance.values=bestPvals, significance.scaling=significance.scaling, ...)
 
 		# perhaps try to show the significance? 
 		# various code for some of the modes
