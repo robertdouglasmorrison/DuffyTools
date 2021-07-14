@@ -5,13 +5,17 @@
 			label.offset=1, tree.font=1, col=NULL, rotate.tree=0, tree.type="u",
 			main=NULL, ...) {
 
-
-	ids <- seqNames
-
 	require( Biostrings)
 	require( ape)
 	checkX11()
 	par( mai=c(0.5,0.5,0.5,0.5))
+
+	ids <- seqNames
+	N <- length(seqs)
+	if ( ! is.null( dm) && is.matrix(dm)) {
+		ids <- colnames(dm)
+		N <- ncol(dm)
+	}
 
 	if ( is.null( dm)) {
 		cat( "\nMeasuring inter-sequence distances (N=", length(seqs),")", sep="")
@@ -27,11 +31,11 @@
 	
 	# catch/cleanup the label colors
 	if ( is.null( col)) {
-		tip.color <- rainbow(length(seqs),end=0.76)
+		tip.color <- rainbow( N, end=0.76)
 	} else {
 		tip.color <- col
 	}
-	if ( length(seqs) != length(tip.color)) tip.color <- rep( tip.color, length.out=length(seqs))
+	if ( length(tip.color) != N) tip.color <- rep( tip.color, length.out=N)
 
 	# draw it
 	plot.phylo( as.phylo( hclust( dm)), type=tree.type, lab4ut="a", label.offset=label.offset, 
