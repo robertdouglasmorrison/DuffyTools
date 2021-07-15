@@ -1825,7 +1825,7 @@
 
 	# now let's calculate the clusters for each cell type, both UP and DOWN
 	cellFac <- factor( celltype)
-	outCell <- outDir <- outCount <- outPct <- outFold <- outPval <- vector()
+	outCell <- outDir <- outCount <- outGenes <- outPct <- outFold <- outPval <- vector()
 	outRadius <- outColor <- vector()
 	nout <- 0
 
@@ -1846,6 +1846,7 @@
 
 		# see how many and where each group falls
 		xUP <- yUP <- xDOWN <- yDOWN <- 0
+		gUP <- gDOWN <- ""
 		kUP <- intersect( k, UPgenes)
 		nUP <- length(kUP)
 		pctUP <- round( nUP * 100 / NG.use, digits=1)
@@ -1853,6 +1854,7 @@
 		if (nUP) {
 			xUP <- mean( fold[kUP], na.rm=T)
 			yUP <- mean( y[kUP], na.rm=T)
+			gUP <- paste( genes[kUP], collapse="; ")
 		} 
 
 		kDOWN <- intersect( k, DOWNgenes)
@@ -1862,6 +1864,7 @@
 		if (nDOWN) {
 			xDOWN <- mean( fold[kDOWN], na.rm=T)
 			yDOWN <- mean( y[kDOWN], na.rm=T)
+			gDOWN <- paste( genes[kDOWN], collapse="; ")
 		} 
 
 		# save all the details
@@ -1870,6 +1873,7 @@
 		outColor[now] <<- ctColor
 		outDir[now] <<- c( "UP", "DOWN")
 		outCount[now] <<- c( nUP, nDOWN)
+		outGenes[now] <<- c( gUP, gDOWN)
 		outPct[now] <<- c( pctUP, pctDOWN)
 		outRadius[now] <<- c( radUP, radDOWN)
 		outFold[now] <<- c( xUP, xDOWN)
@@ -1879,7 +1883,7 @@
 
 	out <- data.frame( "CellType"=outCell, "Direction"=outDir, "N_Genes"=outCount, "Pct_Genes"=outPct,
 				"Color"=outColor, "Radius"=outRadius, "Log2Fold"=outFold, "Log10.Pvalue"=outPval,
-				stringsAsFactors=F)
+				"GeneList"=outGenes, stringsAsFactors=F)
 
 	# add extra room on X for the labels, and the cell types too
 	# and retune the Y axis limits
@@ -1943,6 +1947,9 @@
 		}
 	}
 
+	out$Drawn <- FALSE
+	out$Drawn[toShow] <- TRUE
+
 	# optional labels to remind which group is which
 	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in Group '", left.label, "'", sep=""), cex=1, font=2)
 	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
@@ -1950,7 +1957,46 @@
 	# and show the cell type color legend
 	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=0.8)
 	dev.flush()
-	
 	return( invisible( out))
-	
 }
+
+
+`writeCellTypeClusterExtras` <- function( tbl, resultsfile) {
+
+	# given a data frame of details from the cell type volcano cluster plot tool (above), make some supporting files
+	path <- dirname( resultsfile)
+	file.root <- sub(  ".JOINED.txt$", "", basename( resultsfile))
+
+	extras.path <- file.path( path, "CellTypeCluster.SupplementalFiles")
+	if ( ! file.exists( extras.path)) dir.create( extras.path, recursive=T)
+
+	# visit each cell type cluster that did get drawn
+	drawnRows <- which( tbl$Drawn == TRUE)
+	if ( ! length( drawnRows)) return(0)
+
+	# get the content, so we can extract subsets
+	resultsTbl <- read.delim( resultsfile, as.is=T)
+	resultGenes <- shortGeneName( resultsTbl$GENE_ID, keep=1)
+
+	for ( i in drawnRows) {
+		celltype <- tbl$CellType[i]
+		direct <- tbl$Direction[i]
+		genes <- strsplit( tbl$GeneList[i], split="; ")[[1]]
+
+		# part 1:  find those genes in the results and make a small table of just those genes in the cluster
+		wh <- match( genes, resultGenes, nomatch=0)
+		sml <- resultsTbl[ wh, ]
+		sml <- data.frame( "CellType"=celltype, "Direction"=direct, sml, stringsAsFactors=F)
+		outfile <- file.path( extras.path, paste( file.root, celltype, direct, "MemberGenes.txt", sep="."))
+		write.table( sml, outfile, sep="\t", quote=F, row.names=F)
+
+		# part 2: what pathways do these genes enrich for
+		gsAns <- geneSetBestMatch( genes, nBest=20)
+		outfile <- file.path( extras.path, paste( file.root, celltype, direct, "PathwayHits.csv", sep="."))
+		write.csv( gsAns, outfile, row.names=F)
+
+		# others as we add them...
+	}
+	return( length(drawnRows))
+}
+
