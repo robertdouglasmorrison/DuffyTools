@@ -153,6 +153,9 @@
 		ans <- bestTimeHour( df, ts, scaleMethod=SCALE, scoreMethod=SCORE, nTSgenes=N,
 				minimumIntensity=minimumIntensity)
 		myscore <- ans$Scores
+		# various errors could return NA or NAN
+		if ( all( is.na( myscore))) next
+		if ( all( is.nan( myscore))) next
 		finalScore <- finalScore + myscore
 		nScores <- nScores + 1
 	}}}
@@ -308,6 +311,9 @@
 	}
 	mySetInten <- mySetInten * scaleFactor
 
+	# gracefully catch no/little intensity
+	if ( diff( range( mySetInten, na.rm=T)) < 1) return( list( score=0))
+
 	# make a score that measures similarity
 	if ( scoreMethod == "rms") {
 		diff <- mySetInten - tSetInten
@@ -316,9 +322,7 @@
 		out <- rms / rmsScale
 	} else if ( scoreMethod == "pearson") {
 		if ( useLog) {
-			mySetInten[ mySetInten < 4] <- 4
-			tSetInten[ tSetInten < 4] <- 4
-			ans <- cor( log(mySetInten,2), log(tSetInten,2), use="complete", method="pearson")
+			ans <- cor( log2(mySetInten+1), log2(tSetInten+1), use="complete", method="pearson")
 		} else {
 			ans <- cor( mySetInten, tSetInten, use="complete", method="pearson")
 		}
@@ -339,7 +343,7 @@
 
 `plotTimeHourCurvesFromFileSet` <- function( fnames, fids, fcolors=1, fgrps="group", fLwd=2, 
 				fLty=1, xMax=48, label="label goes here", legend.cex=1.0,
-				minimumIntensity=1, sep="\t") {
+				minimumIntensity=1, sep="\t", geneUniverse=NULL) {
 
 	mainText <- paste( "Time Hour Estimates: \n", label)
 	plot( 1,1, type="n", xlim=c(0,xMax), ylim=c(-0.2, 1.0), main=mainText, xlab="DeRisi Time Hour", 
@@ -359,7 +363,22 @@
 			next;
 		}
 		mydf <- read.delim( f, as.is=T, sep=sep); 
+
+		# allow using a subset of genes
+		if ( ! is.null( geneUniverse)) {
+			geneCol <- which( colnames(mydf) %in% c("GENE_ID","GeneID","Gene"))[1]
+			if ( is.na( geneCol)) stop( "plotTimeHourCurve: Unable to find gene ID column in transcriptone")
+			dfGenes <- mydf[[ geneCol]]
+			keep <- which( dfGenes %in% geneUniverse)
+			mydf <- mydf[ keep, ]
+			if ( nrow(mydf) < 100) {
+				cat( "\nplotTimeHourCurve: not enough genes remain after 'geneUniverse' filtering")
+				next
+			}
+		}
+
 		ans <- getTimeHourConsensusBestHour( mydf, minimumIntensity=minimumIntensity); 
+		if ( is.null(ans)) next
 		lines( ans$Scores, col=fcolors[i], lwd=fLwd[i], lty=fLty[i]); 
 		text( which.max( ans$Scores), max( ans$Scores), fids[i], col=fcolors[i], font=2, pos=3)
 		timeOut[i] <- ans$BestTimePoint
@@ -380,7 +399,7 @@
 
 `plotTimeHourCurvesFromMatrix` <- function( m, fcolors=1, fgrps="group", fLwd=2, 
 				fLty=1, xMax=48, label="label goes here", legend.cex=1.0,
-				minimumIntensity=1) {
+				minimumIntensity=1, geneUniverse=NULL) {
 
 	mainText <- paste( "Time Hour Estimates: \n", label)
 	plot( 1,1, type="n", xlim=c(0,xMax), ylim=c(-0.2, 1.0), main=mainText, xlab="DeRisi Time Hour", 
@@ -393,6 +412,17 @@
 
 	timeOut <- scoreOut <- vector()
 	labX <- labY <-vector()
+
+	# allow using a subset of genes
+	if ( ! is.null( geneUniverse)) {
+		mGenes <- rownames(m)
+		keep <- which( mGenes %in% geneUniverse)
+		m <- m[ keep, ]
+		if ( nrow(m) < 100) {
+			cat( "\nplotTimeHourCurve: not enough genes remain after 'geneUniverse' filtering")
+			return(NULL)
+		}
+	}
 
 	genes <- rownames(m)
 	fids <- colnames(m)
