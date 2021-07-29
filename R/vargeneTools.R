@@ -170,7 +170,8 @@
 }
 
 
-`findVsaDomains` <- function( aaSeq, minScorePerAA=1, maskVSAgenes=NULL, plot.Y=NULL, rect.border=1, rect.fill='goldenrod',
+`findVsaDomains` <- function( aaSeq, minScorePerAA=1, maskVSApattern=NULL, keepVSApattern=NULL, 
+				plot.Y=NULL, rect.border=1, rect.fill='goldenrod', text.column="DOMAIN_ID",
 				rect.halfHeight=1, rect.lwd=1, text.font=2, text.cex=1, text.X.repeat=NULL,
 				verbose=FALSE) {
 
@@ -183,16 +184,27 @@
 	domDF <- data.frame()
 
 	myVsa <- vsa
-	if ( ! is.null( maskVSAgenes)) {
+	if ( ! is.null( maskVSApattern)) {
 		toDrop <- vector()
-		for ( mask in maskVSAgenes) toDrop <- c( toDrop, grep( mask, myVsa$GENE_ID))
+		for ( mask in maskVSApattern) toDrop <- c( toDrop, grep( mask, myVsa$GENE_ID))
 		toDrop <- sort( unique( toDrop))
 		dropGenes <- sort( unique( myVsa$GENE_ID[toDrop]))
 		if (verbose) {
 			cat( "\nMasking VSA genes to exclude from search: ", length(dropGenes), "\n")
-			print( dropGenes)
+			print( head( dropGenes))
 		}
 		myVsa <- myVsa[ -toDrop, ]
+	}
+	if ( ! is.null( keepVSApattern)) {
+		toKeep <- vector()
+		for ( mask in keepVSApattern) toKeep <- c( toKeep, grep( mask, myVsa$GENE_ID))
+		toKeep <- sort( unique( toKeep))
+		keepGenes <- sort( unique( myVsa$GENE_ID[toKeep]))
+		if (verbose) {
+			cat( "\nLimiting VSA genes to include in search: ", length(keepGenes), "\n")
+			print( head( keepGenes))
+		}
+		myVsa <- myVsa[ toKeep, ]
 	}
 
 	refLens <- nchar( myVsa$REF_SEQ)
@@ -277,7 +289,7 @@
 	from <- out$QUERY_START
 	to <- out$QUERY_STOP
 	midpts <- (from + to) / 2
-	txtstr <- out$QUERY_DOMAIN_ID
+	txtstr <- out[[ text.column]]
 	for ( y in yLocs) {
 		rect( from-0.3, y-rect.halfHeight, to+0.3, y+rect.halfHeight, border=rect.border, 
 			col=rect.fill, lwd=rect.lwd)
