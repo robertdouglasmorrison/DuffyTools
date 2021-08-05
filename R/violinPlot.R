@@ -176,19 +176,38 @@
 
 	orientation <- match.arg( orientation)
 	hw <- width / 2
-	## get the stats
+	## get the box stats, and crop them to the window
 	z <- boxplot.stats(x)$stats
+	usr <- par('usr')
+	if ( par('xlog')) usr[1:2] <- 10 ^ usr[1:2]
+	if ( par('ylog')) usr[3:4] <- 10 ^ usr[3:4]
+	if (orientation == "vertical") {
+		z[1] <- max( z[1], usr[3])
+		z[2] <- max( z[2], usr[3])
+		z[3] <- max( z[3], usr[3])
+		z[3] <- min( z[3], usr[4])
+		z[4] <- min( z[4], usr[4])
+		z[5] <- min( z[5], usr[4])
+	} else {
+		z[1] <- max( z[1], usr[1])
+		z[2] <- max( z[2], usr[1])
+		z[3] <- max( z[3], usr[1])
+		z[3] <- min( z[3], usr[2])
+		z[4] <- min( z[4], usr[2])
+		z[5] <- min( z[5], usr[2])
+	}
+
 	if ( hw > 0) {
 		if (orientation == "vertical") {
 			rect( center-hw, z[2], center+hw, z[4], border=border, lwd=lwd, lty=lty, ...)
 			lines( c( center, center, NA, center, center), c( z[1], z[2], NA, z[4], z[5]), 
 					col=border, lwd=lwd, lty=lty, ...)
-			lines( c(center-hw, center+hw), c( z[3], z[3]), lwd=lwd*2, lty=lty, col=border, ...)
+			lines( c(center-hw, center+hw), c( z[3], z[3]), lwd=lwd*3, lty=lty, col=border, ...)
 		} else {
 			rect( z[2], center-hw, z[4], center+hw, border=border, lwd=lwd, lty=lty, ...)
 			lines( c( z[1], z[2], NA, z[4], z[5]), c( center, center, NA, center, center), 
 					col=border, lwd=lwd, lty=lty, ...)
-			lines( c( z[3], z[3]), c(center-hw, center+hw), lwd=lwd*2, lty=lty, col=border, ...)
+			lines( c( z[3], z[3]), c(center-hw, center+hw), lwd=lwd*3, lty=lty, col=border, ...)
 		}
 	}
 	if ( ! is.null( pch)) {
