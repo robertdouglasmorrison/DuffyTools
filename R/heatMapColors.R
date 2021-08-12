@@ -1,7 +1,7 @@
 
 # heatMapColors.R - make a green to red color ramp
 
-heatMapColors <- function( nColors, palette=c("red-black-green", "red-white-blue"),
+heatMapColors <- function( nColors, palette=c("red-black-green", "red-white-blue", "red-white-green"),
 				inflexionPoint=0.5, rampExponent=0.5, plotRamp=TRUE, pt.cex=30/sqrt(nColors)) {
 
 	# make a color map...  for use by heatmaps, etc.
@@ -26,6 +26,8 @@ heatMapColors <- function( nColors, palette=c("red-black-green", "red-white-blue
 		colmap <- rgb( red=c( zeroDown, rampUp), green=c( rampDown, zeroUp), blue=rep.int(0,nColors))
 	} else if (palette == "red-white-blue") {
 		colmap <- rgb( red=c( rev(rampDown), oneUp), green=c( rev(rampDown), rev(rampUp)), blue=c( oneDown, rev(rampUp)))
+	} else if (palette == "red-white-green") {
+		colmap <- rgb( red=c( rev(rampDown), oneUp), green=c( oneDown, rev(rampUp)), blue=c( rev(rampDown), rev(rampUp)))
 	}
 	colHgt <- c( -rampDown, rampUp)
 

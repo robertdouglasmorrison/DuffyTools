@@ -186,7 +186,7 @@
 }
 
 
-`heatMapLegend` <- function( colorRamp, at, values, label=NULL, ...) {
+`heatMapLegend` <- function( colorRamp, at, values, label=NULL, border.lwd=3, ...) {
 
 	par( mai=c(0.1,0.1,0.1,0.1))
 	N <- length( colorRamp)
@@ -195,7 +195,7 @@
 		ylim=c(0,3), xlab=NA, ylab=NA, axes=F)
 
 	for( i in 1:N) rect( i-1, 1, i, 2, col=colorRamp[i], border=colorRamp[i])
-	rect( 0, 1, N, 2, border=1, lwd=4)
+	rect( 0, 1, N, 2, border=1, lwd=border.lwd)
 	text( at, 1, values, pos=1, ...)
 	if ( ! is.null(label)) text( N/2, 2, label, pos=3)
 }
