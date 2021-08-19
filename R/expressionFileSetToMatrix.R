@@ -95,11 +95,13 @@
 
 `expressionMatrixToFileSet` <- function( m, groups=colnames(m), geneColumn="GENE_ID", 
 					intensityColumn=c("INTENSITY","RPKM_M","READS_M"),
-					path=".", sep="\t", AVG.FUN=sqrtmean, verbose=FALSE) {
+					path=".", sep="\t", AVG.FUN=sqrtmean, addNGScolumns=FALSE,
+					dropDuplicateIDs=TRUE, verbose=FALSE) {
 
 	intensityColumn <- match.arg( intensityColumn)
 	prefix <- getCurrentSpeciesFilePrefix()
 	suffix <- if ( sep == ",") "csv" else "txt"
+	gmap <- getCurrentGeneMap()
 
 	# make sure we can write those files
 	if ( ! file.exists( path)) dir.create( path, recursive=T)
@@ -132,6 +134,25 @@
 		sml <- sml[ ord, ]
 		rownames(sml) <- 1:NG
 		colnames(sml) <- c( geneColumn, "PRODUCT", intensityColumn)
+
+		# if we need to make this look like NGS data, add a few more data fields
+		if (addNGScolumns) {
+			if ( intensityColumn != "READS_M") sml$READS_M <- sml[[3]]
+			if ( intensityColumn != "RPKM_M") sml$RPKM_M <- sml[[3]]
+			sml$SIGMA_M <- rosettaSigma( sml[[3]])
+			sml$N_EXON_BASES <- 1000
+			wh1 <- match( sml[[1]], gmap$GENE_ID, nomatch=0)
+			sml$N_EXON_BASES[ wh1 > 0] <- gmap$N_EXON_BASES[wh1]
+			wh2 <- match( sml[[1]], gmap$NAME, nomatch=0)
+			sml$N_EXON_BASES[ wh2 > 0] <- gmap$N_EXON_BASES[wh2]
+		}
+
+		# many downstream tools expect fully unique gene IDs
+		if ( dropDuplicateIDs) {
+			drops <- which( duplicated( sml[[1]]))
+			if ( length( drops)) sml <- sml[ -drops, ]
+		}
+
 		outfile <- file.path( path, paste( sids[i], prefix, "Transcript", suffix, sep="."))
 		write.table( sml, outfile, sep=sep, quote=(suffix == "csv"), row.names=F)
 		if (verbose) cat( "\r", i, sids[i])
