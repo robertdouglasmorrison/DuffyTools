@@ -3,14 +3,14 @@
 
 
 # extract expression values from a variety of object types
-eosinophilExpression <- function( x, value.mode=c("absolute","relative"), sep="\t") {
+`eosinophilExpression` <- function( x, value.mode=c("absolute","relative"), sep="\t") {
 
 	eosinMarkerGenes <- c(  "FRRS1", "ADORA3", "ALOX15", "CCL23", "AFF2", 
 				"CEBPE", "AOC1", "TFF3", "PRSS33", "CCL15", 
-				"KHDRBS3", "VSTM1", "IDO1", "CD24")
+				"KHDRBS3", "VSTM1", "IDO1", "CD24", "OLIG2")
 	eosinRPKMvalues <- c(    61.4777, 100.8599, 284.4524, 94.6696, 20.9992, 
 				128.5605, 24.3029, 32.6940, 86.2324, 8.9697, 
-				6.6057, 128.8078, 206.893, 88.6310)
+				6.6057, 128.8078, 206.893, 88.6310, 21.5762)
 
 	isMAT <- isDF <- isVEC <- FALSE
 	out <- NULL
