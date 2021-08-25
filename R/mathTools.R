@@ -32,11 +32,13 @@ movingAverage <- function( x, window=9, at=names(x), by=1, FUN=mean.default, do.
 			return( FUN( x[i:j]))
 		})
 
-	ats <- base::mapply( froms, tos, MoreArgs=list( "x"=as.numeric(at), "FUN"=mean.default), FUN=function( i,j,x,FUN) {
+	if ( is.numeric( at)) {
+		at <- base::mapply( froms, tos, MoreArgs=list( "x"=as.numeric(at), "FUN"=mean.default), FUN=function( i,j,x,FUN) {
 			return( FUN( x[i:j]))
 		})
+	}
 
-	names( values) <- ats
+	names( values) <- at
 	return( values)
 }
 
