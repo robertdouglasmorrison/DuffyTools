@@ -80,6 +80,17 @@
 		if (any( where > 0)) genesOut[ notYet[ where > 0]] <- aliasTable$GeneID[ where]
 	}
 
+	# one more thing to try:  many GeneIDs have various special characters, that the given gene symobls may not have
+	# try to test the given names against genes (not aliases)
+	notYet <- which( genesOut == genes)
+	if ( length( notYet)) {
+		uniqGenes <- unique.default( aliasTable$GeneID)
+		testAliasGenes <- gsub( "[^A-Z0-9]", "", toupper(uniqGenes))
+		testGenes <- gsub( "[^A-Z0-9]", "", genesOutUP[notYet])
+		where <- base::match( testGenes, testAliasGenes, nomatch=0)
+		if (any( where > 0)) genesOut[ notYet[ where > 0]] <- uniqGenes[ where]
+	}
+
 	# one more thing to try:  many aliases have various special characters, that can break the full equality test
 	# try to turn the aliases in the table into just the alphanumeric core.
 	notYet <- which( genesOut == genes)
