@@ -177,6 +177,7 @@
 
 	addTarget( "PbANKA", "PbANKA", "Pb")
 	addTarget( "PbMmu", "PbANKA,Mmu_grc", "Pb,Mmus")
+	addTarget( "PbHs", "PbANKA,Hs_grc", "Pb,Hs")
 
 	addTarget( "Py17X", "Py17X", "Py17X")
 	addTarget( "Mmu_grc", "Mmu_grc", "Mmus")
