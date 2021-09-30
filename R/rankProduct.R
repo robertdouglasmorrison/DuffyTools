@@ -56,6 +56,8 @@ rankProductDiffExpress <- function( fnames, fids, groupSet, targetGroup=groupSet
 	allGroups <- groupSet
 	allPools <- poolSet
 	grpNames <- sort( unique( allGroups))
+	otherGroups <- setdiff( grpNames, targetGroup)
+	if ( length( otherGroups) > 1) otherGroups <- paste( "Not", targetGroup, sep=".")
 	if ( length( grpNames) < 2) stop( "'RankProduct' needs at least 2 groups of files")
 	if ( ! (targetGroup %in% grpNames)) stop( paste("Not a given RankProduct group: ", targetGroup, 
 				"   choices: ", paste(grpNames, collapse=", "))) 
@@ -221,8 +223,7 @@ rankProductDiffExpress <- function( fnames, fids, groupSet, targetGroup=groupSet
 	intenCol1 <- 8
 	intenCol2 <- 9
 	colnames(out)[intenCol1] <- targetGroup
-	lab2 <- paste( "Not", targetGroup, sep=" ")
-	colnames(out)[intenCol2] <- lab2
+	colnames(out)[intenCol2] <- otherGroups
 	if ( is.null( extraColumn)) {
 		evalueCols <- 10:13
 		out <- out[ ,c(1:7, evalueCols, intenCol1:intenCol2)]

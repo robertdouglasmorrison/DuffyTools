@@ -5,9 +5,8 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 			geneColumn="GENE_ID", subfolderName="Group", 
 			tools=c("RoundRobin", "RankProduct", "SAM", "EdgeR", "DESeq"), altGeneMapLabel=NULL,
 			rank.average.FUN=sqrtmean, value.average.FUN=mean, keepIntergenics=FALSE,
-			topFolders=NULL, other.DE.files=NULL,
-			missingGenes=c("drop", "fill", "na"), nFDRsimulations=0,
-			direction=c("UP", "DOWN")) {
+			topFolders=NULL, other.DE.files=NULL, missingGenes=c("drop", "fill", "na"), nFDRsimulations=0,
+			direction=c("UP", "DOWN"), otherGroup=paste("Not",targetGroup,sep=".")) {
 
 	missingGenes <- match.arg( missingGenes)
 	direction <- match.arg( direction)
@@ -78,13 +77,15 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 			diffExpressPvalueCorrection=TRUE, direction=direction)
 
 	# append the RPKM data for the two conditions
-	ans <- appendMetaResultGroupValues( ans, targetGroup, files=allFiles, tools=allNames, geneColumn=geneColumn)
+	ans <- appendMetaResultGroupValues( ans, targetGroup, files=allFiles, tools=allNames, geneColumn=geneColumn,
+					otherGroup=otherGroup)
 
 	return( ans)
 }
 
 
-`appendMetaResultGroupValues` <- function( tbl, targetGroup, files, tools, geneColumn="GENE_ID") {
+`appendMetaResultGroupValues` <- function( tbl, targetGroup, files, tools, geneColumn="GENE_ID", 
+					otherGroup=paste("Not",targetGroup,sep=".")) {
 
 	# several (but not all) DE tools give their call for gene expression.
 	# grab those to supplement the results
@@ -99,25 +100,23 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 		smlDF <- read.delim( files[j], as.is=T)
 		N <- nrow(smlDF)
 
-		if ( thisTool == "RoundRobin") {
-			name1 <- "RPKM_1"
-			name2 <- "RPKM_2"
-			if ( length( grep( "RPKM", colnames(smlDF))) < 1) {
-				name1 <- "VALUE_1"
-				name2 <- "VALUE_2"
-			}
-		} else if ( thisTool %in% c("RankProduct", "SAM")) {
-			name1 <- targetGroup
-			name2 <- paste( "Not", targetGroup, sep=".")
-			# if the group name starts with a digit, the column will start with an 'X'
-			if ( substr(name1,1,1) %in% as.character( 0:9)) name1 <- paste( 'X', name1, sep="")
-			# also, certain characters will not be preserved in an R table column name
-			name1 <- make.names(name1)
-			name2 <- make.names(name2)
-		} else {
-			cat( "\nUnknown tool:  ", thisTool, "\nSkipping..")
-			next
-		}
+		# make all the tools use same naming...
+		#if ( thisTool == "RoundRobin") {
+		#	name1 <- "RPKM_1"
+		#	name2 <- "RPKM_2"
+		#	if ( length( grep( "RPKM", colnames(smlDF))) < 1) {
+		#		name1 <- "VALUE_1"
+		#		name2 <- "VALUE_2"
+		#	}
+		#} else if ( thisTool %in% c("RankProduct", "SAM")) {
+		name1 <- targetGroup
+		name2 <- otherGroup
+		# if the group name starts with a digit, the column will start with an 'X'
+		if ( substr(name1,1,1) %in% as.character( 0:9)) name1 <- paste( 'X', name1, sep="")
+		if ( substr(name2,1,1) %in% as.character( 0:9)) name2 <- paste( 'X', name2, sep="")
+		# also, certain characters will not be preserved in an R table column name
+		name1 <- make.names(name1)
+		name2 <- make.names(name2)
 
 		if ( ! all( c( geneColumn, name1, name2) %in% colnames(smlDF))) {
 			cat( "\nSome needed VALUE columns not found.  Wanted: ", geneColumn, name1, name2)
@@ -155,7 +154,7 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 	# stuff these where they go
 	where <- match( geneNames, tbl[[geneColumn]], nomatch=0)
 	outVALUE <- matrix( NA, nrow=nrow(tbl), ncol=2)
-	colnames(outVALUE) <- c( targetGroup, paste( "Not", targetGroup, sep=" "))
+	colnames(outVALUE) <- c( targetGroup, otherGroup)
 	outVALUE[ where, 1] <- value1[where > 0]
 	outVALUE[ where, 2] <- value2[where > 0]
 	

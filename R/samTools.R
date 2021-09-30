@@ -41,10 +41,15 @@ SAM.DiffExpress <- function( fnames, fids, m=NULL,
 	}
 
 	# the column flags for SAM are to end up as 0,1, where 1 is the one we want...
+	# and the result column names are set from the input group names
 	cl <- rep( 0, times=length(groupSet))
 	cl[ groupSet == targetGroup] <- 1
 	myGrpNames <- rep( targetGroup, times=length(groupSet))
-	myGrpNames[ cl == 0] <- paste( "Not", targetGroup, sep=" ")
+	myGrpNames[ cl == 0] <- paste( "Not", targetGroup, sep=".")
+	uniqueGroupNames <- unique( groupSet)
+	otherGroups <- setdiff( uniqueGroupNames, targetGroup)
+	if ( length(otherGroups) == 1) myGrpNames[ cl == 0] <- otherGroups
+	
 	if ( ! is.null( extraColumn)) {
 		clExtra <- cl
 	}
