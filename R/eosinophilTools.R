@@ -62,3 +62,76 @@
 	return( out)
 }
 
+
+`eosinophilExpressionComparison` <- function( x, y, value.mode=c("absolute","relative"), col=c('tan','grey70'), 
+						labels=c("x","y"), sep="\t", main=NULL, legend="topright", 
+						...) {
+
+	isMAT <- isVEC <- FALSE
+	out <- NULL
+	value.mode <- match.arg( value.mode)
+
+	if ( is.null(main)) main <- "Esosinophil Marker Gene Expression:"
+
+	xAns <- eosinophilExpression( x, value.mode=value.mode, sep=sep)
+	if ( is.null( xAns)) return(NULL)
+	yAns <- eosinophilExpression( y, value.mode=value.mode, sep=sep)
+	if ( is.null( yAns)) return(NULL)
+
+	# try to compare and display in a sensible manner
+	if ( is.vector(xAns) && is.vector(yAns)) {
+		xGenes <- names(xAns)
+		yGenes <- names(yAns)
+		xyGenes <- sort( intersect( xGenes, yGenes))
+		NG <- length(xyGenes)
+		if ( ! NG) {
+			cat( "\nNo Eosinophil genes in intersect of both data sets.")
+			return(NULL)
+		}
+		xAns <- xAns[ match( xyGenes, xGenes)]
+		yAns <- yAns[ match( xyGenes, yGenes)]
+		legend.label.suffix <- ""
+	} else if ( is.matrix(xAns) && is.matrix(yAns)) {
+		xGenes <- rownames(xAns)
+		yGenes <- rownames(yAns)
+		xyGenes <- sort( intersect( xGenes, yGenes))
+		NG <- length(xyGenes)
+		if ( ! NG) {
+			cat( "\nNo Eosinophil genes in intersect of both data sets.")
+			return(NULL)
+		}
+		xAnsM <- xAns[ match( xyGenes, xGenes), ]
+		yAnsM <- yAns[ match( xyGenes, yGenes), ]
+		xAns <- apply( xAnsM, 1, mean)
+		yAns <- apply( yAnsM, 1, mean)
+		legend.label.suffix <- paste( " (N=", c(ncol(xAnsM),ncol(yAnsM)), ")", sep="")
+	} else {
+		cat( "\nError: both x and y must be of the same type")
+		return(NULL)
+	}
+
+	# compare the 2 sets of values
+	testAns <- wilcox.test( xAns, yAns, paired=T)
+	xMean <- mean(xAns)
+	yMean <- mean(yAns)
+	fc <- log2( (yMean+1) / (xMean+1))
+
+	# reformat to plot the results
+	m <- matrix( c(xAns,yAns), nrow=length(xyGenes), ncol=2)
+	rownames(m) <- xyGenes
+	colnames(m) <- labels
+	plotAns <- barplot( t(m), beside=TRUE, col=col, las=3, ylab="Gene Expression", xlab=NA, 
+				ylim=c(0,max(m)*1.05), main=main, ...)
+
+	lines( c(0.5,NG*3+0.5), c(xMean,xMean), col=col[1], lty=2, lwd=2)
+	lines( c(0.5,NG*3+0.5), c(yMean,yMean), col=col[2], lty=2, lwd=2)
+
+	if ( ! is.na(legend)) {
+		if ( is.null(legend) || legend == "") legend <- "topright"
+		graphics::legend( legend, paste(labels,legend.label.suffix), fill=col, bg='white')
+	}
+
+	out <- list( "x.avg"=xMean, "y.avg"=yMean, "Log2Fold"=fc, "p.value"=testAns$p.value)
+	return( out)
+}
+
