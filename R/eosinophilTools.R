@@ -65,7 +65,8 @@
 
 `eosinophilExpressionComparison` <- function( x, groups=names(x), levels=sort(unique(groups)), 
 						value.mode=c("absolute","relative"), col=NULL,
-						sep="\t", main="", legend="topright", AVG.FUN=mean, ...) {
+						sep="\t", main="", legend="topright", legend.cex=1, 
+						AVG.FUN=mean, ...) {
 
 	isMAT <- isVEC <- FALSE
 	out <- NULL
@@ -143,15 +144,23 @@
 		pv[nout] <- testAns$p.value
 	}
 
-	# reformat to plot the results
-	plotAns <- barplot( t(m2), beside=TRUE, col=col, las=3, ylab="Gene Expression", xlab=NA, 
-				xlim=c(0,(NG+2)*(NGRP+1)), ylim=c(0,max(m2,na.rm=T)*1.05), main=mainText, ...)
+	# plot the results
+	yLimits <- c( 0, max(m2,na.rm=T)*1.05) 
+	borderCol <- par( "fg")
+	if (NGRP > 8) borderCol=col
 
-	for ( j in 1:NGRP) lines( c(0.5,NG*(NGRP+1)+0.5), rep.int(avgAns[j],2), col=col[j], lty=3, lwd=2)
+	plotAns <- barplot( t(m2), beside=TRUE, col=col, border=borderCol, las=3, ylab="Gene Expression", xlab=NA, 
+				xlim=c(0,(NG+2)*(NGRP+1)), ylim=yLimits, main=mainText, 
+				...)
+
+	for ( j in 1:NGRP) lines( c(0.5,NG*(NGRP+1)+0.5), rep.int(avgAns[j],2), col=col[j], lty=3, lwd=1.5)
+	# redraw the bars so they are in front of the average lines
+	plotAns <- barplot( t(m2), beside=TRUE, col=col, border=borderCol, las=3, add=TRUE)
 
 	if ( ! is.na(legend)) {
 		if ( is.null(legend) || legend == "") legend <- "topright"
-		graphics::legend( legend, paste( uniqGrps, legend.label.suffix), fill=col, bg='white')
+		graphics::legend( legend, paste( uniqGrps, legend.label.suffix), fill=col, bg='white',
+				cex=legend.cex)
 	}
 
 	out <- data.frame( "Group1"=g1, "Group2"=g2, "Average1"=avg1, "Average2"=avg2, "Log2Fold"=fc, "P.Value"=pv, stringsAsFactors=F)
