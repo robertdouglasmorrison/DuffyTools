@@ -63,9 +63,9 @@
 }
 
 
-`eosinophilExpressionComparison` <- function( x, groups=names(x), value.mode=c("absolute","relative"), col=NULL,
-						sep="\t", main="", legend="topright", AVG.FUN=mean,
-						...) {
+`eosinophilExpressionComparison` <- function( x, groups=names(x), levels=sort(unique(groups)), 
+						value.mode=c("absolute","relative"), col=NULL,
+						sep="\t", main="", legend="topright", AVG.FUN=mean, ...) {
 
 	isMAT <- isVEC <- FALSE
 	out <- NULL
@@ -109,7 +109,7 @@
 	}
 
 	# now reduce by group
-	grpFac <- factor(groups)
+	grpFac <- factor(groups, levels=levels)
 	uniqGrps <- levels(grpFac)
 	NGRP <- length( uniqGrps)
 	legend.label.suffix <- paste( " (N=", tapply(1:N,grpFac,length),")", sep="")
