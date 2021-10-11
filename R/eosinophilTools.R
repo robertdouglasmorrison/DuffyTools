@@ -63,75 +63,110 @@
 }
 
 
-`eosinophilExpressionComparison` <- function( x, y, value.mode=c("absolute","relative"), col=c('tan','grey70'), 
-						labels=c("x","y"), sep="\t", main=NULL, legend="topright", 
+`eosinophilExpressionComparison` <- function( x, groups=names(x), value.mode=c("absolute","relative"), col=NULL,
+						sep="\t", main="", legend="topright", AVG.FUN=mean,
 						...) {
 
 	isMAT <- isVEC <- FALSE
 	out <- NULL
 	value.mode <- match.arg( value.mode)
+	mainText <- paste( "Esosinophil Marker Genes: ", main)
 
-	if ( is.null(main)) main <- "Esosinophil Marker Gene Expression:"
-
-	xAns <- eosinophilExpression( x, value.mode=value.mode, sep=sep)
-	if ( is.null( xAns)) return(NULL)
-	yAns <- eosinophilExpression( y, value.mode=value.mode, sep=sep)
-	if ( is.null( yAns)) return(NULL)
-
-	# try to compare and display in a sensible manner
-	if ( is.vector(xAns) && is.vector(yAns)) {
-		xGenes <- names(xAns)
-		yGenes <- names(yAns)
-		xyGenes <- sort( intersect( xGenes, yGenes))
-		NG <- length(xyGenes)
+	# we may be given a list of filenames, or a matrix
+	if ( is.character(x)) {
+		# for files, extract the gene values from each
+		files <- x
+		N <- length(files)
+		groups <- rep( groups, length.out=N)
+		smlAns <- lapply( files, eosinophilExpression, value.mode=value.mode, sep=sep)
+		drops <- sapply( smlAns, is.null)
+		smlAns <- smlAns[ ! drops]
+		files <- files[ ! drops]
+		groups <- groups[ ! drops]
+		if ( ! length(smlAns)) return(NULL)
+		N <- length(smlAns)
+		# visit each small set, to get the final set of genes
+		allGenes <- names( smlAns[[1]])
+		for ( j in 2:N) allGenes <- intersect( allGenes, names(smlAns[[j]]))
+		NG <- length( allGenes)
 		if ( ! NG) {
 			cat( "\nNo Eosinophil genes in intersect of both data sets.")
 			return(NULL)
 		}
-		xAns <- xAns[ match( xyGenes, xGenes)]
-		yAns <- yAns[ match( xyGenes, yGenes)]
-		legend.label.suffix <- ""
-	} else if ( is.matrix(xAns) && is.matrix(yAns)) {
-		xGenes <- rownames(xAns)
-		yGenes <- rownames(yAns)
-		xyGenes <- sort( intersect( xGenes, yGenes))
-		NG <- length(xyGenes)
-		if ( ! NG) {
-			cat( "\nNo Eosinophil genes in intersect of both data sets.")
-			return(NULL)
+		allGenes <- sort( allGenes)
+		m <- matrix( NA, nrow=NG, ncol=N)
+		rownames(m) <- allGenes
+		colnames(m) <- basename( files)
+		for ( j in 1:N) {
+			wh <- match( allGenes, names(smlAns[[j]]))
+			m[ ,j] <- smlAns[[j]][wh]
 		}
-		xAnsM <- xAns[ match( xyGenes, xGenes), ]
-		yAnsM <- yAns[ match( xyGenes, yGenes), ]
-		xAns <- apply( xAnsM, 1, mean)
-		yAns <- apply( yAnsM, 1, mean)
-		legend.label.suffix <- paste( " (N=", c(ncol(xAnsM),ncol(yAnsM)), ")", sep="")
-	} else {
-		cat( "\nError: both x and y must be of the same type")
-		return(NULL)
+	} else if ( is.matrix(x)) {
+		m <- eosinophilExpression( x, value.mode=value.mode)
+		N <- ncol(m)
+		NG <- nrow(m)
+		groups <- rep( groups, length.out=N)
 	}
 
-	# compare the 2 sets of values
-	testAns <- wilcox.test( xAns, yAns, paired=T)
-	xMean <- mean(xAns)
-	yMean <- mean(yAns)
-	fc <- log2( (yMean+1) / (xMean+1))
+	# now reduce by group
+	grpFac <- factor(groups)
+	uniqGrps <- levels(grpFac)
+	NGRP <- length( uniqGrps)
+	legend.label.suffix <- paste( " (N=", tapply(1:N,grpFac,length),")", sep="")
+	if ( is.null(col)) {
+		col <- rainbow( NGRP, end=0.75)
+	} else {
+		col <- rep( col, length.out=NGRP)
+	}
+	m2 <- matrix( NA, nrow=NG, ncol=NGRP)
+	rownames(m2) <- rownames(m)
+	colnames(m2) <- uniqGrps
+	for ( i in 1:NG) m2[ i, ] <- tapply( m[ i, ], grpFac, AVG.FUN, na.rm=T)
+
+	# now compute compares
+	g1 <- g2 <- fc <- pv <- avg1 <- avg2 <- vector()
+	nout <- 0
+	avgAns <- apply( m2, 2, AVG.FUN, na.rm=T)
+	for (i1 in 1:(NGRP-1)) for (i2 in (i1+1):NGRP) {
+		xAns <- m2[ ,i1]
+		yAns <- m2[ ,i2]
+		testAns <- wilcox.test( xAns, yAns, paired=T)
+		xMean <- avgAns[i1]
+		yMean <- avgAns[i2]
+		thisFC <- log2( (yMean+1) / (xMean+1))
+		nout <- nout + 1
+		g1[nout] <- uniqGrps[i1]
+		g2[nout] <- uniqGrps[i2]
+		avg1[nout] <- xMean
+		avg2[nout] <- yMean
+		fc[nout] <- thisFC
+		pv[nout] <- testAns$p.value
+	}
 
 	# reformat to plot the results
-	m <- matrix( c(xAns,yAns), nrow=length(xyGenes), ncol=2)
-	rownames(m) <- xyGenes
-	colnames(m) <- labels
-	plotAns <- barplot( t(m), beside=TRUE, col=col, las=3, ylab="Gene Expression", xlab=NA, 
-				ylim=c(0,max(m)*1.05), main=main, ...)
+	plotAns <- barplot( t(m2), beside=TRUE, col=col, las=3, ylab="Gene Expression", xlab=NA, 
+				xlim=c(0,NG*(NGRP+1.75)), ylim=c(0,max(m2,na.rm=T)*1.05), main=mainText, ...)
 
-	lines( c(0.5,NG*3+0.5), c(xMean,xMean), col=col[1], lty=2, lwd=2)
-	lines( c(0.5,NG*3+0.5), c(yMean,yMean), col=col[2], lty=2, lwd=2)
+	for ( j in 1:NGRP) lines( c(0.5,NG*(NGRP+1)+0.5), rep.int(avgAns[j],2), col=col[j], lty=3, lwd=2)
 
 	if ( ! is.na(legend)) {
 		if ( is.null(legend) || legend == "") legend <- "topright"
-		graphics::legend( legend, paste(labels,legend.label.suffix), fill=col, bg='white')
+		graphics::legend( legend, paste( uniqGrps, legend.label.suffix), fill=col, bg='white')
 	}
 
-	out <- list( "x.avg"=xMean, "y.avg"=yMean, "Log2Fold"=fc, "p.value"=testAns$p.value)
+	out <- data.frame( "Group1"=g1, "Group2"=g2, "Average1"=avg1, "Average2"=avg2, "Log2Fold"=fc, "P.Value"=pv, stringsAsFactors=F)
+
+	# try to show some P-values?
+	mostSig <- which.min( out$P.Value)
+	xLeftTic <- NG * (NGRP+1) + 1.5
+	xRightTic <- xLeftTic * 1.02
+	yTic1 <- out$Average1[mostSig]
+	yTic2 <- out$Average2[mostSig]
+	pShow <- out$P.Value[mostSig]
+	pShowText <- if ( pShow > 0.0001) formatC( pShow, format="f", digits=4) else formatC( pShow, format="e", digits=2) 
+	lines( c( xLeftTic, xRightTic, xRightTic, xLeftTic), c( yTic1, yTic1, yTic2, yTic2), lwd=1, col=1, lty=1)
+	text( xRightTic, (yTic1+yTic2)/2, paste( "P =", pShowText), col=1, pos=4, cex=0.9)
+
 	return( out)
 }
 
