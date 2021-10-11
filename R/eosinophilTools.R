@@ -145,7 +145,7 @@
 
 	# reformat to plot the results
 	plotAns <- barplot( t(m2), beside=TRUE, col=col, las=3, ylab="Gene Expression", xlab=NA, 
-				xlim=c(0,NG*(NGRP+1.75)), ylim=c(0,max(m2,na.rm=T)*1.05), main=mainText, ...)
+				xlim=c(0,(NG+2)*(NGRP+1)), ylim=c(0,max(m2,na.rm=T)*1.05), main=mainText, ...)
 
 	for ( j in 1:NGRP) lines( c(0.5,NG*(NGRP+1)+0.5), rep.int(avgAns[j],2), col=col[j], lty=3, lwd=2)
 
