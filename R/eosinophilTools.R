@@ -3,7 +3,8 @@
 
 
 # extract expression values from a variety of object types
-`eosinophilExpression` <- function( x, value.mode=c("absolute","relative"), sep="\t") {
+`eosinophilExpression` <- function( x, value.mode=c("absolute","relative"), sep="\t"
+					speciesID=getCurrentSpecies()) {
 
 	eosinMarkerGenes <- c(  "FRRS1", "ADORA3", "ALOX15", "CCL23", "AFF2", 
 				"CEBPE", "AOC1", "TFF3", "PRSS33", "CCL15", 
@@ -14,6 +15,15 @@
 
 	isMAT <- isDF <- isVEC <- FALSE
 	out <- NULL
+
+	if ( speciesID != getCurrentSpecies()) {
+		eosinMarkerGenes <- ortholog( eosinMarkerGenes, from="Hs_grc", to=speciesID)
+		dropGenes <- which( eosinMarkerGenes == "")
+		if (length(ddropGenes)) {
+			eosinMarkerGenes <- eosinMarkerGenes[ -dropGenes]
+			eosinRPKMvalues <- eosinRPKMvalues[ -dropGenes]
+		}
+	}
 
 	if ( is.character(x)) {
 		x  <- read.delim( x[1], as.is=T, sep=sep)
@@ -64,8 +74,8 @@
 
 
 `eosinophilExpressionComparison` <- function( x, groups=names(x), levels=sort(unique(groups)), 
-						value.mode=c("absolute","relative"), col=NULL,
-						sep="\t", main="", legend="topright", legend.cex=1, 
+						value.mode=c("absolute","relative"), speciesID=getCurrentSpecies(), 
+						col=NULL, sep="\t", main="", legend="topright", legend.cex=1, 
 						AVG.FUN=mean, ...) {
 
 	isMAT <- isVEC <- FALSE
@@ -79,7 +89,7 @@
 		files <- x
 		N <- length(files)
 		groups <- rep( groups, length.out=N)
-		smlAns <- lapply( files, eosinophilExpression, value.mode=value.mode, sep=sep)
+		smlAns <- lapply( files, eosinophilExpression, value.mode=value.mode, speciesID=speciesID, sep=sep)
 		drops <- sapply( smlAns, is.null)
 		smlAns <- smlAns[ ! drops]
 		files <- files[ ! drops]
@@ -103,7 +113,7 @@
 			m[ ,j] <- smlAns[[j]][wh]
 		}
 	} else if ( is.matrix(x)) {
-		m <- eosinophilExpression( x, value.mode=value.mode)
+		m <- eosinophilExpression( x, value.mode=value.mode, speciesID=speciesID)
 		N <- ncol(m)
 		NG <- nrow(m)
 		groups <- rep( groups, length.out=N)
