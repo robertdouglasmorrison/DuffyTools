@@ -16,7 +16,7 @@
 	isMAT <- isDF <- isVEC <- FALSE
 	out <- NULL
 
-	if ( speciesID != getCurrentSpecies()) {
+	if ( speciesID != "Hs_grc") {
 		eosinMarkerGenes <- ortholog( eosinMarkerGenes, from="Hs_grc", to=speciesID)
 		dropGenes <- which( eosinMarkerGenes == "")
 		if (length(ddropGenes)) {
