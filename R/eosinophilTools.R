@@ -3,7 +3,7 @@
 
 
 # extract expression values from a variety of object types
-`eosinophilExpression` <- function( x, value.mode=c("absolute","relative"), sep="\t"
+`eosinophilExpression` <- function( x, value.mode=c("absolute","relative"), sep="\t", 
 					speciesID=getCurrentSpecies()) {
 
 	eosinMarkerGenes <- c(  "FRRS1", "ADORA3", "ALOX15", "CCL23", "AFF2", 
