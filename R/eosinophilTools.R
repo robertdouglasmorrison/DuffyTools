@@ -163,7 +163,7 @@
 				xlim=c(0,(NG+2)*(NGRP+1)), ylim=yLimits, main=mainText, 
 				...)
 
-	for ( j in 1:NGRP) lines( c(0.5,NG*(NGRP+1)+0.5), rep.int(avgAns[j],2), col=col[j], lty=3, lwd=1.5)
+	for ( j in 1:NGRP) lines( c(0.5,NG*(NGRP+1)+0.5), rep.int(avgAns[j],2), col=col[j], lty=3, lwd=2.5)
 	# redraw the bars so they are in front of the average lines
 	plotAns <- barplot( t(m2), beside=TRUE, col=col, border=borderCol, las=3, add=TRUE)
 
