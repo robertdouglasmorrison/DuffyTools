@@ -19,7 +19,7 @@
 	if ( speciesID != "Hs_grc") {
 		eosinMarkerGenes <- ortholog( eosinMarkerGenes, from="Hs_grc", to=speciesID)
 		dropGenes <- which( eosinMarkerGenes == "")
-		if (length(ddropGenes)) {
+		if (length(dropGenes)) {
 			eosinMarkerGenes <- eosinMarkerGenes[ -dropGenes]
 			eosinRPKMvalues <- eosinRPKMvalues[ -dropGenes]
 		}
