@@ -70,13 +70,15 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 
 
 # turn amino acids to DNA
-`AAtoCodonOptimizedDNA` <- function( aa, dnaRef) {
+`AAtoCodonOptimizedDNA` <- function( aa, dnaRef, mode=c("sample","best")) {
 
 	codonFreq <- codonUsageFrequency( dnaRef, allAA=TRUE)
 	out <- rep.int( "", length(aa))
 	
 	aa <- TOUPPER( aa)
 	aaV <- STRSPLIT( aa, split="")
+
+	mode <- match.arg( mode)
 
 	# test to provide a clean error
 	allDefinedAA <- unique.default( SUBSTR( names(codonFreq), 1,1))
@@ -96,7 +98,8 @@ codonUsageFrequency <- function( dna, allAA=FALSE) {
 				# use the codon frequencies as the sampling probabilities
 				prob <- codonFreq[who]
 				dnaSet <- SUB( "^[A-Z\\*]_", "", names(codonFreq)[who])
-				return( sample( dnaSet, size=1, prob=prob))
+				ans <- if (mode == "sample") sample( dnaSet, size=1, prob=prob) else dnaSet[ which.max(prob)]
+				return( ans)
 			})
 		out[j] <- PASTE( dnaV, collapse="")
 	}
