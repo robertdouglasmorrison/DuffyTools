@@ -55,7 +55,7 @@
 				minIntensity=0, small.offset=1, crop.log2fold=NULL, min.difference=NULL,
 				palette="YlOrRd", n.palette.colors=9, rev.palette=FALSE, n.heatmap.colors=50, 
 				Rowv=TRUE, Colv=TRUE, dendrogram=c("both","row","column","none"), 
-				scale=c("none","row","column"), trace=c("column","row","both","none"), margins=c(8,5), 
+				scale=c("none","row","column"), trace=c("none","column","row","both"), margins=c(8,5), 
 				key.xlab="", keysize=1.0, density.info=c("histogram","density","none"), key.title="Color Key",
 				...) {
 

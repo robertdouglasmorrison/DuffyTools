@@ -476,6 +476,8 @@
 	stopDNA <- stopDNA + AAoffset - 1
 	firstTracePoint <- max( 1, peakPos[ startDNA] - halfPeak)
 	lastTracePoint <- min( NT, peakPos[ stopDNA] + halfPeak)
+	# at this point, we have made the DNA be exactly in frame...
+	AAoffset <- 1
 
 	# now trim all data to that subset
 	xLimits <- c( firstTracePoint, lastTracePoint)

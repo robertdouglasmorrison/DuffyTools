@@ -144,11 +144,27 @@ UNION <- base::union
 			for (k in goodStops) {
 				tmp <- pepTerms[[k]]
 				nt <- length(tmp)
-				tmpStr <- PASTE( tmp[nt], "*", sep="")
+				tmpStr <- PASTE( tmp[nt], STOP_CODON, sep="")
 				tmp[nt] <- tmpStr
 				pepTerms[[k]] <- tmp
 			}
-	
+
+			# also try to allow rare internal stop codons, as when a psuedogene in some isolates
+			for (fram in 1:3) {
+				tmp <- pepTerms[[fram]]
+				nt <- length(tmp)
+				nch <- nchar(tmp)
+				if ( nt < 2) next
+				# find those with at least 20 aa on both sides of the STOP that broke the original
+				leftSideSize <- nch[ 1:(nt-1)]
+				rightSideSize <- nch[ 2:nt]
+				goodCandidates <- which( leftSideSize >= 20 & rightSideSize >= 20)
+				if ( ! length(goodCandidates)) next
+				# put the STOP back in, at the end of the left side sequence, and redude them back to one seq
+				for ( k in rev(goodCandidates)) tmp[k] <- paste( tmp[k], tmp[k+1], sep=STOP_CODON)
+				pepTerms[[fram]] <- tmp
+			}
+
 			# which reading frame has the best?
 			if ( is.null( referenceAA)) {
 				bigLength <- SAPPLY( pepTerms, function(x) return( max( nchar(x))))
