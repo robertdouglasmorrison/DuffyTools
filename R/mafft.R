@@ -1,6 +1,6 @@
 
 `mafft` <- function( fastaFile, outFile="mafft.aln", mafftProgram="~/bin/mafft",
-			mode=c("global", "local", "genaffine"), 
+			mode=c("global", "local", "genaffine"), anysymbol=FALSE,
 			iterations=1000, outfmt=c("clustal", "fasta"), 
 			guidetree=FALSE, mafftArgs="", verbose=FALSE) {
 
@@ -24,9 +24,11 @@
 
 	treeStr <- if (guidetree) " --treeout " else ""
 	outfmtStr <- if ( outfmt == "fasta") "" else " --clustalout "
+	anysymbolStr <- if (anysymbol) " --anysymbol" else ""
 
 	# build the command line
-	cmdLine <- paste( mafftProgram, modeStr, iterStr, treeStr, outfmtStr, mafftArgs, fastaFile, " > ", outFile)
+	cmdLine <- paste( mafftProgram, modeStr, iterStr, treeStr, outfmtStr, anysymbolStr, 
+				mafftArgs, fastaFile, " > ", outFile)
 
 	# clean away the expected result
 	file.delete( outFile)
