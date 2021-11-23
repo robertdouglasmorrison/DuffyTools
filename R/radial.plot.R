@@ -2,7 +2,7 @@
 
 radial.plot <- function (lengths, radial.pos = NULL, labels = NA, label.pos = NULL, 
     radlab = FALSE, start = 0, clockwise = FALSE, rp.type = "r", 
-    label.prop = 1.15, main = "", xlab = "", ylab = "", line.col = par("fg"), 
+    label.prop = 1.15, main = "", xlab = "", ylab = "", line.col = par("fg"), cex = par( "cex.axis"),
     lty = par("lty"), lwd = par("lwd"), mar = c(2, 2, 3, 2), 
     show.grid = TRUE, show.grid.labels = 4, show.radial.grid = TRUE, 
     grid.col = "gray", grid.bg = "transparent", grid.left = FALSE, 
@@ -204,7 +204,7 @@ radial.plot <- function (lengths, radial.pos = NULL, labels = NA, label.pos = NU
                   (label.pos[label] > pi/2 && label.pos[label] < 
                     3 * pi/2)
                 text(xpos[label], ypos[label], labels[label], 
-                  cex = par("cex.axis"), srt = labelsrt)
+                  cex = cex, srt = labelsrt)
             }
         } else {
 	    # when horizontal labels, tweak the positions near pi/2 and 3/2pi...
@@ -226,7 +226,7 @@ radial.plot <- function (lengths, radial.pos = NULL, labels = NA, label.pos = NU
 
             xpos <- cos(label.pos) * maxlength * label.prop
             ypos <- sin(label.pos) * maxlength * label.prop
-	    boxed.labels(xpos, ypos, labels, xpad=1.01, ypad = 0.7, border = FALSE, cex = par("cex.axis"), 
+	    boxed.labels(xpos, ypos, labels, xpad=1.01, ypad = 0.7, border = FALSE, cex = cex,
 	    		bg="transparent")
 	}
     }
