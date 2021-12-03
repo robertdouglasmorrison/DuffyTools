@@ -33,7 +33,7 @@ PEXEL.search <- function( x, max.aa.start=150, strict=TRUE, verbose=FALSE) {
 	startAA <- motif <- gName <- typeOut <- vector( length=N)
 	pexelType <- rep( 0, times=N)
 
-	pexelTerm1 <- "R[A-Z][L][A-Z][EQD]"
+	pexelTerm1 <- "R[A-Z][IL][A-Z][EQD]"
 	pexelTerm2 <- "[RK][NQSTYAVLIPFMWGC][LIVMAF][NQSTYAVLIPFMWGC][EQD]"
 	pexelLikeTerm1 <- "R[A-Z][LMF][ASTCHYV][EQDSAVR]"
 	pexelLikeTerm2 <- "[RK][A-Z][LIAVMF][ASTCHYV][EQDSAVR]"

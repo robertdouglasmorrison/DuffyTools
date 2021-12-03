@@ -86,3 +86,67 @@
 	out
 }
 
+
+`alignedSeqDist` <- function( x, delete.temp.files=TRUE) {
+
+	# use MAFFT MSA alignment to call edit distance, not just 'adist' or 'stringDist'
+
+	# could be given several types of argument
+	fastaFile <- alnFile <- NULL
+	makeFasta <- TRUE
+	if ( is.character(x) && length(x) == 1 && grepl( "\\.fa(sta)?$", tolower(x))) {
+		fastaFile <- x
+		alnFile <- sub( "\\.fa(sta)?$", ".aln", x)
+		makeFasta <- deleteFasta <- deleteAln <- FALSE
+	} else if ( is.Fasta(x)) {
+		seqs <- x$seq
+		desc <- x$desc
+	} else {
+		seqs <- x
+		desc <- names(x)
+		if ( is.null(desc)) {
+			desc <- 1:length(seqs)
+		}
+	} 
+
+	# make a FASTA for MAFFT?
+	if ( makeFasta) {
+		fastaFile <- "Temp.AlignedSeqDist.fasta"
+		alnFile <- "Temp.AlignedSeqDist.aln"
+		file.delete( alnFile)
+		writeFasta( as.Fasta( desc, seqs), fastaFile, line=100)
+		deleteFasta <- deleteAln <- delete.temp.files
+	} else {
+		tmpFA <- loadFasta( fastaFile, verbose=F)
+		desc <- tmpFA$desc
+	}
+
+	# do we do the MAFFT call
+	if ( file.exists( alnFile)) {
+		aln <- readALN( alnFile)
+	} else {
+		aln <- mafft( fastaFile, alnFile)
+	}
+
+	# extract the aligned matrxi, and calculate the distances
+	aaM <- aln$alignment
+	N <- nrow(aaM)
+	NC <- ncol(aaM)
+	dm <- matrix( 0, nrow=N, ncol=N)
+	rownames(dm) <- colnames(dm) <- desc
+	for ( i in 1:(N-1)) {
+		ch1 <- aaM[ i, ]
+		for (j in (i+1):N) {
+			ch2 <- aaM[ j, ]
+			dm[i,j] <- dm[j,i] <- sum( ch1 != ch2)
+		}
+	}
+
+	# clean up
+	if (deleteAln) file.delete( alnFile)
+	if (deleteFasta) file.delete( fastaFile)
+
+	return( dm)
+}
+
+		

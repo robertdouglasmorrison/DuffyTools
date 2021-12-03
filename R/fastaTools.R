@@ -49,6 +49,9 @@
 }
 
 
+`is.Fasta` <- function( x) return( is.list(x) && all( c("desc","seq") %in% names(x)))
+
+
 `writeFasta` <- function( fasta, file=NULL, line.width=80) {
 
 	if ( is.null( file)) stop( "writeFasta:  required 'file' argument is missing")
