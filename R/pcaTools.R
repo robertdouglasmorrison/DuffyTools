@@ -16,7 +16,7 @@
 				label.cex=label.cex, pch=pch, na.mode=na.mode, 
 				xZoom=xZoom, yZoom=yZoom, plotOrder=plotOrder, ...)
 
-	return( out)
+	return( invisible( out))
 }
 
 
@@ -91,7 +91,7 @@
 	out2 <- data.frame( "ROW_ID"=nams[keep], "PCT_DEV"=rPctDev[keep], stringsAsFactors=F)
 	if (nrow(out2)) rownames(out2) <- 1:nrow(out2)
 
-	return( list( "Column.Info"=out1, "Row.Info"=out2))
+	return( invisible( list( "Column.Info"=out1, "Row.Info"=out2)))
 }
 
 
