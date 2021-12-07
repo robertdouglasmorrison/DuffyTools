@@ -348,7 +348,7 @@
 				pos <- marker.pos
 			}
 			points( a[who], m[who], col=marker.col, bg=marker.col, pch=marker.pch, cex=marker.cex)
-			if (marker.labels) text( a[who], m[who], genes[who], pos=pos, col=marker.col, cex=marker.label.cex)
+			if (marker.labels) text( a[who], m[who], marker.genes, pos=pos, col=marker.col, cex=marker.label.cex)
 		}}
 	}
 	dev.flush()
@@ -436,7 +436,7 @@
 				pos <- marker.pos
 			}
 			points( int2[who], int1[who], col=marker.col, bg=marker.col, pch=marker.pch, cex=marker.cex)
-			if (marker.labels) text( int2[who], int1[who], genes[who], pos=pos, col=marker.col, cex=marker.label.cex)
+			if (marker.labels) text( int2[who], int1[who], marker.genes, pos=pos, col=marker.col, cex=marker.label.cex)
 		}}
 	}
 	dev.flush()
