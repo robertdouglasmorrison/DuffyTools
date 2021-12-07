@@ -295,7 +295,7 @@
 
 
 `makeMAplot` <- function( genes, int1, int2, offset=1, units="Intensity", label="MA plot", 
-			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, 
+			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.label.cex=1,
 			marker.pch=1, marker.pos=NULL, minYmax=NULL, maxYmax=NULL, cex=1, hideZero=FALSE, ...) {
 
 	if (hideZero) {
@@ -334,7 +334,9 @@
 		if ( marker.genes[1] == "identify") {
 			identify( a, m, shortGeneName(genes, keep=1), col=marker.col, cex=marker.cex)
 		} else {
-		who <- base::match( marker.genes, genes, nomatch=0)
+		who1 <- base::match( marker.genes, genes, nomatch=0)
+		who2 <- base::match( alias2Gene(marker.genes), genes, nomatch=0)
+		who <- pmax( who1, who2)
 		marker.genes <- marker.genes[ who > 0]
 		if ( length( marker.col) > 1) marker.col <- marker.col[ who > 0]
 		who <- who[ who > 0]
@@ -346,7 +348,7 @@
 				pos <- marker.pos
 			}
 			points( a[who], m[who], col=marker.col, bg=marker.col, pch=marker.pch, cex=marker.cex)
-			if (marker.labels) text( a[who], m[who], genes[who], pos=pos, col=marker.col, cex=marker.cex)
+			if (marker.labels) text( a[who], m[who], genes[who], pos=pos, col=marker.col, cex=marker.label.cex)
 		}}
 	}
 	dev.flush()
@@ -360,7 +362,7 @@
 
 `makeScatterplot` <- function( genes, int1, int2, offset=1, units1="Intensity", 
 			units2=units1, label="MA plot", 
-			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, 
+			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.label.cex=1,
 			marker.pch=1, marker.pos=NULL, minYmax=NULL, maxYmax=NULL, lab1="", lab2="", cex=1, useLog="xy", 
 			hideZero=FALSE, sym.asp=TRUE, show.cor=TRUE, ...) {
 
@@ -420,7 +422,9 @@
 		if ( marker.genes[1] == "identify") {
 			identify( int2, int1, shortGeneName(genes, keep=1), col=marker.col, cex=marker.cex)
 		} else {
-		who <- base::match( marker.genes, genes, nomatch=0)
+		who1 <- base::match( marker.genes, genes, nomatch=0)
+		who2 <- base::match( alias2Gene(marker.genes), genes, nomatch=0)
+		who <- pmax( who1, who2)
 		marker.genes <- marker.genes[ who > 0]
 		if ( length( marker.col) > 1) marker.col <- marker.col[ who > 0]
 		who <- who[ who > 0]
@@ -432,7 +436,7 @@
 				pos <- marker.pos
 			}
 			points( int2[who], int1[who], col=marker.col, bg=marker.col, pch=marker.pch, cex=marker.cex)
-			if (marker.labels) text( int2[who], int1[who], genes[who], pos=pos, col=marker.col, cex=marker.cex)
+			if (marker.labels) text( int2[who], int1[who], genes[who], pos=pos, col=marker.col, cex=marker.label.cex)
 		}}
 	}
 	dev.flush()
