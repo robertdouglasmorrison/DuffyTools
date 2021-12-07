@@ -211,14 +211,16 @@ errorBar <- function( x, mode=c("se", "sd", "mad", "ci", "gm.ci"), average.FUN=m
 	if ( mode == "ci") {
 		tt <- t.test( x, na.rm=T)
 		ci <- tt$conf.int
-		se1 <- ci[1]
-		se2 <- ci[2]
+		# the confidence interval is absolute, so turn these back to 'relative to mean' values
+		se1 <- mn - ci[1]
+		se2 <- ci[2] - mn
 	}
 	if ( mode == "gm.ci") {
 		tt <- t.test( log10(x), na.rm=T)
 		ci <- 10 ^ tt$conf.int
-		se1 <- ci[1]
-		se2 <- ci[2]
+		# the confidence interval is absolute, so turn these back to 'relative to mean' values
+		se1 <- mn - ci[1]
+		se2 <- ci[2] - mn
 	}
 
 	if (plot && horiz) {
