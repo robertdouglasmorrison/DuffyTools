@@ -227,8 +227,8 @@
 `plotFoldChange` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="PVALUE", cex=1,
 			keepIntergenics=FALSE, label="Plot", plotType=c("Volcano"),
 			pch=21, col=c('blue','red', 'black'), cut.fold=1, cut.pvalue=0.05, shortNames=TRUE,
-			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.pch=21, 
-			marker.pos=NULL, sep="\t", min.intensity=0, intensityColumn="RPKM_1", 
+			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.label.cex=1, 
+			marker.pch=21, marker.pos=NULL, sep="\t", min.intensity=0, intensityColumn="RPKM_1", 
 			left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, ...) {
 
 	if ( is.character(file)) {
@@ -285,7 +285,7 @@
 	if ( plotType == "Volcano") {
 		ans <- makeVolcanoPlot( genes, fold, pval, label=label, cex=cex,
 			pch=pch, col=col, cut.fold=cut.fold, cut.pvalue=cut.pvalue,
-			marker.genes=marker.genes, marker.col=marker.col, marker.cex=marker.cex,
+			marker.genes=marker.genes, marker.col=marker.col, marker.cex=marker.cex, marker.label.cex=marker.label.cex,
 			marker.labels=marker.labels, marker.pch=marker.pch, marker.pos=marker.pos, 
 			left.label=left.label, right.label=right.label, forceXmax=forceXmax, forceYmax=forceYmax, ...)
 	}
@@ -448,7 +448,7 @@
 `makeVolcanoPlot` <- function( genes, fold, pval, label="Volcano Plot: ", 
 			pch=21, col=c('blue','red','black'), cut.fold=1, cut.pvalue=0.05,
 			clip.fold=10, clip.pvalue=1e-10, forceXmax=NULL, forceYmax=NULL,
-			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, 
+			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.label.cex=1,
 			marker.pch=21, marker.pos=NULL, cex=1, left.label=NULL, right.label=NULL, ...) {
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
@@ -521,7 +521,9 @@
 		if ( marker.genes[1] == "identify") {
 			identify( fold, y, shortGeneName(genes, keep=1), col=marker.col, cex=marker.cex)
 		} else {
-			who <- whereMarker
+			who1 <- match( marker.genes, genes, nomatch=0)
+			who2 <- match( alias2Gene( marker.genes), genes, nomatch=0)
+			who <- pmax( who1, who2)
 			marker.genes <- marker.genes[ who > 0]
 			if ( length( marker.col) > 1) marker.col <- marker.col[ who > 0]
 			who <- who[ who > 0]
@@ -533,7 +535,7 @@
 					pos <- marker.pos
 				}
 				points( fold[who], y[who], col=marker.col, bg=marker.col, pch=marker.pch, cex=marker.cex)
-				if (marker.labels) text( fold[who], y[who], genes[who], pos=pos, col=col[3], cex=marker.cex)
+				if (marker.labels) text( fold[who], y[who], marker.genes, pos=pos, col=col[3], cex=marker.label.cex)
 			}
 		}
 	}
