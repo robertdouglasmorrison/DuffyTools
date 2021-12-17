@@ -294,13 +294,20 @@
 	par( 'xpd'=FALSE)
 	dev.flush()
 
-	# return the full table, what we drew is at the very top
+	# return the full table, what we drew is at the very top.  Try to smartly truncate the values
+	if ( max(magniOut,na.rm=T) > 1) {
+		magniOut <- round( magniOut, digits=3)
+		mOut <- round( mOut, digits=3) 
+	} else if ( max(magniOut,na.rm=T) > 0.01) {
+		magniOut <- round( magniOut, digits=5)
+		mOut <- round( mOut, digits=5) 
+	}
+
 	# let's not keep the HTML links...
 	fullPathNames <- cleanGeneSetModuleNames( fullPathNames, wrap=F)
-	out <- data.frame( "PathName"=fullPathNames, "N_Genes"=nGenes, "DeltaFold"=round( magniOut, digits=5),
+	out <- data.frame( "PathName"=fullPathNames, "N_Genes"=nGenes, "DeltaFold"=magniOut,
 				"BestPvalue"=formatC( bestPout, format="e", digits=2), 
-				"BestPIvalue"=round( bestPIout, digits=3), 
-				round( mOut, digits=5), 
+				"BestPIvalue"=round( bestPIout, digits=3), mOut,
 				formatC( pOut, format="e", digits=2), 
 				round( piOut, digits=3), stringsAsFactors=F)
 	colnames(out) <- c( "PathName", "N_Genes", "DeltaFold", "BestPvalue", "BestPIvalue",
