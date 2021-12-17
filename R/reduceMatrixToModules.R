@@ -86,11 +86,14 @@ reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rown
 			outN[ i, j] <<- n <- sum( ! is.na(v))
 			outV[ i, j] <<- average.FUN( v, na.rm=T)
 			if( n > 1) {
-				# if ( diff( range( v, na.rm=T)) < 0.01) v <- jitter(v)
-				pval <- suppressWarnings( t.test( v)$p.value)
-				if ( is.null(pval) || is.na( pval) || is.nan(pval)) pval <- 1
-				# try to adjust for size of V
-				pval <- pval * n
+				if ( diff( range( v, na.rm=T)) < 0.001) {
+					pval <- 1
+				} else {
+					pval <- suppressWarnings( t.test( v)$p.value)
+					if ( is.null(pval) || is.na( pval) || is.nan(pval)) pval <- 1
+					# try to adjust for size of V
+					pval <- pval * n
+				}
 			} else {
 				pval <- 1
 			}
