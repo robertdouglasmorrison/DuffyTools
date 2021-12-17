@@ -11,8 +11,8 @@ radial.plot <- function (lengths, radial.pos = NULL, labels = NA, label.pos = NU
     boxed.radial = TRUE, poly.col = NULL, add = FALSE, ...) 
 {
 
-    # set up args based on defaults
-    if (is.null(radial.lim)) radial.lim <- range(lengths)
+    # set up args based on defaults, with a sensible minimum
+    if (is.null(radial.lim)) radial.lim <- range( c( lengths, -0.1, 0.1))
     length.dim <- dim(lengths)
     if (is.null(length.dim)) {
         npoints <- length(lengths)
@@ -185,7 +185,7 @@ radial.plot <- function (lengths, radial.pos = NULL, labels = NA, label.pos = NU
             if (is.null(radial.labels)) radial.labels = as.character(grid.pos)
             if (!is.null(grid.unit)) radial.labels[length(grid.pos)] <- paste(radial.labels[length(grid.pos)], grid.unit)
             if (boxed.radial) {
-                boxed.labels(xpos, ypos, radial.labels, col=grid.col, border=FALSE, cex=par("cex.lab")*0.9, 
+                boxed.labels(xpos, ypos, radial.labels, col=grid.col, border=NA, cex=par("cex.lab")*0.9, 
 				bg="transparent")
             } else {
 	        text(xpos, ypos, radial.labels, col=grid.col, cex=par("cex.lab")*0.9)
@@ -226,7 +226,7 @@ radial.plot <- function (lengths, radial.pos = NULL, labels = NA, label.pos = NU
 
             xpos <- cos(label.pos) * maxlength * label.prop
             ypos <- sin(label.pos) * maxlength * label.prop
-	    boxed.labels(xpos, ypos, labels, xpad=1.01, ypad = 0.7, border = FALSE, cex = cex,
+	    boxed.labels(xpos, ypos, labels, xpad=1.01, ypad = 0.7, border = NA, cex = cex,
 	    		bg="transparent")
 	}
     }
