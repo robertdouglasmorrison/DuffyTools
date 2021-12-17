@@ -255,9 +255,11 @@
 	# either set the limits from the data..
 	if ( is.null( radial.lim)) {
 		radial.lim <- range( as.vector( mShow)) * 1.5
+		if ( radial.lim[2] < 0.1) radial.lim[2] <- 0.1
 		# make sure we span the zero point, so any 'baseline' group is sure to be drawn
 		negThreshold <- max( as.vector( mShow), na.rm=T) * -0.3
 		if ( radial.lim[1] > negThreshold) radial.lim[1] <- negThreshold
+		if ( radial.lim[1] > -0.1) radial.lim[1] <- -0.1
 	} else {
 		# or clip the data to those limits
 		mShow <- pmax( mShow, (radial.lim[1]*0.95))
