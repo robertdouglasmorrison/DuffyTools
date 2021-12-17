@@ -295,10 +295,10 @@
 	# return the full table, what we drew is at the very top
 	# let's not keep the HTML links...
 	fullPathNames <- cleanGeneSetModuleNames( fullPathNames, wrap=F)
-	out <- data.frame( "PathName"=fullPathNames, "N_Genes"=nGenes, "DeltaFold"=round( magniOut, digits=3),
+	out <- data.frame( "PathName"=fullPathNames, "N_Genes"=nGenes, "DeltaFold"=round( magniOut, digits=5),
 				"BestPvalue"=formatC( bestPout, format="e", digits=2), 
 				"BestPIvalue"=round( bestPIout, digits=3), 
-				round( mOut, digits=3), 
+				round( mOut, digits=5), 
 				formatC( pOut, format="e", digits=2), 
 				round( piOut, digits=3), stringsAsFactors=F)
 	colnames(out) <- c( "PathName", "N_Genes", "DeltaFold", "BestPvalue", "BestPIvalue",
