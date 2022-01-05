@@ -3,12 +3,12 @@
 #				DE results "Look Like" a specific other DE result
 
 
-`deSignatureCompare` <- function( refPath, refGroup="", refLabel="Reference", 
-				targetPath, targetGroup=NULL, targetLabel="Target", 
-				speciesID=getCurrentSpecies(),
-				min.fold=0.1, max.pvalue=0.1, max.members=2000, ...) {
+`deSignatureCompare` <- function( refPath, refGroup="", targetPath, targetGroup=NULL, 
+				refLabel="Reference", targetLabel="Target", targetColor=NULL,
+				speciesID=getCurrentSpecies(), min.fold=0.1, max.pvalue=0.1, 
+				max.members=1000, clip.fold=4, ...) {
 
-	if ( refGroup == "") stop( "Explicit DE 'referenceGroup' is required.")
+	if ( refGroup == "") stop( "Explicit DE 'refGroup' is required.")
 	if ( speciesID != getCurrentSpecies()) setCurrentSpecies( speciesID)
 
 	# get the reference signature, and verify it was found
@@ -26,14 +26,15 @@
 	if ( (N <- length(targetSig$Gene)) > 0) cat( "\n\nTarget Groups found: ", N, "\n", names(targetSig$Gene))
 
 	# do the comparisons
-	ans <- compareSignatures( refSig, targetSig, refLabel=refLabel, targetLabel=targetLabel, ...)
+	ans <- compareSignatures( refSig, targetSig, refLabel=refLabel, targetLabel=targetLabel, targetColor=targetColor, 
+				clip.fold=clip.fold, ...)
 	cat( "\nDone.\n")
 
 	return( ans)
 }
 
 
-`gatherAllSignatures` <- function( path, groupSet=NULL, min.fold=0.1, max.pvalue=0.1, max.members=2000) {
+`gatherAllSignatures` <- function( path, groupSet=NULL, min.fold=0.1, max.pvalue=0.1, max.members=1000) {
 
 	geneFiles <- selectSignatureFiles( path, groupSet, mode="gene")
 	densityFiles <- selectSignatureFiles( path, groupSet, mode="density")
@@ -131,7 +132,7 @@
 }
 
 
-`gatherGeneSignature` <- function( geneFile, min.fold=0.1, max.pvalue=0.1, max.members=2000) {
+`gatherGeneSignature` <- function( geneFile, min.fold=0.1, max.pvalue=0.1, max.members=1000) {
 
 	# grab the genes that are DE UP, and 
 	# make a small DF of the important values
@@ -159,7 +160,7 @@
 }
 
 
-`gatherDensitySignature` <- function( densityFile, min.fold=0.1, max.pvalue=0.1, max.members=2000) {
+`gatherDensitySignature` <- function( densityFile, min.fold=0.1, max.pvalue=0.1, max.members=1000) {
 
 	# grab the gene sets that are DE UP, and 
 	# make a small DF of the important values
@@ -193,7 +194,7 @@
 }
 
 
-`gatherQusageSignature` <- function( qusageFile, min.fold=0.1, max.pvalue=0.1, max.members=2000) {
+`gatherQusageSignature` <- function( qusageFile, min.fold=0.1, max.pvalue=0.1, max.members=1000) {
 
 	tbl <- read.csv( qusageFile, sep=",", as.is=T)
 	tbl$RANK <- 1:nrow(tbl)
@@ -217,9 +218,9 @@
 
 
 `compareSignatures` <- function( refSig, targetSig, refLabel="", targetLabel="", targetColor=NULL, 
-				targetOrder=NULL, legend.cex=1, ...) {
+				targetOrder=NULL, legend.cex=1, clip.fold=4, ...) {
 
-	comparePlotSetup( refLabel, targetLabel, ...)
+	comparePlotSetup( refLabel, targetLabel, clip.fold=clip.fold, ...)
 
 	# grab the parts of the signatures
 	refGene <- refSig$Gene[[1]]
@@ -252,7 +253,8 @@
 
 		# we always have genes
 		ans <- compareOneSignature( refGene, thisGeneSig, groupName=thisGrp, 
-					idColumn="GENE_ID", col=targetColor[i], pch=21, ...)
+					idColumn="GENE_ID", col=targetColor[i], pch=21, 
+					clip.fold=clip.fold, ...)
 		if ( ! is.null(ans)) {
 			f1 <- c( f1, ans$Fold.Ref)
 			f2 <- c( f2, ans$Fold.Target)
@@ -332,7 +334,7 @@
 }
 
 
-`comparePlotSetup` <- function( refLabel, targetLabel, clip.fold=3.0, ...) {
+`comparePlotSetup` <- function( refLabel, targetLabel, clip.fold=4.0, ...) {
 
 	checkX11()
 	mainText <- paste( "DE Signature Compare:    ", refLabel, "  .vs.  ", targetLabel)
@@ -351,7 +353,7 @@
 
 
 compareOneSignature <- function( refDF, targetDF, groupName, mode=c("intersect","union"), idColumn="GENE_ID", 
-				col=1, pch=1, pt.cex=1, ...) {
+				col=1, pch=1, pt.cex=1, clip.fold=4.0, ...) {
 
 	# grab the identifiers from both
 	refID <- refDF[[ idColumn]]
@@ -373,6 +375,12 @@ compareOneSignature <- function( refDF, targetDF, groupName, mode=c("intersect",
 	refFold[ whRef > 0] <- refDF$LOG2FOLD[ whRef]
 	whTarget <- match( allID, targetID, nomatch=0)
 	targetFold[ whTarget > 0] <- targetDF$LOG2FOLD[ whTarget]
+
+	# apply the fold change clip to what we draw
+	refFold[ refFold > clip.fold] <- clip.fold
+	refFold[ refFold < -clip.fold] <- -clip.fold
+	targetFold[ targetFold > clip.fold] <- clip.fold
+	targetFold[ targetFold < -clip.fold] <- -clip.fold
 
 	points( refFold, targetFold, col=col, pch=pch, cex=pt.cex)
 	dev.flush()

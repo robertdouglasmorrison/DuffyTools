@@ -266,9 +266,9 @@
 	NG <- nlevels( grpFac)
 	if ( any( c( NS, NG) < 1)) stop( "Not enough samples or marker groups")
 
-	m <- matrix( NA, nrow=NG, ncol=NS)
-	rownames(m) <- levels(grpFac)
-	colnames(m) <- sampleIDset
+	m <- pv <- matrix( NA, nrow=NG, ncol=NS)
+	rownames(m) <- rownames(pv) <- levels(grpFac)
+	colnames(m) <- colnames(pv) <- sampleIDset
 
 	for ( i in 1:NS) {
 		s <- sampleIDset[i]
@@ -281,7 +281,8 @@
 		if ( is.null( ans)) next
 		ord <- order( ans$Group)
 		m[ , i] <- ans$Score[ ord]
-		cat( "\r", i, s, "\tBest: ", ans$Group[1], ans$Score[1])
+		pv[ , i] <- ans$FDR[ ord]
+		cat( "\r", i, s, "\tBest: ", ans$Group[1], ans$Score[1], ans$FDR[1])
 	}
 	cat( "\n")
 
@@ -312,7 +313,7 @@
 	# spacing for the legend depends on counts and label length...
 	plotMode <- match.arg( plotMode)
 	if ( plotMode == "none") {
-		return( m)
+		return( list( "score"=m, "p.value"=pv))
 	}
 	if ( plotMode == "bars") {
 		gap <- 2.5
@@ -325,7 +326,7 @@
 	if ( plotMode == "lines") {
 		xLegendPad <- 1.3
 		if ( NS < 6) xLegendPad <- 1.5
-		ylim <- range( m, na.rm=T)
+		ylim <- range( m, na.rm=T) * 1.05
 		plot( 1, 1, type="n", main=paste( "Marker Genes Scoring:   ", label), ylab=ylabel,
 			xlim=c(0.5-(NS/10),NS*xLegendPad), ylim=ylim, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
 			xaxt="n", xlab=NA, ...)
@@ -342,14 +343,23 @@
 			text( 0.9, m[j,1], rownames(m)[j], pos=2, cex=label.cex)
 			text( NS+0.1, m[j,NS], rownames(m)[j], pos=4, cex=label.cex)
 		}
+		# show P-values
+		pvTxt <- rep.int( "", NS)
+		bestP <- apply( pv, 2, min, na.rm=T)
+		bestS <- apply( m, 2, max, na.rm=T)
+		pvTxt[ bestP < 0.05] <- "*"
+		pvTxt[ bestP < 0.01] <- "**"
+		pvTxt[ bestP < 0.001] <- "***"
+		text( 1:NS, bestS, pvTxt, pos=3)
 
 		legend( "topright", rownames(m), fill=groupColor, bg='white', cex=legend.cex)
 	}
 
 	if ( length( isNA)) {
 		m <- m[ , -isNA]
+		pv <- pv[ , -isNA]
 	}
-	return( m)
+	return( list( "score"=m, "p.value"=pv))
 }
 
 
@@ -399,4 +409,38 @@
 	out
 }
 
+
+`createMarkerGenes` <- function( folder, file.pattern=paste( getCurrentSpeciesFilePrefix(), "Meta.JOINED.txt$", sep="."),
+				Ngenes=100, geneColumn="GENE_ID", sep="\t", UP.only=FALSE) {
+
+	# given a folder that should hold DE results, find all the groups' results
+	fset <- dir( folder, pattern=file.pattern, recursive=FALSE, full.name=T)
+	if (! length( fset)) {
+		cat( "\nWarning:  No DE files found that match the given file pattern: ", file.pattern)
+		return( NULL)
+	}
+
+	out <- data.frame()
+	for (f in fset) {
+		tbl <- read.delim( f, as.is=TRUE, sep=sep)
+		if ( ! geneColumn %in% colnames(tbl)) {
+			cat( "\nWarning:  No column name matches the given gene field: ", geneColumn, " in file: ", f)
+			next
+		}
+		grpName <- sub( paste( ".", file.pattern, sep=""), "", basename(f))
+		Nuse <- min( Ngenes, nrow(tbl)/2)
+		smlTbl <- tbl[ 1:Nuse, ]
+		sml <- data.frame( "GENE_ID"=shortGeneName( smlTbl[[ geneColumn]], keep=1), "Group"=grpName, 
+				"Direction"="UP", "Rank"=1:nrow(smlTbl), stringsAsFactors=F)
+		out <- rbind( out, sml)
+		if ( UP.only) next
+		tbl <- tbl[ rev( 1:nrow(tbl)), ]
+		smlTbl <- tbl[ 1:Nuse, ]
+		sml <- data.frame( "GENE_ID"=shortGeneName( smlTbl[[ geneColumn]], keep=1), "Group"=grpName, 
+				"Direction"="DOWN", "Rank"=1:nrow(smlTbl), stringsAsFactors=F)
+		out <- rbind( out, sml)
+		cat( "  ", grpName, nrow(out), "\n")
+	}
+	return( out)
+}
 

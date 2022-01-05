@@ -94,7 +94,7 @@
 
 
 `expressionMatrixToFileSet` <- function( m, groups=colnames(m), geneColumn="GENE_ID", 
-					intensityColumn=c("INTENSITY","RPKM_M","READS_M"),
+					intensityColumn=c("INTENSITY","RPKM_M","READS_M", "TPM_M"),
 					path=".", sep="\t", AVG.FUN=sqrtmean, addNGScolumns=FALSE,
 					dropDuplicateIDs=TRUE, verbose=FALSE) {
 
