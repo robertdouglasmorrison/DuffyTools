@@ -36,10 +36,14 @@ UNION <- base::union
 	out <- SAPPLY( as.character( dnaSet), function( dna) {
 
 			pepsIn <- DNAtoAA( dna, clipAtStop=clipAtStop, readingFrames=readingFrames)
+			names(pepsIn) <- PASTE( "FR", readingFrames, sep="")
 
 			# if ignoring stop codons, break into all coding fragments of each
 			if ( ! clipAtStop && breakAtStops) {
-				pepFrags <- unlist( STRSPLIT( pepsIn, split=STOP_CODON_PATTERN, fixed=FALSE), use.names=F)
+				splitAns <- STRSPLIT( pepsIn, split=STOP_CODON_PATTERN, fixed=FALSE)
+				splitNames <- rep( names(pepsIn), times=SAPPLY( splitAns, length))
+				pepFrags <- unlist( splitAns, use.names=F)
+				names(pepFrags) <- splitNames
 			} else {
 				pepFrags <- pepsIn
 			}
