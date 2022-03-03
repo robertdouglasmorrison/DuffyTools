@@ -397,7 +397,7 @@
 }
 
 
-geneSetOverlap <- function( gs1, gs2) {
+`geneSetOverlap` <- function( gs1, gs2) {
 
 	# do set overlap calculation (Jaccard Index and hypergeometric P-value)
 
@@ -478,7 +478,7 @@ geneSetOverlap <- function( gs1, gs2) {
 }
 
 
-geneSetBestMatch <- function( genes, geneSets=defaultGeneSets(), nBest=5, speciesID=getCurrentSpecies()) {
+`geneSetBestMatch` <- function( genes, geneSets=defaultGeneSets(), nBest=5, speciesID=getCurrentSpecies()) {
 
 	# do set overlap calculation (Jaccard Index and hypergeometric P-value)
 	curID <- getCurrentSpecies()
@@ -548,7 +548,7 @@ geneSetBestMatch <- function( genes, geneSets=defaultGeneSets(), nBest=5, specie
 }
 
 
-geneSetFitDataFrame <- function( tbl, geneSets=defaultGeneSets(), speciesID=getCurrentSpecies(),
+`geneSetFitDataFrame` <- function( tbl, geneSets=defaultGeneSets(), speciesID=getCurrentSpecies(),
 				geneColumn="GENE_ID", foldColumn="LOG2FOLD", min.fold=0.2, 
 				pvalueColumn="AVG_PVALUE", max.pvalue=0.05, max.geneSets=100) {
 
