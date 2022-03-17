@@ -72,7 +72,7 @@
 	}
 
 	# some aliases may have revision suffixes.  Strip and try one more time
-	notYet <- which( genesOut == genes)
+	notYet <- setdiff( which( genesOut == genes), noChange)
 	if ( length( notYet)) {
 		hasSuffix <- grep( "\\.[1-9]$", genes[notYet])
 		genes2 <- sub( "\\.[1-9]$", "", genes[notYet])
@@ -82,7 +82,7 @@
 
 	# one more thing to try:  many GeneIDs have various special characters, that the given gene symobls may not have
 	# try to test the given names against genes (not aliases)
-	notYet <- which( genesOut == genes)
+	notYet <- setdiff( which( genesOut == genes), noChange)
 	if ( length( notYet)) {
 		uniqGenes <- unique.default( aliasTable$GeneID)
 		testAliasGenes <- gsub( "[^A-Z0-9]", "", toupper(uniqGenes))
@@ -93,7 +93,7 @@
 
 	# one more thing to try:  many aliases have various special characters, that can break the full equality test
 	# try to turn the aliases in the table into just the alphanumeric core.
-	notYet <- which( genesOut == genes)
+	notYet <- setdiff( which( genesOut == genes), noChange)
 	if ( length( notYet)) {
 		# the grep substitution on the full alias table may be super slow, can we only do those with a chance...
 		firstLetters <- unique( substr( genes[notYet], 1, 1))
