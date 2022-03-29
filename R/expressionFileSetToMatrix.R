@@ -126,6 +126,15 @@
 		sids <- groupIDs
 	}
 
+	# note that TPM units by definition should sum to 1 million.  Averaging can distort that,
+	# so restore that by hand
+	if ( grepl( "TPM", toupper(intensityColumn))) {
+		for ( i in 1:NC) {
+			v <- m[ , i]
+			m[ , i] <- v * 1000000 / sum(v,na.rm=T)
+		}
+	}
+
 	for ( i in 1:NC) {
 		v <- m[,i]
 		v <- round( v, digits=4)
