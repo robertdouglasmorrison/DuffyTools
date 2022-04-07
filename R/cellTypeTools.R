@@ -145,7 +145,7 @@
 	isNewFormat <- grepl( "; ", cellTypes)
 	if ( isNewFormat) {
 		cellTerms <- unlist( strsplit( cellTypes, split="; "))
-		cellTermCellName <- sub( ":[0-9]+%", "", cellTerms)
+		cellTermCellNames <- sub( ":[0-9]+%", "", cellTerms)
 		cellTermPcts <- sub( "(.+:)([0-9]+)(%^)", "\\2", cellTerms)
 		# use the percentages to prorate all the cell terms, and then scale back to how many cell types we were given
 		cellTbl <- table( rep( cellTermCellNames, times=as.numeric(cellTermPcts)))
