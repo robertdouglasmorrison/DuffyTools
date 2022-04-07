@@ -96,7 +96,7 @@
 }
 
 
-`cellTypeEnrichment` <- function( cellTypes, mode=c("geneSets", "genes"), 
+`cellTypeEnrichment` <- function( cellTypes, mode=c("genes", "geneSets"), 
 				upOnly=TRUE, minEnrich=1.25, maxPvalue=0.01, 
 				wt.enrich=1, wt.pvalue=2, speciesID=getCurrentSpecies(), 
 				geneUniverse=NULL, correct=TRUE, verbose=T) {
@@ -140,7 +140,20 @@
 	if ( length( drops)) cellTypes <- cellTypes[ -drops]
 
 	# ready to calculate enrichment
-	givenTbl <- table( cellTypes)
+	# in the past, these cell type strings were always just a single cell type.  Now they can instead
+	# be the relative percentages of 2+ cell types.  Always of the form:   CellType1:XX%; CellType2:YY%; etc
+	isNewFormat <- grepl( "; ", cellTypes)
+	if ( isNewFormat) {
+		cellTerms <- unlist( strsplit( cellTypes, split="; "))
+		cellTermCellName <- sub( ":[0-9]+%", "", cellTerms)
+		cellTermPcts <- sub( "(.+:)([0-9]+)(%^)", "\\2", cellTerms)
+		# use the percentages to prorate all the cell terms, and then scale back to how many cell types we were given
+		cellTbl <- table( rep( cellTermCellNames, times=as.numeric(cellTermPcts)))
+		cellTbl <- round( cellTbl * length(cellTypes) / sum(cellTbl))
+		givenTbl <- cellTbl[ cellTbl > 0]
+	} else {
+		givenTbl <- table( cellTypes)
+	}
 	givenPcts <- givenTbl * 100 / sum(givenTbl)
 	givenNames <- names( givenTbl)
 	allTbl <- table( cellTypeUniverse)
