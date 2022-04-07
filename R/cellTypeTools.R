@@ -119,8 +119,10 @@
 
 		# this table often has more than one cell type per gene, to show the diversity
 		# limit it to the first/best cell type choice for each gene
-		dups <- which( duplicated( geneCellTypes$GENE_ID))
-		if ( length(dups)) geneCellTypes <- geneCellTypes[ -dups, ]
+		# Note:  with allowing 2+ cell types per gene, we need to NOT remove duplicates, as it distorts 
+		# the true number of genes per cell type
+		# dups <- which( duplicated( geneCellTypes$GENE_ID))
+		# if ( length(dups)) geneCellTypes <- geneCellTypes[ -dups, ]
 
 		# allow the caller to shrink the universe, as from arrays with less than all genes present
 		if ( ! is.null( geneUniverse)) {
@@ -1793,7 +1795,7 @@
 	genes <- shortGeneName( genes, keep=1)
 	fold <- as.numeric( tmp[[ foldColumn]])
 	pval <- as.numeric( tmp[[ pvalueColumn]])
-	celltype <- if ( "CellType" %in% colnames(tmp)) tmp$CellType else gene2CellType(genes)
+	celltype <- if ( "CellType" %in% colnames(tmp)) tmp$CellType else gene2CellType(genes, max.type=5)
 
 	# always remove  non genes, etc.
 	drops <- grep( "(ng)", genes, fixed=TRUE)
@@ -1842,10 +1844,11 @@
 	DOWNgenes <- intersect( DOWNgenes, which(fold < 0))
 
 	# use cell type enrichment to decide who to highlight
+	# as of new cell types allowing 2+ types, all cell type names are 'short'
 	UPenrich <- cellTypeEnrichment( celltype[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
 	DOWNenrich <- cellTypeEnrichment( celltype[DOWNgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
-	UPenrich$CellType <- shortCellNames[ match( UPenrich$CellType , longCellNames)]
-	DOWNenrich$CellType <- shortCellNames[ match( DOWNenrich$CellType , longCellNames)]
+	UPenrich$CellType <- shortCellNames[ match( UPenrich$CellType , shortCellNames)]
+	DOWNenrich$CellType <- shortCellNames[ match( DOWNenrich$CellType , shortCellNames)]
 
 	# now let's calculate the clusters for each cell type, both UP and DOWN
 	cellFac <- factor( celltype)
@@ -1864,8 +1867,8 @@
 		# given all the genes for one cell type
 		ct <- celltype[k[1]]
 		if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
-		ct <- shortCellNames[ ct == longCellNames]
-		if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
+		#ct <- shortCellNames[ ct == longCellNames]
+		#if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
 		ctColor <- allCellTransparentColors[ match( ct, allCellNames)]
 
 		# see how many and where each group falls
