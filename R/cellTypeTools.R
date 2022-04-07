@@ -142,7 +142,7 @@
 	# ready to calculate enrichment
 	# in the past, these cell type strings were always just a single cell type.  Now they can instead
 	# be the relative percentages of 2+ cell types.  Always of the form:   CellType1:XX%; CellType2:YY%; etc
-	isNewFormat <- grepl( "; ", cellTypes)
+	isNewFormat <- any( grepl( "; ", cellTypes))
 	if ( isNewFormat) {
 		cellTerms <- unlist( strsplit( cellTypes, split="; "))
 		cellTermCellNames <- sub( ":[0-9]+%", "", cellTerms)
