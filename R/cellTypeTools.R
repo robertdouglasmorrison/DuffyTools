@@ -64,7 +64,7 @@
 }
 
 
-`gene2CellType` <- function( genes, speciesID=getCurrentSpecies()) {
+`gene2CellType` <- function( genes, max.types=1, speciesID=getCurrentSpecies()) {
 
 	out <- rep.int( "", N <- length(genes))
 
@@ -77,8 +77,19 @@
 		return( out)
 	}
 
-	where <- match( genesIn, geneCellTypes$GENE_ID, nomatch=0)
-	out[ where > 0] <- geneCellTypes$CellType[ where]
+	if ( max.types == 1) {
+		where <- match( genesIn, geneCellTypes$GENE_ID, nomatch=0)
+		out[ where > 0] <- geneCellTypes$CellType[ where]
+	} else {
+		# nned to find 2+ cell types per gene
+		smlCT <- subset( geneCellTypes, GENE_ID %in% genesIn)
+		out <- sapply( genesIn, function(x) {
+				wh <- which( smlCT$GENE_ID == x)
+				if ( ! length(wh)) return( "")
+				if ( length(wh) > max.types) wh <- wh[ 1:max.types]
+				return( paste( smlCT$CellType[wh], ":", smlCT$PctExpression[wh], "%", sep="", collapse="; "))
+			})
+	}
 	if ( all( out == "")) warning( paste( "No genes mapped to cell types.  Verify current SpeciesID"))
 
 	out
