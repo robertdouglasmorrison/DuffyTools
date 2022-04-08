@@ -81,13 +81,19 @@
 		where <- match( genesIn, geneCellTypes$GENE_ID, nomatch=0)
 		out[ where > 0] <- geneCellTypes$CellType[ where]
 	} else {
-		# nned to find 2+ cell types per gene
+		# nned to find 2+ cell type entries per gene
+		# so crop the data to contain just the genes we want, for speed.
+		# and map to where in the output list each gene ends up
 		smlCT <- subset( geneCellTypes, GENE_ID %in% genesIn)
-		out <- sapply( genesIn, function(x) {
-				wh <- which( smlCT$GENE_ID == x)
-				if ( ! length(wh)) return( "")
-				if ( length(wh) > max.types) wh <- wh[ 1:max.types]
-				return( paste( smlCT$CellType[wh], ":", smlCT$PctExpression[wh], "%", sep="", collapse="; "))
+		smlGeneFac <- factor(smlCT$GENE_ID)
+		whereOut <- match( levels(smlGeneFac), genesIn)
+		k <- 0
+		tapply( 1:nrow(smlCT), smlGeneFac, function(x) {
+				if ( length(x) > max.types) x <- x[ 1:max.types]
+				cellTypeStr <- paste( smlCT$CellType[x], ":", smlCT$PctExpression[x], "%", sep="", collapse="; ")
+				k <<- k + 1
+				out[ whereOut[k]] <<- cellTypeStr
+				return(NULL)
 			})
 	}
 	if ( all( out == "")) warning( paste( "No genes mapped to cell types.  Verify current SpeciesID"))
@@ -311,7 +317,24 @@
 	
 	gids <- shortGeneName( rownames(m), keep=1)
 	cids <- gene2CellType( gids)
-	cellTypes <- sort( unique( cids))
+
+	# now that cell type calls can be 2+ types, may need to accumulate differently
+	isNewFormat <- any( grepl( "; ", cids))
+	if ( isNewFormat) {
+		cellTerms <- strsplit( cids, split="; ")
+		cellsPerGene <- sapply( cellTerms, length)
+		cellTermsV <- unlist( cellTerms)
+		cellTermCellNames <- sub( "\\:[0-9]+%", "", cellTermsV)
+		cellTermPcts <- as.numeric( sub( "(.+\\:)([0-9]+)(%)", "\\2", cellTermsV))
+		cellTermGenes <- rep( gids, times=cellsPerGene)
+		ctGenePtrs <- match( cellTermGenes, gids)
+		NCTterms <- length(cellTermCellNames)
+		cellTypes <- sort( unique( cellTermCellNames))
+	} else {
+		cellTypes <- sort( unique( cids))
+	}
+
+	# create the storage to hold the result
 	NCT <- length( cellTypes)
 	if ( NCT < 2) {
 		cat( "\nUnexpected low number of cell types: ", NCT)
@@ -319,21 +342,46 @@
 		cat( "\nDebug:  Cell Type calls:      ", head( cids))
 		return( NULL)
 	}
-
 	out <- matrix( NA, nrow=NCT, ncol=ncol(m))
 	colnames(out) <- colnames(m)
 	rownames(out) <- gsub( "\\.\\.+", ".", make.names( cellTypes))
 
-	cellFac <- factor( cids)
-	mode <- match.arg( mode)
-	for ( i in 1:ncol(m)) {
-		geneV <- m[ , i]
-		if ( mode == "sqrtmean") {
-			cellV <- tapply( geneV, cellFac, sqrtmean, na.rm=T)
-		} else {
-			cellV <- tapply( geneV, cellFac, function(x) logmean( x+1, na.rm=T))
+	# now fill the new matrix with the average expression by cell type
+	# Old cell types of exactly 1 type per gene are easy.  New style needs prorating
+	if ( isNewFormat) {
+		cellFac <- factor( cellTypeCellNames)
+		mode <- match.arg( mode)
+		for ( i in 1:ncol(m)) {
+			geneV <- m[ , i]
+			if ( mode == "sqrtmean") {
+				cellV <- tapply( 1:NCTterms, cellFac, function(x) {
+						myGeneV <- geneV[ ctGenePtrs[x]]
+						myPcts <- cellTermPcts[x]
+						# use the 1-100 pcts as relative votes for each gene
+						myV <- rep( myGeneV, times=myPcts)
+						sqrtmean( myV, na.rm=T)})
+			} else {
+				cellV <- tapply( 1:NCTterms, cellFac, function(x) {
+						myGeneV <- geneV[ ctGenePtrs[x]]
+						myPcts <- cellTermPcts[x]
+						# use the 1-100 pcts as relative votes for each gene
+						myV <- rep( myGeneV, times=myPcts)
+						logmean( myV+1, na.rm=T)})
+			}
+			out[ , i] <- cellV
 		}
-		out[ , i] <- cellV
+	} else {
+		cellFac <- factor( cids)
+		mode <- match.arg( mode)
+		for ( i in 1:ncol(m)) {
+			geneV <- m[ , i]
+			if ( mode == "sqrtmean") {
+				cellV <- tapply( geneV, cellFac, sqrtmean, na.rm=T)
+			} else {
+				cellV <- tapply( geneV, cellFac, function(x) logmean( x+1, na.rm=T))
+			}
+			out[ , i] <- cellV
+		}
 	}
 
 	drops <- which( rownames(out) %in% c( "", " ", "X"))
