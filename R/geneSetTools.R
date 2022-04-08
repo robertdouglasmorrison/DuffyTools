@@ -332,7 +332,7 @@
 }
 
 
-`getGeneSetCellType` <- function( geneSetNames) {
+`getGeneSetCellType` <- function( geneSetNames, max.types=1) {
 
 	out <- rep.int( "", N <- length(geneSetNames))
 
@@ -344,23 +344,35 @@
 	namesIn <- cleanGeneSetName( geneSetNames)
 	namesIn <- cleanGeneSetModuleNames( namesIn, wrapParentheses=F)
 	knownGeneSets <- geneSetCellTypes$GeneSetName
-	knownGeneSetsB <- cleanGeneSetName( knownGeneSets)
-
-	# first try is direct perfect match
-	where <- match( namesIn, knownGeneSets, nomatch=0)
-	out[ where > 0] <- geneSetCellTypes$CellType[ where]
-	where <- match( namesIn, knownGeneSetsB, nomatch=0)
-	out[ where > 0] <- geneSetCellTypes$CellType[ where]
-
 	# next try is to strip off any gene set prefix from the names
-	stillBlank <- which( out == "")
-	if ( length( stillBlank)) {
-		knownGeneSets2 <- sub( "^[A-Za-z0-9.]+: ", "", knownGeneSets)
-		where2 <- match( namesIn[stillBlank], knownGeneSets2, nomatch=0)
-		out[ stillBlank[ where2 > 0]] <- geneSetCellTypes$CellType[ where2]
-	}
+	knownGeneSets2 <- sub( "^[A-Za-z0-9.]+: ", "", knownGeneSets)
+	#knownGeneSetsB <- cleanGeneSetName( knownGeneSets)
 
-	out <- cleanCellTypeName( out)
+	# we can now have 2+ cell types, so perhaps change how we ask
+	if ( max.types == 1) {
+		# first try is direct perfect match
+		where <- match( namesIn, knownGeneSets, nomatch=0)
+		out[ where > 0] <- geneSetCellTypes$CellType[ where]
+		stillBlank <- which( out == "")
+		if ( length( stillBlank)) {
+			where2 <- match( namesIn[stillBlank], knownGeneSets2, nomatch=0)
+			out[ stillBlank[ where2 > 0]] <- geneSetCellTypes$CellType[ where2]
+		}
+	} else {
+		
+		# find 1+ hits for each gene set
+		smlCT <- subset( geneSetCellTypes, GeneSetName %in% namesIn)
+		smlGenesetFac <- factor( smlCT$GeneSetName)
+		whereOut <- match( levels(smlGenesetFac), namesIn)
+		k <- 0
+		tapply( 1:nrow(smlCT), smlGenesetFac, function(x) {
+				if ( length(x) > max.types) x <- x[ 1:max.types]
+				cellTypeStr <- paste( smlCT$CellType[x], ":", smlCT$PctExpression, "%", sep="", collapse="; ")
+				k <<- k + 1
+				out[ whereOut[k]] <<- cellTypeStr
+				return(NULL)
+			})
+	}
 	out
 }
 
