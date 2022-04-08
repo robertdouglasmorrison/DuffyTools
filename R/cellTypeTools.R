@@ -2049,7 +2049,11 @@
 	extras.path <- file.path( path, "CellTypeCluster.SupplementalFiles")
 	if ( ! file.exists( extras.path)) dir.create( extras.path, recursive=T)
 
-	# visit each cell type cluster that did get drawn
+	# first write out the overall table of results
+	outfile <- file.path( extras.path, paste( file.root, "CellTypeCluster.Enrichment.Overview.csv", sep="."))
+	write.csv( tbl, outfile, row.names=F)
+
+	# then visit each cell type cluster that did get drawn
 	drawnRows <- which( tbl$Drawn == TRUE)
 	if ( ! length( drawnRows)) return(0)
 
