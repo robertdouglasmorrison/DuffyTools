@@ -1847,10 +1847,14 @@
 	# as of new cell types allowing 2+ types, all cell type names are 'short'
 	UPenrich <- cellTypeEnrichment( celltype[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
 	DOWNenrich <- cellTypeEnrichment( celltype[DOWNgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
-	UPenrich$CellType <- shortCellNames[ match( UPenrich$CellType , shortCellNames)]
-	DOWNenrich$CellType <- shortCellNames[ match( DOWNenrich$CellType , shortCellNames)]
+	# UPenrich$CellType <- shortCellNames[ match( UPenrich$CellType , shortCellNames)]
+	# DOWNenrich$CellType <- shortCellNames[ match( DOWNenrich$CellType , shortCellNames)]
 
 	# now let's calculate the clusters for each cell type, both UP and DOWN
+	# Note:  With the new 2+ types per gene, with percentages, we have to do something different
+	#  For now, just keep the first (biggest %) one.
+	celltype <- sub( "\\:[0-9]+.+", "", celltype)
+
 	cellFac <- factor( celltype)
 	outCell <- outDir <- outCount <- outGenes <- outPct <- outFold <- outPval <- vector()
 	outRadius <- outColor <- vector()
