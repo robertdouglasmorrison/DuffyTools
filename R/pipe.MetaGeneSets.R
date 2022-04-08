@@ -261,14 +261,14 @@
 		if ( length(bigCellType)) {
 			out$CellType <- ""
 			out$CellType[ where > 0] <- bigCellType[where]
-			stillMissing <- which( out$CellType == "")
-			out$CellType[ stillMissing] <- getGeneSetCellType( ansLongPathNames[ stillMissing])
+			stillMissing <- which( out$CellType == "" | is.na(out$CellType))
+			out$CellType[ stillMissing] <- getGeneSetCellType( ansLongPathNames[ stillMissing], max.type=4)
 			out <- out[ ,c( 1, ncol(out), 2:(ncol(out)-1))]
 			doCellType <- TRUE
 		} else if ( length(bigLifeCycle)) {
 			out$LifeCycle <- ""
 			out$LifeCycle[ where > 0] <- bigLifeCycle[where]
-			stillMissing <- which( out$LifeCycle == "")
+			stillMissing <- which( out$LifeCycle == "" | is.na(out$LifeCycle))
 			out$LifeCycle[ stillMissing] <- getGeneSetLifeCycle( ansLongPathNames[ stillMissing])
 			out <- out[ ,c( 1, ncol(out), 2:(ncol(out)-1))]
 			doLifeCycle <- TRUE

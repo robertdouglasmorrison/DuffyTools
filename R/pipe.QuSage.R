@@ -218,7 +218,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 		where <- match( pathName, shortNames)
 		pathName <- longNames[ where]
 		if ( addCellTypes) {
-			cellType <- getGeneSetCellType( pathName)
+			cellType <- getGeneSetCellType( pathName, max.type=4)
 			nKeep <- 8
 			out <- data.frame( "PATHWAY"=pathName, "CellType"=cellType, "LOG2FOLD"=pathFold, 
 					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "PIVALUE"=pival, "N_GENES"=pathSize, 
