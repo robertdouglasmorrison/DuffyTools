@@ -2040,7 +2040,7 @@
 }
 
 
-`writeCellTypeClusterExtras` <- function( tbl, resultsfile) {
+`writeCellTypeClusterExtras` <- function( tbl, resultsfile, resultsTbl=NULL) {
 
 	# given a data frame of details from the cell type volcano cluster plot tool (above), make some supporting files
 	path <- dirname( resultsfile)
@@ -2058,7 +2058,7 @@
 	if ( ! length( drawnRows)) return(0)
 
 	# get the content, so we can extract subsets
-	resultsTbl <- read.delim( resultsfile, as.is=T)
+	if ( is.null( resultsTbl)) resultsTbl <- read.delim( resultsfile, as.is=T)
 	resultGenes <- shortGeneName( resultsTbl$GENE_ID, keep=1)
 
 	for ( i in drawnRows) {

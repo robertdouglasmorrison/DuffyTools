@@ -121,7 +121,7 @@
 		pathTable <- data.frame( "GeneID"=allGenes, "PathwayID"= allNames, stringsAsFactors=F)
 		rownames(pathTable) <- 1:nrow(pathTable)
 
-		nGenesInTable <- length( unique( pathTable$GeneID))
+		nGenesInTable <- length( unique.default( pathTable$GeneID))
 		pathID.table <- table( pathTable$PathwayID)
 		pathGenePcts <- pathID.table * 100 / nGenesInTable
 		pathGeneCnts <- pathID.table
@@ -147,7 +147,7 @@
 		}
 		rownames(mySet) <- 1:nrow(mySet)
 	
-		nGenesInSet <- length( unique( mySet$GeneID))
+		nGenesInSet <- length( unique.default( mySet$GeneID))
 		pathID.table <- table( mySet$PathwayID)
 		pathGenePcts <- pathID.table * 100 / nGenesInSet
 		pathGeneCnts <- pathID.table
@@ -494,7 +494,7 @@
 	}
 
 	genes1 <- shortGeneName( genes, keep=1)
-	genes1 <- unique( genes1)
+	genes1 <- unique.default( genes1)
 	len1 <- length( genes1)
 
 	# set up to visit all the gene sets
