@@ -1797,6 +1797,10 @@
 	pval <- as.numeric( tmp[[ pvalueColumn]])
 	celltype <- if ( "CellType" %in% colnames(tmp)) tmp$CellType else gene2CellType(genes, max.type=5)
 
+	# Note:  With the new 2+ types per gene, with percentages, we have to do something different
+	# For now, just keep/use the first (biggest %) one.  May be some way to prorate, but not now...
+	celltype <- sub( "\\:[0-9]+.+", "", celltype)
+
 	# always remove  non genes, etc.
 	drops <- grep( "(ng)", genes, fixed=TRUE)
 	if ( length( drops) > 0) {
@@ -1844,17 +1848,13 @@
 	DOWNgenes <- intersect( DOWNgenes, which(fold < 0))
 
 	# use cell type enrichment to decide who to highlight
-	# as of new cell types allowing 2+ types, all cell type names are 'short'
+	# as of new cell types allowing 2+ types, all cell type names are always 'short'
 	UPenrich <- cellTypeEnrichment( celltype[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
 	DOWNenrich <- cellTypeEnrichment( celltype[DOWNgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
 	# UPenrich$CellType <- shortCellNames[ match( UPenrich$CellType , shortCellNames)]
 	# DOWNenrich$CellType <- shortCellNames[ match( DOWNenrich$CellType , shortCellNames)]
 
 	# now let's calculate the clusters for each cell type, both UP and DOWN
-	# Note:  With the new 2+ types per gene, with percentages, we have to do something different
-	#  For now, just keep the first (biggest %) one.
-	celltype <- sub( "\\:[0-9]+.+", "", celltype)
-
 	cellFac <- factor( celltype)
 	outCell <- outDir <- outCount <- outGenes <- outPct <- outFold <- outPval <- vector()
 	outRadius <- outColor <- vector()
