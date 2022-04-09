@@ -4,6 +4,7 @@
 # circa 2020:   cloning all the LifeCycle data analysis & deconstruction tools to
 #				apply them to mammalian immune cell type datasets.  See down below.
 
+# 2022:  Allowing 2+ cell types per call.  Forces many small changes...
 
 # clean up the cell type names a bit
 `cleanCellTypeName` <- function( cellTypes) {
