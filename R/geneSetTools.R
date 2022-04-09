@@ -367,7 +367,7 @@
 		k <- 0
 		tapply( 1:nrow(smlCT), smlGenesetFac, function(x) {
 				if ( length(x) > max.types) x <- x[ 1:max.types]
-				cellTypeStr <- paste( smlCT$CellType[x], ":", smlCT$PctExpression, "%", sep="", collapse="; ")
+				cellTypeStr <- paste( smlCT$CellType[x], ":", smlCT$PctExpression[x], "%", sep="", collapse="; ")
 				k <<- k + 1
 				out[ whereOut[k]] <<- cellTypeStr
 				return(NULL)

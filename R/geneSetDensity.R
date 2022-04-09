@@ -288,13 +288,13 @@
 
 			# we can also make an enrichment table of cell types
 			if (addCellTypes) {
-				enrich <- cellTypeEnrichment( smlForHTML$CellType, upOnly=F, minEnrich=1, 
+				enrich <- cellTypeEnrichment( smlForHTML$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 				f <- paste( thisSample, prefix, "UP.GeneSetCellTypeEnrichment.csv", sep=".")
 				f <- file.path( GS_path, f)
 				write.table( enrich, f, sep=",", quote=T, row.names=F)
 			} else if (addLifeCycle) {
-				enrich <- lifeCycleEnrichment( smlForHTML$LifeCycle, upOnly=F, minEnrich=1, 
+				enrich <- lifeCycleEnrichment( smlForHTML$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 				f <- paste( thisSample, prefix, "UP.GeneSetLifeCycleEnrichment.csv", sep=".")
 				f <- file.path( GS_path, f)
@@ -346,13 +346,13 @@
 
 			# we can also make an enrichment table of cell types
 			if (addCellTypes) {
-				enrich <- cellTypeEnrichment( smlForHTML$CellType, upOnly=F, minEnrich=1, 
+				enrich <- cellTypeEnrichment( smlForHTML$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 				f <- paste( thisSample, prefix, "DOWN.GeneSetCellTypeEnrichment.csv", sep=".")
 				f <- file.path( GS_path, f)
 				write.table( enrich, f, sep=",", quote=T, row.names=F)
 			} else if (addLifeCycle) {
-				enrich <- lifeCycleEnrichment( smlForHTML$LifeCycle, upOnly=F, minEnrich=1, 
+				enrich <- lifeCycleEnrichment( smlForHTML$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 				f <- paste( thisSample, prefix, "DOWN.GeneSetLifeCycleEnrichment.csv", sep=".")
 				f <- file.path( GS_path, f)

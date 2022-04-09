@@ -271,7 +271,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 	if (addCellTypes) {
 		out1 <- subset( out, LOG2FOLD >= 0.1 & PVALUE <= 0.05)
 		if ( nrow(out1)) {
-			enrich <- cellTypeEnrichment( out1$CellType, upOnly=F, minEnrich=1, 
+			enrich <- cellTypeEnrichment( out1$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( group1, prefix, "UP.QuSage.CellTypeEnrichment.csv", sep=".")
 			f <- file.path( path, f)
@@ -279,7 +279,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 		}
 		out2 <- subset( out, LOG2FOLD <= -0.1 & PVALUE <= 0.05)
 		if ( makeDownHTML && nrow(out2)) {
-			enrich <- cellTypeEnrichment( out2$CellType, upOnly=F, minEnrich=1, 
+			enrich <- cellTypeEnrichment( out2$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( group1, prefix, "DOWN.QuSage.CellTypeEnrichment.csv", sep=".")
 			f <- file.path( path, f)
@@ -289,7 +289,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 	if (addLifeCycle) {
 		out1 <- subset( out, LOG2FOLD >= 0.1 & PVALUE <= 0.05)
 		if ( nrow(out1)) {
-			enrich <- lifeCycleEnrichment( out1$LifeCycle, upOnly=F, minEnrich=1, 
+			enrich <- lifeCycleEnrichment( out1$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( group1, prefix, "UP.QuSage.LifeCycleEnrichment.csv", sep=".")
 			f <- file.path( path, f)
@@ -297,7 +297,7 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 		}
 		out2 <- subset( out, LOG2FOLD <= -0.1 & PVALUE <= 0.05)
 		if ( makeDownHTML && nrow(out2)) {
-			enrich <- lifeCycleEnrichment( out2$LifeCycle, upOnly=F, minEnrich=1, 
+			enrich <- lifeCycleEnrichment( out2$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( group1, prefix, "DOWN.QuSage.LifeCycleEnrichment.csv", sep=".")
 			f <- file.path( path, f)

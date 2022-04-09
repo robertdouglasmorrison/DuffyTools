@@ -301,14 +301,14 @@
 
 		# write the cell type enrichment on just these top N gene sets...
 		if (doCellType) {
-			enrich <- cellTypeEnrichment( out$CellType, upOnly=F, minEnrich=1, 
+			enrich <- cellTypeEnrichment( out$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( grp, prefix, "MetaGeneSets", direction, "CellTypeEnrichment.csv", sep=".")
 			f <- file.path( metaPathwayPath, f)
 			write.table( enrich, f, sep=",", quote=T, row.names=F)
 		}
 		if (doLifeCycle) {
-			enrich <- lifeCycleEnrichment( out$LifeCycle, upOnly=F, minEnrich=1, 
+			enrich <- lifeCycleEnrichment( out$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( grp, prefix, "MetaGeneSets", direction, "LifeCycleEnrichment.csv", sep=".")
 			f <- file.path( metaPathwayPath, f)
