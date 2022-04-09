@@ -183,6 +183,10 @@
 	if ( ! file.exists( globalPlotPath)) dir.create( globalPlotPath)
 	# plots to the genes are up relative to the HTML
 	localGenePlotPath <- "../../pngPlots"
+	
+	# get the plot format we will use
+	dev.type <- getPlotDeviceType( optionsFile)
+	dev.ext <- paste( ".", dev.type, sep="")
 
 	# write the result as a text file
 	fileout=paste( prefix, descriptor, "txt", sep=".")
@@ -212,10 +216,10 @@
 	if (makeGeneTables) {
 		table2html( outForHTML, fileout=sub( "txt$", "html", fileout), title=addSpeciesToHtmlTitle(descriptor), 
 			linkColumnNames=c( descriptor, "Genes Per Group"), 
-			linkPaths=rep( localPlotPath, times=2), linkExtensions=c( ".png", ".html"))
+			linkPaths=rep( localPlotPath, times=2), linkExtensions=c( dev.ext, ".html"))
 	} else {
 		table2html( outForHTML, fileout=sub( "txt$", "html", fileout), title=addSpeciesToHtmlTitle(descriptor), 
-			linkColumnNames=descriptor, linkPaths=localPlotPath, linkExtensions=".png")
+			linkColumnNames=descriptor, linkPaths=localPlotPath, linkExtensions=dev.ext)
 	}
 
 	# also make smaller pages of each one sample, with only the relavent rows...
@@ -284,7 +288,7 @@
 						thisSample, " &nbsp; vs &nbsp; ", otherGroup, sep="") 
 			table2html( smlForHTML, fileout=f, title=addSpeciesToHtmlTitle(mytitle), maxRows=NgeneSets,
 				linkColumnNames=c( descriptor, "Genes Per Group"), 
-				linkPaths=rep( localPlotPath, times=2), linkExtensions=c( ".png", ".html"))
+				linkPaths=rep( localPlotPath, times=2), linkExtensions=c( dev.ext, ".html"))
 
 			# we can also make an enrichment table of cell types
 			if (addCellTypes) {
@@ -342,7 +346,7 @@
 						thisSample, " &nbsp; vs &nbsp; ", otherGroup, sep="") 
 			table2html( smlForHTML, fileout=f, title=addSpeciesToHtmlTitle(mytitle), maxRows=NgeneSets,
 				linkColumnNames=c( descriptor, "Genes Per Group"), 
-				linkPaths=rep( localPlotPath, times=2), linkExtensions=c( ".png", ".html"))
+				linkPaths=rep( localPlotPath, times=2), linkExtensions=c( dev.ext, ".html"))
 
 			# we can also make an enrichment table of cell types
 			if (addCellTypes) {
@@ -400,7 +404,7 @@
 		table2html( gmap, fileout=f, title=addSpeciesToHtmlTitle(cleanGeneSetName( names( geneSets)[j])), 
 				linkColumnNames=c( geneMapColumn, "GroupsPerGene"),
 				linkPaths=c( "../../pngPlots", "."),
-				linkExtension=c(".png",".html"))
+				linkExtension=c( dev.ext, ".html"))
 
 		thisSet <- rep( j, times=nrow(gmap))
 		names( thisSet) <- gmap[[ geneMapColumn]]
@@ -439,7 +443,7 @@
 			f <- file.path( globalPlotPath, f)
 			table2html( oneDF, fileout=f, title=paste( mygene, gene2Product(mygene), sep=":  "),
 				linkColumnNames=c(descriptor,"GenesPerGroup"), 
-				linkPaths=rep.int(".",2), linkExtensions=c(".png",".html"))
+				linkPaths=rep.int(".",2), linkExtensions=c( dev.ext, ".html"))
 			if ( x[1] %% 10 == 0) cat( "\r", x[1], mygene, nrow(oneDF))
 		})
 
@@ -457,7 +461,7 @@
 	   cat( "\n\nMaking gene set density plots...\n")
 	   useYmin <- 1 / nrow( getCurrentGeneMap()) * 5
 	   makeAllDensityPlots( geneSets, groupIDset=groupIDs, speciesID=speciesID, colorset=DE_colors,
-	   		results.path=results.path, folderName=folderName, toolName=toolName,
+	   		optionsFile=optionsFile, results.path=results.path, folderName=folderName, toolName=toolName,
 	   		pngPath=globalPlotPath, pngName=descriptor, geneMapColumn=geneMapColumn, 
 			whoToPlot=goodSets, deList=deList, yMin=useYmin, PLOT.FUN=PLOT.FUN,
 			subsetInHTML=geneSetsToPlot)
@@ -768,7 +772,7 @@
 
 
 `makeAllDensityPlots` <- function(  allGeneSets, groupIDset, speciesID=getCurrentSpecies(), 
-				colorset=c(2:(length(groupIDset)+1)), results.path=results.path, 
+				colorset=c(2:(length(groupIDset)+1)), optionsFile="Options.txt", results.path=results.path, 
 				folderName=folderName, toolName=c("RoundRobin","RankProduct","SAM","MetaResults"),
 				pngPath="densityPlots", pngName="Pathway", geneMapColumn="GENE_ID", 
 				whoToPlot=1:length(allGeneSets), deList=NULL, yMin=0.0005, PLOT.FUN=NULL,
@@ -783,8 +787,12 @@
 
 	# plot once to get window set up and load the data
 	toolName <- match.arg( toolName)
-	pngFile <- file.path( pngPath, paste( pngName, "_", firstGood, ".png", sep=""))
-	png( filename=pngFile, width=1000, height=700, bg="white")
+
+	# note that the new plot device wrapper does both pdf & png, can leave off the explicit suffix
+	#pngFile <- file.path( pngPath, paste( pngName, "_", firstGood, ".png", sep=""))
+	#png( filename=pngFile, width=1000, height=700, bg="white")
+	plotFile <- file.path( pngPath, paste( pngName, "_", firstGood, sep=""))
+	openPlot( plotFile, optT=optionsFile)
 
 	geneSetsDensityPlot( gSet=allGeneSets[[ firstGood]], groupIDset, 
 				label=paste( pngName, ":   ", trimGeneSetNameLink( pathnames[ firstGood])), 
@@ -808,8 +816,10 @@
 		# do we skip this one for not being in any HTML file?
 		if ( (! is.null( subsetInHTML)) && ( !(j %in% subsetInHTML))) next
 
-		pngFile <- file.path( pngPath, paste( pngName, "_", j, ".png", sep=""))
-		png( filename=pngFile, width=1000, height=700, bg="white")
+		#pngFile <- file.path( pngPath, paste( pngName, "_", j, ".png", sep=""))
+		#png( filename=pngFile, width=1000, height=700, bg="white")
+		plotFile <- file.path( pngPath, paste( pngName, "_", j, sep=""))
+		openPlot( plotFile, optT=optionsFile)
 
 		if ( is.null( PLOT.FUN)) {
 			geneSetsDensityPlot( gSet=allGeneSets[[j]], groupIDset, 
@@ -823,7 +833,6 @@
 					trimGeneSetNameLink( cleanGeneSetName( pathnames[j])))
 			PLOT.FUN( allGeneSets[[j]], label)
 		}
-
 		dev.off()
 
 		if ( j %% 10 == 0) cat( "\r", j, trimGeneSetNameLink( pathnames[j]), "  N_genes:", ngenes[j], "    ")

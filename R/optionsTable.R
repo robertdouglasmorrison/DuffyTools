@@ -22,6 +22,9 @@
 
 `getOptionValue` <- function( tbl, arg, speciesID=NULL, notfound=NA, verbose=TRUE) {
 
+	# send back default if no option file exists
+	if ( ! is.na(notfound) && is.character(tbl) && ! file.exists(tbl[1])) return( notfound)
+
 	if ( typeof( tbl) != "list") {
 		try( tbl <- readOptionsTable( tbl))
 	}
