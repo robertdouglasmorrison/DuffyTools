@@ -259,7 +259,7 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 		})
 
 	legend( "topleft", columnNames, fill=columnColors, cex=1.2, bg="white")
-	dev.print( png, "MetaResultDeviation.Lineplot.png", width=1000, height=720)
+	printPlot( "MetaResultDeviation.Lineplot")
 	Sys.sleep(5)
 
 
@@ -268,7 +268,7 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 	boxplot( abs(m), col=columnColors, main=mainText, 
 			ylab="(Better)       Absolute Deviation from Consensus     (Worse)",
 			ylim=ylim, pars=list( font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1))
-	dev.print( png, "MetaResultDeviation.Boxplot.png", width=1000, height=720)
+	printPlot( "MetaResultDeviation.Boxplot")
 
 	return()
 }

@@ -788,10 +788,8 @@
 	toolName <- match.arg( toolName)
 
 	# note that the new plot device wrapper does both pdf & png, can leave off the explicit suffix
-	#pngFile <- file.path( pngPath, paste( pngName, "_", firstGood, ".png", sep=""))
-	#png( filename=pngFile, width=1000, height=700, bg="white")
 	plotFile <- file.path( pngPath, paste( pngName, "_", firstGood, sep=""))
-	openPlot( plotFile, optT=optionsFile)
+	openPlot( plotFile, optT=optionsFile, bg="white")
 
 	geneSetsDensityPlot( gSet=allGeneSets[[ firstGood]], groupIDset, 
 				label=paste( pngName, ":   ", trimGeneSetNameLink( pathnames[ firstGood])), 
@@ -815,10 +813,8 @@
 		# do we skip this one for not being in any HTML file?
 		if ( (! is.null( subsetInHTML)) && ( !(j %in% subsetInHTML))) next
 
-		#pngFile <- file.path( pngPath, paste( pngName, "_", j, ".png", sep=""))
-		#png( filename=pngFile, width=1000, height=700, bg="white")
 		plotFile <- file.path( pngPath, paste( pngName, "_", j, sep=""))
-		openPlot( plotFile, optT=optionsFile)
+		openPlot( plotFile, optT=optionsFile, bg="white")
 
 		if ( is.null( PLOT.FUN)) {
 			geneSetsDensityPlot( gSet=allGeneSets[[j]], groupIDset, 
