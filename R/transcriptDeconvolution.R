@@ -214,10 +214,11 @@
 	if (plot) {
 		if ( label == "") label <- paste( "Sample =", fids[1], "  Algorithm =", algorithm, "  Log =", useLog)
 		plotTranscriptProportions(pcts, col=plot.col, label=label)
-		plotFile <- paste( "TranscriptProportions", algorithm, "png", sep=".")
+		# new plot printing method does not need explicit extension
+		plotFile <- paste( "TranscriptProportions", algorithm, sep=".")
 		if ( length(fids) == 1) plotFile <- paste( fids[1], if (useLog) "YesLog" else "NoLog", plotFile, sep=".")
 		plotFile <- file.path( plot.path, plotFile)
-		dev.print( png, plotFile, width=900)
+		printPlot( plotFile)
 	}
 
 	return( list( "BestFit"=pcts, "Statistics"=out2))
@@ -281,10 +282,10 @@
 	if (plot) {
 		if ( label == "") label <- paste( "Sample =", colnames(m)[1], "  Algorithm =", algorithm, "  Log =", useLog)
 		plotTranscriptProportions(pcts, col=plot.col, label=label)
-		plotFile <- paste( "TranscriptProportions", algorithm, "png", sep=".")
+		plotFile <- paste( "TranscriptProportions", algorithm, sep=".")
 		if ( ncol(m) == 1) plotFile <- paste( colnames(m)[1], if (useLog) "YesLog" else "NoLog", plotFile, sep=".")
 		plotFile <- file.path( plot.path, plotFile)
-		dev.print( png, plotFile, width=900)
+		printPlot( plotFile)
 	}
 
 	return( list( "BestFit"=pcts, "Statistics"=out2))

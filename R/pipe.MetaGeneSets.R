@@ -28,6 +28,9 @@
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optT, "results.path", notfound=".")
 	}
+
+	dev.type <- getPlotDeviceType( optT)
+	dev.ext <- paste( ".", dev.type, sep="")
 	
 	# rather than force running all the GeneSet tools, just for for and use what you find.  Report missing ones..
 
@@ -251,7 +254,8 @@
 		radarRanks <- as.numeric( ans[["Radar GS"]])
 		namesWithExtraLinks <- addExtraPathwayLinks( ansShortPathNames, ansLongPathNames, 
 							densityAns=densityAns, radarAns=radarAns, 
-							radarRanks=radarRanks, metaPath=metaPath)
+							radarRanks=radarRanks, metaPath=metaPath,
+							dev.ext=dev.ext)
 		ans$PathName <- namesWithExtraLinks
 
 		# put in the column order we expect
@@ -328,7 +332,7 @@
 
 
 `addExtraPathwayLinks` <- function( ansShortPathNames, ansLongPathNames, densityAns=NULL, 
-					radarAns=NULL, radarRanks=NULL, metaPath=".") {
+					radarAns=NULL, radarRanks=NULL, metaPath=".", dev.ext=".png") {
 
 	# given the pathway names, with and without the hyperlinks to the source URL
 	N <- length( ansShortPathNames)
@@ -354,7 +358,7 @@
 		# for the Density results, the files should always be there if
 		hits <- which( myNumber != "")
 		if ( length( hits)) {
-			fDensity <- paste( "CombinedGeneSets_", myNumber[hits], ".png", sep="")
+			fDensity <- paste( "CombinedGeneSets_", myNumber[hits], dev.ext, sep="")
 			fLocalDensity <- file.path( "../CombinedGeneSets", "CombinedGeneSets.pngPlots", fDensity)
 			outDensity[hits] <- fLocalDensity
 			fGlobalDensity <- file.path( metaPath, "CombinedGeneSets", "CombinedGeneSets.pngPlots", fDensity)
@@ -377,7 +381,7 @@
 
 		# the image name is from the very front
 		gsID <- sub( ":.+", "", myNames)
-		fRadar <- paste( "Radar.", gsID, ".png", sep="")
+		fRadar <- paste( "Radar.", gsID, dev.ext, sep="")
 		fRadar <- file.path( "../RadarPlots", fRadar)
 		outRadar[ whoRadar > 0] <- fRadar[whoRadar]
 

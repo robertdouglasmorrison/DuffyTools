@@ -1140,9 +1140,10 @@
 				tolerance=tolerance, makePlots=makePlots, plot.path=plot.path, algorithm=algorithm, 
 				geneUniverse=geneUniverse, ...)
 	if (makePlots != "none") {
-		plotFile <- paste( sid, "CellTypeProportions", algorithm, "png", sep=".")
+		# new plot printing wrapper lets us not append the device type suffix
+		plotFile <- paste( sid, "CellTypeProportions", algorithm, sep=".")
 		plotFile <- file.path( plot.path, plotFile)
-		dev.print( png, plotFile, width=900)
+		printPlot( plotFile)
 	}
 	
 	return( ans)
@@ -1192,12 +1193,10 @@
 		m[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
-			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, "png", sep=".")
+			# new plot printing wrapper lets us not append the device type suffix
+			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, sep=".")
 			plotFile <- file.path( plot.path, plotFile)
-			dev.print( png, plotFile, width=900)
-		}
-	}
-	cat( "\nDone.\n")
+			printPlot( plotFile)
 
 	out <- list( "CellProportions"=t(m), "RMSD"=rmsd)
 	return( out)
@@ -1238,9 +1237,10 @@
 		mOut[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
-			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, "png", sep=".")
+			# new plot printing wrapper lets us not append the device type suffix
+			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, sep=".")
 			plotFile <- file.path( plot.path, plotFile)
-			dev.print( png, plotFile, width=900)
+			printPlot( plotFile)
 		}
 	}
 	cat( "\nDone.\n")

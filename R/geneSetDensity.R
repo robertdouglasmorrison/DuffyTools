@@ -162,7 +162,6 @@
 	if ( length(drops)) {
 		smlDrop <- out[ drops, ]
 		IDsToDrop <- as.integer( sub( "^.+_", "", smlDrop[[1]]))
-		#cat( "\n\nDEBUG:  ", head( IDsToDrop, 100), "\n\n")
 		# the data frame rows are by index
 		outForHTML <- outForHTML[ -drops, ]
 
