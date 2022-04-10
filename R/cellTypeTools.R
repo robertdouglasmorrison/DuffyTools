@@ -1197,6 +1197,9 @@
 			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, sep=".")
 			plotFile <- file.path( plot.path, plotFile)
 			printPlot( plotFile)
+		}
+	}
+	cat( "\nDone.\n")
 
 	out <- list( "CellProportions"=t(m), "RMSD"=rmsd)
 	return( out)
