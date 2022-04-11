@@ -12,7 +12,7 @@
 					makePlots=TRUE, PLOT.FUN=NULL, makeGeneTables=TRUE, 
 					addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
 					addLifeCycle=(speciesID %in% PARASITE_SPECIES), 
-					doFDR=TRUE, NgeneSets=500) {
+					doFDR=TRUE, NgeneSets=200, legend.cex=1) {
 
 	setCurrentSpecies( speciesID)
 	geneMap <- getCurrentGeneMap()
@@ -466,7 +466,7 @@
 	   		optionsFile=optionsFile, results.path=results.path, folderName=folderName, toolName=toolName,
 	   		pngPath=globalPlotPath, pngName=descriptor, geneMapColumn=geneMapColumn, 
 			whoToPlot=goodSets, deList=deList, yMin=useYmin, PLOT.FUN=PLOT.FUN,
-			subsetInHTML=geneSetsToPlot)
+			subsetInHTML=geneSetsToPlot, legend.cex=legend.cex)
 	}
 
 	# clean up any global storage... 
@@ -707,7 +707,7 @@
 `geneSetsDensityPlot` <- function( gSet, groupIDset, label="", reload=TRUE, speciesID=getCurrentSpecies(), 
 				results.path=NULL, folderName="", colorset=c( 2:(length(groupIDset)+1)), 
 				toolName=c("RoundRobin","RankProduct","SAM","MetaResults"),
-				geneMapColumn="GENE_ID", deList=NULL, yScale=1.1, yMin=0.0005) {
+				geneMapColumn="GENE_ID", deList=NULL, yScale=1.1, yMin=0.0005, legend.cex=1) {
 
 	NS <- length( groupIDset)
 
@@ -764,7 +764,7 @@
 	axis( 1, at=c(0,NG), labels=NA, tcl=0, col=1, lwd=tickWidth)
 
 	legend( "topright", legend=c( groupIDset, "uniform density"),
-		col=c( colorList, 1), lty=c( rep(1,NS), 2), lwd=3, bg="white", cex=1.2)
+		col=c( colorList, 1), lty=c( rep(1,NS), 2), lwd=3, bg="white", cex=legend.cex)
 	
 	text( x=c( (NG*0.1), (NG*0.5), (NG*0.9)), y=negY, label=c( "Up-Regulated", "No Net Change", 
 		"Down-Regulated"), cex=1.2, font=2, pos=3)
@@ -778,7 +778,7 @@
 				folderName=folderName, toolName=c("RoundRobin","RankProduct","SAM","MetaResults"),
 				pngPath="densityPlots", pngName="Pathway", geneMapColumn="GENE_ID", 
 				whoToPlot=1:length(allGeneSets), deList=NULL, yMin=0.0005, PLOT.FUN=NULL,
-				subsetInHTML=NULL) {
+				subsetInHTML=NULL, legend.cex=1) {
 
 	# small chance we were asked to not draw anything...
 	if ( !is.null(PLOT.FUN) && is.na(PLOT.FUN)) return()
@@ -798,7 +798,7 @@
 				label=paste( pngName, ":   ", trimGeneSetNameLink( pathnames[ firstGood])), 
 				results.path=results.path, folderName=folderName, toolName=toolName,
 				reload=TRUE, speciesID=speciesID, colorset=colorset, 
-				geneMapColumn=geneMapColumn, deList=deList, yMin=yMin)
+				geneMapColumn=geneMapColumn, deList=deList, yMin=yMin, legend.cex=legend.cex)
 
 	dev.off()
 

@@ -9,8 +9,8 @@
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 4 else 2, 
 				mode=c("combined", "separate"), cutPvalue=0.05, cutRankShift=NULL, makePlots=TRUE,
 				doFDR=TRUE, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
-				cutFold=0.1, cutFDR=0.05, NgeneSets=500, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
-				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, verbose=T, ...)
+				cutFold=0.1, cutFDR=0.05, NgeneSets=200, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
+				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, legend.cex=1, verbose=T, ...)
 {
 
 	toolName <- match.arg( toolName)
@@ -60,7 +60,7 @@
 				cutFold=cutFold, cutFDR=cutFDR, NgeneSets=NgeneSets,
 				trimGenesToGeneMap=trimGenesToGeneMap, makeGeneTables=makeGeneTables,
 				makePlots=makePlots, addCellTypes=addCellTypes, addLifeCycle=addLifeCycle,
-				PLOT.FUN=PLOT.FUN)
+				PLOT.FUN=PLOT.FUN, legend.cex=legend.cex)
 	}
 
 	if (verbose) {
@@ -79,10 +79,10 @@
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 4 else 2, 
 				geneMapColumn=if (speciesID %in% MAMMAL_SPECIES) "NAME" else "GENE_ID", 
 				mode=c("combined", "separate"), cutPvalue=0.05, 
-				cutFold=0.1, cutFDR=0.05, NgeneSets=500, cutRankShift=NULL,
+				cutFold=0.1, cutFDR=0.05, NgeneSets=200, cutRankShift=NULL,
 				doFDR=TRUE, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
 				makePlots=TRUE, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
-				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, verbose=T)
+				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, legend.cex=1, verbose=T)
 {
 
 	mode <- match.arg( mode)
@@ -117,7 +117,7 @@
 				doFDR=doFDR, NgeneSets=NgeneSets,
 				trimGenesToGeneMap=trimGenesToGeneMap, makeGeneTables=makeGeneTables,
 				makePlots=makePlots, addCellTypes=addCellTypes, addLifeCycle=addLifeCycle,
-				PLOT.FUN=PLOT.FUN)
+				PLOT.FUN=PLOT.FUN, legend.cex=legend.cex)
 	}
 
 	if (verbose) {
@@ -135,9 +135,9 @@
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 4 else 2, 
 				geneMapColumn=if (speciesID %in% MAMMAL_SPECIES) "NAME" else "GENE_ID", 
 				mode=c("combined", "separate"), cutPvalue=0.05, cutFold=0.1, cutFDR=0.05, cutRankShift=NULL, 
-				doFDR=TRUE, NgeneSets=500, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
+				doFDR=TRUE, NgeneSets=200, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
 				makePlots=TRUE, addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
-				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, verbose=T)
+				addLifeCycle=(speciesID %in% PARASITE_SPECIES), PLOT.FUN=NULL, legend.cex=1, verbose=T)
 {
 
 	mode <- match.arg( mode)
@@ -188,7 +188,7 @@
 				doFDR=doFDR, NgeneSets=NgeneSets,
 				trimGenesToGeneMap=trimGenesToGeneMap, makeGeneTables=makeGeneTables,
 				makePlots=makePlots, addCellTypes=addCellTypes, addLifeCycle=addLifeCycle,
-				PLOT.FUN=PLOT.FUN)
+				PLOT.FUN=PLOT.FUN, legend.cex=legend.cex)
 	}
 
 	if (verbose) {

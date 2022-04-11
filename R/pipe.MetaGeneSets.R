@@ -6,7 +6,7 @@
 				optionsFile="Options.txt", results.path=NULL,  groupColumn="Group", colorColumn="Color", 
 				geneSets=defaultGeneSets(speciesID), 
 				NgeneSets=500, verbose=TRUE, label="", nFDRsimulations=0,
-				doGeneSets=TRUE, doMissing=TRUE, baselineGroup=NULL, ...) {
+				doGeneSets=TRUE, doMissing=TRUE, baselineGroup=NULL, legend.cex=1, ...) {
 
 	if (verbose) {
 		cat( verboseOutputDivider)
@@ -56,7 +56,7 @@
 		pipe.RadarPlots( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
 				groupColumn=groupColumn, colorColumn=colorColumn, baselineGroup=baselineGroup,
-				geneSets=geneSets, main=paste( "Comparison:  ",folderName), ...)
+				geneSets=geneSets, main=paste( "Comparison:  ",folderName), legend.cex=legend.cex, ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
 		radarFolder <- grep( "/RadarPlots", subFolders, value=T)[1]
@@ -70,7 +70,7 @@
 		pipe.GeneSetDensity( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
 				groupColumn=groupColumn, colorColumn=colorColumn, doFDR=F, NgeneSets=NgeneSets, 
-				geneSets=geneSets, ...)
+				geneSets=geneSets, legend.cex=legend.cex, ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
 		densityFolder <- grep( "/Density", subFolders, value=T)[1]
@@ -377,8 +377,6 @@
 			outDensity[hits] <- fLocalDensity
 			fGlobalDensity <- file.path( metaPath, localDensityFolder, localDensityPlotsFolder, fDensity)
 			notFile <- ( ! file.exists( fGlobalDensity))
-			cat( "\nDebug: Filenames:  ", head( fGlobalDensity))
-			cat( "\nDebug: File exist: ", head( ! notFile))
 			outDensity[ hits[ notFile]] <- ""
 			fGenes <- paste( "GeneSet_", myNumber[hits], ".html", sep="")
 			fLocalGenes <- file.path( relativeDensityFolder, localDensityPlotsFolder, fGenes)
