@@ -51,11 +51,14 @@
 	# small chance we onle want to revisit existing results...
 	if (doQuSage) {
 		# get the matrix of gene expression
+		intensityColumn <- getExpressionUnitsColumn( optionsFile, useMultiHits=TRUE)
+		units <- sub( "_.+", "", intensityColumn)
 		if ( is.null(m)) {
 			if ( speciesID != getCurrentSpecies()) setCurrentSpecies( speciesID)
 			fset <- file.path( results.path, "transcript", paste( sids, prefix, "Transcript.txt", sep="."))
 			if (verbose) cat( "\nGathering Gene Expression matrix..")
-			m <- expressionFileSetToMatrix( fset, sids)
+			cat( "\nLoading ", length( allSamples), "transcriptomes..")
+			m <- expressionFileSetToMatrix( fset, sids, intensityColumn=intensityColumn, verbose=verbose)
 		} else {
 			# verify the matrix matches the samples given
 			if ( ! all( make.names(sids) == colnames(m))) stop( "Column names of 'm' are not 'sampleIDset'")
@@ -76,7 +79,7 @@
 		drops <- which( bigV < min.rpkm)
 		if ( length( drops)) {
 			m <- m[ -drops, ]
-			cat( "\nDropping low expression rows below: ", min.rpkm, " RPKM:   N=", length(drops))
+			cat( "\nDropping low expression rows below: ", min.rpkm, units, ":   N=", length(drops))
 			bigV <- bigV[ -drops]
 		}
 		# QuSage also dies if the variance is too small
@@ -85,7 +88,7 @@
 		drops <- which( rangeV < min.variance)
 		if ( length( drops)) {
 			m <- m[ -drops, ]
-			cat( "\nDropping low variance rows below: ", min.variance, " RPKM:   N=", length(drops))
+			cat( "\nDropping low variance rows below: ", min.variance, units, ":   N=", length(drops))
 		}
 
 		# QuSage chokes on duplicate IDs
@@ -104,7 +107,7 @@
 	
 		# do the log transform with offset
 		if (useLog) {
-			cat( "\nApplying log2 transform after adding linear offset of", offset, "RPKM")
+			cat( "\nApplying log2 transform after adding linear offset of", offset, units)
 			m <- log2( m + offset)
 		}
 	}
