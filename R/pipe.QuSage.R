@@ -57,7 +57,7 @@
 			if ( speciesID != getCurrentSpecies()) setCurrentSpecies( speciesID)
 			fset <- file.path( results.path, "transcript", paste( sids, prefix, "Transcript.txt", sep="."))
 			if (verbose) cat( "\nGathering Gene Expression matrix..")
-			cat( "\nLoading ", length( allSamples), "transcriptomes..")
+			cat( "\nLoading ", length( sids), "transcriptomes..")
 			m <- expressionFileSetToMatrix( fset, sids, intensityColumn=intensityColumn, verbose=verbose)
 		} else {
 			# verify the matrix matches the samples given
