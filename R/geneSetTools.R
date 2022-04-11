@@ -335,6 +335,7 @@
 `getGeneSetCellType` <- function( geneSetNames, max.types=1) {
 
 	out <- rep.int( "", N <- length(geneSetNames))
+	if ( ! N) return(out)
 
 	geneSetCellTypes <- NULL
 	data( list="GeneSetCellTypes", envir=environment())
@@ -365,13 +366,15 @@
 		smlGenesetFac <- factor( smlCT$GeneSetName)
 		whereOut <- match( levels(smlGenesetFac), namesIn)
 		k <- 0
-		tapply( 1:nrow(smlCT), smlGenesetFac, function(x) {
+		if ( nrow(smlCT)) {
+			tapply( 1:nrow(smlCT), smlGenesetFac, function(x) {
 				if ( length(x) > max.types) x <- x[ 1:max.types]
 				cellTypeStr <- paste( smlCT$CellType[x], ":", smlCT$PctExpression[x], "%", sep="", collapse="; ")
 				k <<- k + 1
 				out[ whereOut[k]] <<- cellTypeStr
 				return(NULL)
 			})
+		}
 	}
 	out
 }
@@ -380,6 +383,7 @@
 `getGeneSetLifeCycle` <- function( geneSetNames) {
 
 	out <- rep.int( "", N <- length(geneSetNames))
+	if ( ! N) return(out)
 
 	geneSetLifeCycle <- NULL
 	data( list="GeneSetLifeCycle", envir=environment())
