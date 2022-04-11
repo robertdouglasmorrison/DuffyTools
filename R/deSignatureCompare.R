@@ -97,7 +97,9 @@
 	mode <- match.arg( mode)
 	filePattern <- "Meta.UP.txt$"
 	if ( mode == "density") {
-		path <- file.path( path, "CombinedGeneSets")
+		# allow use of older and newer folder naming
+		path <- file.path( path, "Density")
+		if ( ! file.exists(path)) path <- file.path( path, "CombinedGeneSets")
 		filePattern <- "UP.CombinedGeneSets.txt$"
 	} else if ( mode == "qusage") {
 		path <- file.path( path, "QuSage")

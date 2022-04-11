@@ -62,7 +62,9 @@
 		radarFolder <- grep( "/RadarPlots", subFolders, value=T)[1]
 		hasRadar <- ( ! is.na( radarFolder))
 	}
-	densityFolder <- grep( "/CombinedGeneSets", subFolders, value=T)[1]
+	# allow old and new naming of this tool...
+	densityFolder <- grep( "/Density", subFolders, value=T)[1]
+	if ( is.na( densityFolder)) densityFolder <- grep( "/CombinedGeneSets", subFolders, value=T)[1]
 	hasDensity <- ( ! is.na( densityFolder))
 	if ( doGeneSets || (!hasDensity && doMissing)) {
 		pipe.GeneSetDensity( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
@@ -71,7 +73,8 @@
 				geneSets=geneSets, ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
-		densityFolder <- grep( "/CombinedGeneSets", subFolders, value=T)[1]
+		densityFolder <- grep( "/Density", subFolders, value=T)[1]
+		if ( is.na( densityFolder)) densityFolder <- grep( "/CombinedGeneSets", subFolders, value=T)[1]
 		hasDensity <- ( ! is.na( densityFolder))
 	}
 	enrichFolder <- grep( "/Enrichment", subFolders, value=T)[1]
@@ -358,16 +361,16 @@
 		# for the Density results, the files should always be there if
 		hits <- which( myNumber != "")
 		if ( length( hits)) {
-			fDensity <- paste( "CombinedGeneSets_", myNumber[hits], dev.ext, sep="")
-			fLocalDensity <- file.path( "../CombinedGeneSets", "CombinedGeneSets.pngPlots", fDensity)
+			fDensity <- paste( "CombinedGeneSets", myNumber[hits], dev.ext, sep="")
+			fLocalDensity <- file.path( "../Density", "Density.pngPlots", fDensity)
 			outDensity[hits] <- fLocalDensity
-			fGlobalDensity <- file.path( metaPath, "CombinedGeneSets", "CombinedGeneSets.pngPlots", fDensity)
+			fGlobalDensity <- file.path( metaPath, "Density", "Density.pngPlots", fDensity)
 			notFile <- ( ! file.exists( fGlobalDensity))
 			outDensity[ hits[ notFile]] <- ""
 			fGenes <- paste( "GeneSet_", myNumber[hits], ".html", sep="")
-			fLocalGenes <- file.path( "../CombinedGeneSets", "CombinedGeneSets.pngPlots", fGenes)
+			fLocalGenes <- file.path( "../Density", "Density.pngPlots", fGenes)
 			outGenes[hits] <- fLocalGenes
-			fGlobalGenes <- file.path( metaPath, "CombinedGeneSets", "CombinedGeneSets.pngPlots", fGenes)
+			fGlobalGenes <- file.path( metaPath, "Density", "Density.pngPlots", fGenes)
 			notFile <- ( ! file.exists( fGlobalGenes))
 			outGenes[ hits[ notFile]] <- ""
 		}

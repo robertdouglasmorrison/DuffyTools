@@ -68,7 +68,10 @@
 	}
 	if ( ! file.exists( DE_path)) dir.create( DE_path, recursive=T, showWarnings=F)
 	DE_colors <- colorset
-	GS_path <- file.path( DE_path, descriptor)
+
+	# set the folder path, using a better fixed name
+	folder.descriptor <- "Density"
+	GS_path <- file.path( DE_path, folder.descriptor)
 	if ( ! file.exists( GS_path)) dir.create( GS_path, recursive=T, showWarnings=F)
 
 	# clean up any global storage... 
@@ -177,7 +180,7 @@
 	}
 
 	# make a folder to hold all the linked plots and geneset files
-	localPlotPath <- paste( descriptor, "pngPlots", sep=".")
+	localPlotPath <- paste( folder.descriptor, "pngPlots", sep=".")
 	globalPlotPath <- file.path( GS_path, localPlotPath)
 	if ( ! file.exists( globalPlotPath)) dir.create( globalPlotPath)
 	# plots to the genes are up relative to the HTML
