@@ -377,6 +377,8 @@
 			outDensity[hits] <- fLocalDensity
 			fGlobalDensity <- file.path( metaPath, localDensityFolder, localDensityPlotsFolder, fDensity)
 			notFile <- ( ! file.exists( fGlobalDensity))
+			cat( "\nDebug: Filenames:  ", head( fGlobalDensity))
+			cat( "\nDebug: File exist: ", head( ! notFile))
 			outDensity[ hits[ notFile]] <- ""
 			fGenes <- paste( "GeneSet_", myNumber[hits], ".html", sep="")
 			fLocalGenes <- file.path( relativeDensityFolder, localDensityPlotsFolder, fGenes)
