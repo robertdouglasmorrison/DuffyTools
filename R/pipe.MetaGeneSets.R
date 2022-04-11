@@ -372,7 +372,7 @@
 
 		hits <- which( myNumber != "")
 		if ( length( hits)) {
-			fDensity <- paste( "CombinedGeneSets", myNumber[hits], dev.ext, sep="")
+			fDensity <- paste( "CombinedGeneSets_", myNumber[hits], dev.ext, sep="")
 			fLocalDensity <- file.path( relativeDensityFolder, localDensityPlotsFolder, fDensity)
 			outDensity[hits] <- fLocalDensity
 			fGlobalDensity <- file.path( metaPath, localDensityFolder, localDensityPlotsFolder, fDensity)
