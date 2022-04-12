@@ -1886,7 +1886,7 @@
 	rgbCol <- col2rgb( allCellColors)
 	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
 	geneCellColor <- allCellColors[ debugPtrs <- match( celltype, shortCellNames)]
-	cat( "\nDebug Pt Colors: ", head(celltype,6), "|", head(shortCellNames,6), "|", head(debugPtrs,6))
+	cat( "\nDebug Pt Colors: ", head(celltype,20), "\n|", head(shortCellNames,20), "\n|", head(debugPtrs,20))
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
 	clip.fold <- 10
@@ -1897,6 +1897,7 @@
 	pval[ pval < clip.pvalue] <- clip.pvalue
 	y <- -( log10( pval))
 	NG.use <- round( NG * (gene.pct/100) / 10) * 10
+	cat( "\nDebug Pt Fold,Y: ", head(fold,20), "\n|", head(y,20))
 
 	# we wiil look at the top UP and DOWN genes
 	# watch the fold change to make sure we don't cross zero
