@@ -1884,7 +1884,8 @@
 	# make some transparent colors too
 	rgbCol <- col2rgb( allCellColors)
 	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
-	geneCellColor <- allCellColors[ match( celltype, longCellNames)]
+	geneCellColor <- allCellColors[ debugPtrs <- match( celltype, longCellNames)]
+	cat( "\nDebug Pt Colors: ", head(celltype,6), "|", head(longCellNames,6), "|", head(debugPtrs,6))
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
 	clip.fold <- 10
