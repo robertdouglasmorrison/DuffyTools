@@ -1880,12 +1880,13 @@
 	allCellNames <- c( shortCellNames, longCellNames)
 	allCellColors <- rep( cellColors, times=2)
 	# and now cell type calls may be percentages of 2+ cell types.  Take the first / biggest one.
+	# and all cell type names are the short format
 	celltype <- sub( "\\:[0-9]+\\%.+", "", celltype)
 	# make some transparent colors too
 	rgbCol <- col2rgb( allCellColors)
 	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
-	geneCellColor <- allCellColors[ debugPtrs <- match( celltype, longCellNames)]
-	cat( "\nDebug Pt Colors: ", head(celltype,6), "|", head(longCellNames,6), "|", head(debugPtrs,6))
+	geneCellColor <- allCellColors[ debugPtrs <- match( celltype, shortCellNames)]
+	cat( "\nDebug Pt Colors: ", head(celltype,6), "|", head(shortCellNames,6), "|", head(debugPtrs,6))
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
 	clip.fold <- 10
