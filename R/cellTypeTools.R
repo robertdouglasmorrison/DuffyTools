@@ -1879,6 +1879,8 @@
 	longCellNames <- cleanCellTypeName( shortCellNames)
 	allCellNames <- c( shortCellNames, longCellNames)
 	allCellColors <- rep( cellColors, times=2)
+	# and now cell type calls may be percentages of 2+ cell types.  Take the first / biggest one.
+	celltype <- sub( "\\:[0-9]+\\%.+", "", celltype)
 	# make some transparent colors too
 	rgbCol <- col2rgb( allCellColors)
 	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
