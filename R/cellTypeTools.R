@@ -1824,7 +1824,7 @@
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
 					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, pt.cex=1.5,
 					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, 
-					color.alpha=0.75, label.offset.cex=1, ...) {
+					color.alpha=0.75, label.offset.cex=1, legend.cex=0.9, ...) {
 
 	require( plotrix)
 
@@ -1869,6 +1869,8 @@
 	fold <- fold[ord]
 	pval <- pval[ord]
 	celltype <- celltype[ord]
+	# drawing order is different, to overlay the more DE on top
+	ord2 <- rev( diffExpressRankOrder( abs(fold), pval))
 
 	# get the cell type colors to use/show.  The color map is short names, but the data passed in
 	# may have the longer human readable names
@@ -1989,9 +1991,9 @@
 
 	# plot the volcano as a dust cloud, to downplay the genes
 	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
-	plot ( fold[ord], y[ord], type="p", main=mainText, xlab="Log2 Fold Change",
+	plot ( fold[ord2], y[ord2], type="p", main=mainText, xlab="Log2 Fold Change",
 		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
-		pch=".", col=geneCellColor, cex=pt.cex, font.axis=2, font.lab=2, cex.main=0.8, ...)
+		pch=".", col=geneCellColor[ord2], cex=pt.cex, font.axis=2, font.lab=2, cex.main=0.8, ...)
 
 	# now with all known, we can draw them all
 	ord <- order( out$Radius, decreasing=T)
@@ -2038,7 +2040,7 @@
 	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
 
 	# and show the cell type color legend
-	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=0.8)
+	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=legend.cex)
 	dev.flush()
 	return( invisible( out))
 }
@@ -2087,3 +2089,99 @@
 	return( length(drawnRows))
 }
 
+
+# show expression levels of cell sorting marker genes
+`pipe.PlotCellSortingGenes` <- function( sampleID, annotationFile="Annotation.txt", optionsFile="Options.txt",
+					results.path=NULL, label="", geneColumn="GENE_ID", intensityColumn=NULL, 
+					sep="\t", col=NULL, sortingGenes=NULL) {
+
+	annT <- readAnnotationTable( annotationFile)
+	optT <- readOptionsTable( optionsFile)
+	if ( is.null(results.path)) {
+		results.path <- getOptionValue( optT, "results.path", notfound="results", verbose=F)
+	}
+	speciesID <- getCurrentSpecies()
+	prefix <- getCurrentSpeciesFilePrefix()
+
+	# allow the ID to be a sample name, a expression data frame, a transcriptome file, or a cell type
+	tmpDF <- NULL
+	targetColumn <- NA
+	if ( sampleID %in% annT$SampleID) {
+		file <- file.path( results.path, "transcript", paste( sampleID, prefix, "Transcript.txt", sep="."))
+		if ( ! file.exists(file)) {
+			cat( "\nTranscriptome file not found: ", file)
+			return(NULL)
+		}
+		tmpDF <- read.delim( file, as.is=T)
+		if ( ! nrow(tmpDF)) tmpDF <- NULL
+		if ( is.null(col) && "Color" %in% colnames(annT)) col <- annT$Color[ match( sampleID, annT$SampleID)]
+		if ( label == "") label <- paste( "Sample=", sampleID)
+	} else if (is.data.frame(sampleID)) {
+		tmpDF <- sampleID
+	} else if ( is.character(sampleID) && file.exists(sampleID)) {
+		file <- sampleID
+		tmpDF <- read.delim( file, as.is=T, sep=sep)
+		cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmpDF))
+		if ( ! nrow(tmpDF)) tmpDF <- NULL
+		if ( label == "") label <- paste( "File=", basename(sampleID))
+	} else {
+		targetM <- getCellTypeMatrix()
+		targetColors <- getCellTypeColors()
+		targetColumn <- match( sampleID, colnames(targetM), nomatch=NA) 
+		if ( is.null(col)) col <- targetColors[ match( sampleID, names(targetColors))]
+		if ( label == "") label <- paste( "Cell Type=", sampleID)
+	}
+	if ( is.null(col)) col="tan"
+
+	# extract what we need, given what we were given
+	genes <- inten <- NULL
+	if ( is.null( intensityColumn)) intensityColumn <- getExpressionUnitsColumn( optionsFile, verbose=F)
+	if ( ! is.null( tmpDF)) {
+		if ( !( all( c( geneColumn, intensityColumn) %in% colnames(tmpDF)))) {
+			cat( "\nMissing columns:  looked for: ", geneColumn, intensityColumn,
+				"\n  \tFound: ", colnames(tmpDF))
+			return(NULL)
+		}
+		genes <- shortGeneName( tmpDF[[ geneColumn]], keep=1)
+		inten <- as.numeric( tmpDF[[ intensityColumn]])
+	}
+	if ( ! is.na( targetColumn)) {
+		genes <- rownames( targetM)
+		inten <- targetM[ , targetColumn]
+	}
+	if ( is.null(genes)) {
+		cat( "\nError: unable to deduce 'sampleID'. Not a 'SampleID' or a filename or a Cell Type...")
+		return(NULL)
+	}
+
+	# now deduce what genes to look at
+	if ( is.null( sortingGenes)) {
+		sortingGenes <- c( "CD3", "CD4", "CD8A", "CD19", "CD63", "CD74", "TRDV2")
+	}
+	givenGenes <- sortingGenes
+	sortingGenes <- alias2Gene( sortingGenes, speciesID="Hs_grc")
+	if ( speciesID != "Hs_grc") {
+		sortingGenes <- ortholog( sortingGenes, "Hs_grc", speciesID)
+	}
+	showNames <- paste( givenGenes, " (", sortingGenes, ")", sep="")
+	noAlias <- which( givenGenes == sortingGenes)
+	showNames[noAlias] <- sortingGenes[noAlias]
+	drops <- which( sortingGenes == "")
+	if ( length(drops)) {
+		sortingGenes <- sortingGenes[ -drops]
+		showNames <- showNames[ -drops]
+	}
+	NG <- length( sortingGenes)
+
+	# OK, we are ready to gather and show those genes
+	intenV <- rep.int( 0, NG)
+	where <- match( sortingGenes, genes, nomatch=0)
+	intenV[ where > 0] <- inten[where]
+	names(intenV) <- showNames
+	bigY <- max( intenV, 5)
+	barplot( intenV, col=col, main=paste( "Cell Sorting Genes:  ", label), xlab=NA, 
+			ylab=paste( "Gene Expression (", intensityColumn, ")", sep=""),
+			ylim=c(0,bigY*1.1), las=3)
+
+	return( invisible( intenV))
+}
