@@ -1886,7 +1886,6 @@
 	rgbCol <- col2rgb( allCellColors)
 	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
 	geneCellColor <- allCellColors[ debugPtrs <- match( celltype, shortCellNames)]
-	cat( "\nDebug Pt Colors: ", head(celltype,20), "\n|", head(shortCellNames,20), "\n|", head(debugPtrs,20))
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
 	clip.fold <- 10
@@ -1897,7 +1896,6 @@
 	pval[ pval < clip.pvalue] <- clip.pvalue
 	y <- -( log10( pval))
 	NG.use <- round( NG * (gene.pct/100) / 10) * 10
-	cat( "\nDebug Pt Fold,Y: ", head(fold,20), "\n|", head(y,20))
 
 	# we wiil look at the top UP and DOWN genes
 	# watch the fold change to make sure we don't cross zero
@@ -1977,22 +1975,23 @@
 
 	# add extra room on X for the labels, and the cell types too
 	# and retune the Y axis limits
-	bigX <- max( 1, quantile( abs(fold), 0.98, na.rm=F), abs(out$Log2Fold)+out$Radius)
+	bigX <- max( 1, quantile( abs(fold), 0.995, na.rm=F), abs(out$Log2Fold)+out$Radius)
 	myRangeX <- c( -bigX, bigX)
 	if ( ! is.null( forceXmax)) {
 		bigX <- as.numeric( forceXmax)
 		myRangeX[1] <- -bigX
 		myRangeX[2] <- bigX
-		fold[ fold > bigX] <- bigX
-		fold[ fold < -bigX] <- -bigX
 	}
+	# force all dots to be seen, whether we crop or not
+	fold[ fold > bigX] <- bigX
+	fold[ fold < -bigX] <- -bigX
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
-	myRangeY <- c( 0, max( 1, quantile( y, 0.98, na.rm=F), out$Log10.Pvalue+out$Radius))
+	myRangeY <- c( 0, max( 1, quantile( y, 0.995, na.rm=F), out$Log10.Pvalue+out$Radius))
 	if ( ! is.null( forceYmax)) {
 		bigY <- as.numeric(forceYmax)
 		myRangeY[2] <- bigY
-		y[ y > bigY] <- bigY
 	}
+	y[ y > bigY] <- bigY
 
 	# plot the volcano as a dust cloud, to downplay the genes
 	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
