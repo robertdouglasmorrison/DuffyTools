@@ -1976,7 +1976,7 @@
 
 	# add extra room on X for the labels, and the cell types too
 	# and retune the Y axis limits
-	bigX <- max( 1, quantile( abs(fold), 0.95, na.rm=F), abs(out$Log2Fold)+out$Radius)
+	bigX <- max( 1, quantile( abs(fold), 0.98, na.rm=F), abs(out$Log2Fold)+out$Radius)
 	myRangeX <- c( -bigX, bigX)
 	if ( ! is.null( forceXmax)) {
 		bigX <- as.numeric( forceXmax)
@@ -1986,7 +1986,7 @@
 		fold[ fold < -bigX] <- -bigX
 	}
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
-	myRangeY <- c( 0, max( 1, quantile( y, 0.95, na.rm=F), out$Log10.Pvalue+out$Radius))
+	myRangeY <- c( 0, max( 1, quantile( y, 0.98, na.rm=F), out$Log10.Pvalue+out$Radius))
 	if ( ! is.null( forceYmax)) {
 		bigY <- as.numeric(forceYmax)
 		myRangeY[2] <- bigY
