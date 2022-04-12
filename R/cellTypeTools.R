@@ -1986,7 +1986,8 @@
 	fold[ fold > bigX] <- bigX
 	fold[ fold < -bigX] <- -bigX
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
-	myRangeY <- c( 0, max( 1, quantile( y, 0.995, na.rm=F), out$Log10.Pvalue+out$Radius))
+	bigY <- max( 1, quantile( y, 0.995, na.rm=F), out$Log10.Pvalue+out$Radius)
+	myRangeY <- c( 0, bigY)
 	if ( ! is.null( forceYmax)) {
 		bigY <- as.numeric(forceYmax)
 		myRangeY[2] <- bigY
