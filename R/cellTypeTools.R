@@ -2096,7 +2096,7 @@
 
 
 # show expression levels of cell sorting marker genes
-`pipe.PlotCellSortingGenes` <- function( sampleID, annotationFile="Annotation.txt", optionsFile="Options.txt",
+`pipe.PlotCellSortGatingGenes` <- function( sampleID, annotationFile="Annotation.txt", optionsFile="Options.txt",
 					results.path=NULL, label="", geneColumn="GENE_ID", intensityColumn=NULL, 
 					sep="\t", col=NULL, sortingGenes=NULL, useLog=F, maxYshow=1000) {
 
