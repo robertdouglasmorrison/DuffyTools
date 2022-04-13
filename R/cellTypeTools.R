@@ -1903,8 +1903,8 @@
 
 	# use cell type enrichment to decide who to highlight
 	# as of new cell types allowing 2+ types, all cell type names are always 'short'
-	UPenrich <- cellTypeEnrichment( celltype[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
-	DOWNenrich <- cellTypeEnrichment( celltype[DOWNgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
+	UPenrich <- cellTypeEnrichment( topCellType[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
+	DOWNenrich <- cellTypeEnrichment( topCellType[DOWNgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
 
 	# now let's calculate the clusters for each cell type, both UP and DOWN
 	cellFac <- factor( topCellType)
