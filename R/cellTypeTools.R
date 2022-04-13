@@ -1851,7 +1851,7 @@
 
 	# Note:  With the new 2+ types per gene, with percentages, we have to do something different
 	# For now, just keep/use the first (biggest %) one.  May be some way to prorate, but not now...
-	celltype <- sub( "\\:[0-9]+.+", "", celltype)
+	topCellType <- sub( "\\:[0-9]+\\%.+", "", celltype)
 
 	# always remove  non genes, etc.
 	drops <- grep( "(ng)", genes, fixed=TRUE)
@@ -1859,7 +1859,7 @@
 		genes <- genes[ -drops]
 		fold <- fold[ -drops]
 		pval <- pval[ -drops]
-		celltype <- celltype[ -drops]
+		topCellType <- topCellType[ -drops]
 	}
 	NG <- length(genes)
 
@@ -1868,7 +1868,7 @@
 	genes <- genes[ord]
 	fold <- fold[ord]
 	pval <- pval[ord]
-	celltype <- celltype[ord]
+	topCellType <- topCellType[ord]
 	# drawing order is different, to overlay the more DE on top
 	ord2 <- rev( diffExpressRankOrder( abs(fold), pval))
 
@@ -1879,13 +1879,10 @@
 	longCellNames <- cleanCellTypeName( shortCellNames)
 	allCellNames <- c( shortCellNames, longCellNames)
 	allCellColors <- rep( cellColors, times=2)
-	# and now cell type calls may be percentages of 2+ cell types.  Take the first / biggest one.
-	# and all cell type names are the short format
-	celltype <- sub( "\\:[0-9]+\\%.+", "", celltype)
 	# make some transparent colors too
 	rgbCol <- col2rgb( allCellColors)
 	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
-	geneCellColor <- allCellColors[ debugPtrs <- match( celltype, shortCellNames)]
+	geneCellColor <- allCellColors[ debugPtrs <- match( topCellType, shortCellNames)]
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
 	clip.fold <- 10
@@ -1908,11 +1905,9 @@
 	# as of new cell types allowing 2+ types, all cell type names are always 'short'
 	UPenrich <- cellTypeEnrichment( celltype[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
 	DOWNenrich <- cellTypeEnrichment( celltype[DOWNgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
-	# UPenrich$CellType <- shortCellNames[ match( UPenrich$CellType , shortCellNames)]
-	# DOWNenrich$CellType <- shortCellNames[ match( DOWNenrich$CellType , shortCellNames)]
 
 	# now let's calculate the clusters for each cell type, both UP and DOWN
-	cellFac <- factor( celltype)
+	cellFac <- factor( topCellType)
 	outCell <- outDir <- outCount <- outGenes <- outPct <- outFold <- outPval <- vector()
 	outRadius <- outColor <- vector()
 	nout <- 0
@@ -1926,7 +1921,7 @@
 	tapply( 1:NG, cellFac, function(k) {
 		
 		# given all the genes for one cell type
-		ct <- celltype[k[1]]
+		ct <- topCellType[k[1]]
 		if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
 		#ct <- shortCellNames[ ct == longCellNames]
 		#if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
@@ -2003,9 +1998,9 @@
 	# show cropping lines?
 	if ( pt.cex > 3) {
 		lines( c(bigX,bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
-		text( bigX, 0.75, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
+		text( bigX, 0.6, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
 		lines( c(-bigX,-bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
-		text( -bigX, 1.25, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
+		text( -bigX, 1.5, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
 		lines( c(-bigX,bigX), c(bigY,bigY), col='grey40', lty=3, lwd=1)
 		text( -0, bigY, "Crop Log10 P-Value", col='grey40', srt=0, pos=3, cex=legend.cex)
 		points( fold[ord2], y[ord2], pch=".", col=geneCellColor[ord2], cex=pt.cex)
