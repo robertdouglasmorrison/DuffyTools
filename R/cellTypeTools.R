@@ -1990,7 +1990,8 @@
 	y[ y > bigY] <- bigY
 
 	# plot the volcano as a dust cloud, to downplay the genes
-	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
+	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, 
+			"% of DE Genes: (N=",NG.use," up, N=", NG.use, " down)\n", label, sep="")
 	plot( fold[ord2], y[ord2], type="p", main=mainText, xlab="Log2 Fold Change",
 		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
 		pch=".", col=geneCellColor[ord2], cex=pt.cex, font.axis=2, font.lab=2, cex.main=0.8, ...)
