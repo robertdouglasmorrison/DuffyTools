@@ -1986,7 +1986,7 @@
 	fold[ fold > bigX] <- bigX
 	fold[ fold < -bigX] <- -bigX
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
-	bigY <- max( 1, quantile( y, 0.995, na.rm=F), out$Log10.Pvalue+out$Radius)
+	bigY <- max( 1, quantile( y, 0.995, na.rm=F), out$Log10.Pvalue+(out$Radius * 1.15))
 	myRangeY <- c( 0, bigY)
 	if ( ! is.null( forceYmax)) {
 		bigY <- as.numeric(forceYmax)
@@ -2003,9 +2003,9 @@
 	# show cropping lines?
 	if ( pt.cex > 3) {
 		lines( c(bigX,bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
-		text( bigX, 1, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
+		text( bigX, 0.75, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
 		lines( c(-bigX,-bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
-		text( -bigX, 1, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
+		text( -bigX, 1.25, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
 		lines( c(-bigX,bigX), c(bigY,bigY), col='grey40', lty=3, lwd=1)
 		text( -0, bigY, "Crop Log10 P-Value", col='grey40', srt=0, pos=3, cex=legend.cex)
 		points( fold[ord2], y[ord2], pch=".", col=geneCellColor[ord2], cex=pt.cex)
