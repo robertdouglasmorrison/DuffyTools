@@ -1851,7 +1851,7 @@
 
 	# Note:  With the new 2+ types per gene, with percentages, we have to do something different
 	# For now, just keep/use the first (biggest %) one.  May be some way to prorate, but not now...
-	topCellType <- sub( "\\:[0-9]+\\%.+", "", celltype)
+	topCellType <- sub( "\\:[0-9]+\\%.*", "", celltype)
 
 	# always remove  non genes, etc.
 	drops <- grep( "(ng)", genes, fixed=TRUE)
