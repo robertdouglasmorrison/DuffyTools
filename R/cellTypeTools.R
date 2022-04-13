@@ -2098,7 +2098,7 @@
 # show expression levels of cell sorting marker genes
 `pipe.PlotCellSortingGenes` <- function( sampleID, annotationFile="Annotation.txt", optionsFile="Options.txt",
 					results.path=NULL, label="", geneColumn="GENE_ID", intensityColumn=NULL, 
-					sep="\t", col=NULL, sortingGenes=NULL) {
+					sep="\t", col=NULL, sortingGenes=NULL, useLog=F, maxYshow=1000) {
 
 	annT <- readAnnotationTable( annotationFile)
 	optT <- readOptionsTable( optionsFile)
@@ -2161,7 +2161,11 @@
 
 	# now deduce what genes to look at
 	if ( is.null( sortingGenes)) {
-		sortingGenes <- c( "CD3", "CD4", "CD8A", "CD19", "CD63", "CD74", "TRDV2")
+		sortingGenes <- c( "CD3E", "CD4", "CD8A", "CD11c", "CD14", "CD16", "CD19", "CD25", "CD27", 
+				"CD34", "CD38", "CD45", "CD56",  "CD63",   
+				"CD74", "CD123", "CD127", "CD161", 
+				"CCR4", "CCR6", "CCR7", "CXCR3", "CXCR5", 
+				"HLA-DRA", "IGHD", "TRAV1-2", "TRD@", "TRG@", "TRDV2")
 	}
 	givenGenes <- sortingGenes
 	sortingGenes <- alias2Gene( sortingGenes, speciesID="Hs_grc")
@@ -2183,10 +2187,25 @@
 	where <- match( sortingGenes, genes, nomatch=0)
 	intenV[ where > 0] <- inten[where]
 	names(intenV) <- showNames
+	if ( ! is.null( maxYshow)) {
+		intenV[ intenV > maxYshow] <- maxYshow
+	}
 	bigY <- max( intenV, 5)
+	yRange <- c( 0, bigY)
+
+	yLabel <- paste( "Gene Expression (", intensityColumn, ")", sep="")
+	log <- ""
+	if ( useLog) {
+		intenV[ intenV < 0.02] <- 0.02
+		yLabel <- paste( "Gene Expression (", intensityColumn, "  Log scale)", sep="")
+		log <- "y"
+		yRange <- c( 0.02, bigY)
+	}
 	barplot( intenV, col=col, main=paste( "Cell Sorting Genes:  ", label), xlab=NA, 
-			ylab=paste( "Gene Expression (", intensityColumn, ")", sep=""),
-			ylim=c(0,bigY*1.1), las=3)
+			ylab=yLabel, log=log, ylim=yRange, las=3)
+
+	lines( c(-10,100), c( 0.5,0.5), col='grey30', lwd=1, lty=2)
+	dev.flush()
 
 	return( invisible( intenV))
 }
