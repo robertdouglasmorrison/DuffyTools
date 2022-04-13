@@ -1996,9 +1996,20 @@
 
 	# plot the volcano as a dust cloud, to downplay the genes
 	mainText <- paste( "Volcano by Cell Type:   Top ", gene.pct, "% of DE Genes: (N=",NG.use,")\n", label, sep="")
-	plot ( fold[ord2], y[ord2], type="p", main=mainText, xlab="Log2 Fold Change",
+	plot( fold[ord2], y[ord2], type="p", main=mainText, xlab="Log2 Fold Change",
 		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
 		pch=".", col=geneCellColor[ord2], cex=pt.cex, font.axis=2, font.lab=2, cex.main=0.8, ...)
+
+	# show cropping lines?
+	if ( pt.cex > 3) {
+		lines( c(bigX,bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
+		text( bigX, 1, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
+		lines( c(-bigX,-bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
+		text( -bigX, 1, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
+		lines( c(-bigX,bigX), c(bigY,bigY), col='grey40', lty=3, lwd=1)
+		text( -0, bigY, "Crop Log10 P-Value", col='grey40', srt=0, pos=3, cex=legend.cex)
+		points( fold[ord2], y[ord2], pch=".", col=geneCellColor[ord2], cex=pt.cex)
+	}
 
 	# now with all known, we can draw them all
 	ord <- order( out$Radius, decreasing=T)
