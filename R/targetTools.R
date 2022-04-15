@@ -184,6 +184,7 @@
 	addTarget( "PyMmu", "Py17X,Mmu_grc", "Py17X,Mmus")
 	addTarget( "PyHsMmu", "Py17X,Hs_grc,Mmu_grc", "Py17X,Hs,Mmus")
 
+	addTarget( "Ocun", "Ocun", "Ocun")
 	addTarget( "Rnor", "Rnor", "Rnor")
 
 	addTarget( "PfHsMmu", "Pf3D7,Hs_grc,Mmu_grc", "Pf,Hs,Mmus")
@@ -230,6 +231,7 @@
 	addTarget( "HsMTbHN878", "MT_HN878,Hs_grc", "MTbHN878,Hs")
 	addTarget( "MTbMmu", "MT_H37,Mmu_grc", "MTb,Mmus")
 	addTarget( "MTbHN878Mmu", "MT_HN878,Mmu_grc", "MTbHN878,Mmus")
+	addTarget( "MTbOcun", "MT_H37,Ocun", "MTb,Ocun")
 
 	addTarget( "Styph", "Styph_sl1344", "Styph")
 	addTarget( "StyphHs", "Styph_sl1344,Hs_grc", "Styph,Hs")
