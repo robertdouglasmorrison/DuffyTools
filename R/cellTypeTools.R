@@ -1822,7 +1822,7 @@
 
 # modified version of a volcano plot, that makes one circle per cell type
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
-					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, pt.cex=0.75,
+					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, pt.cex=0.65,
 					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, 
 					color.alpha=0.75, label.offset.cex=1, legend.cex=0.9, ...) {
 
