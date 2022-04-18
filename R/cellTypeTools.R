@@ -1822,7 +1822,7 @@
 
 # modified version of a volcano plot, that makes one circle per cell type
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
-					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, pt.cex=1.5,
+					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, pt.cex=0.75,
 					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, 
 					color.alpha=0.75, label.offset.cex=1, legend.cex=0.9, ...) {
 
@@ -1920,11 +1920,9 @@
 
 	tapply( 1:NG, cellFac, function(k) {
 		
-		# given all the genes for one cell type
+		# given all the genes for one cell type, bail if not a read cell type
 		ct <- topCellType[k[1]]
 		if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
-		#ct <- shortCellNames[ ct == longCellNames]
-		#if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
 		ctColor <- allCellTransparentColors[ match( ct, allCellNames)]
 
 		# see how many and where each group falls
@@ -1994,20 +1992,27 @@
 			"% most DE Genes: (N=",NG.use," up, ", NG.use, " down)\n", label, sep="")
 	plot( fold[ord2], y[ord2], type="p", main=mainText, xlab="Log2 Fold Change",
 		ylab="-Log10 P", xlim=myRangeX, ylim=myRangeY, 
-		pch=".", col=geneCellColor[ord2], cex=pt.cex, font.axis=2, font.lab=2, cex.main=0.8, ...)
+		pch=19, col=geneCellColor[ord2], cex=pt.cex, font.axis=2, font.lab=2, cex.main=0.8, ...)
 
 	# show cropping lines?
-	if ( pt.cex > 3) {
+	if ( pt.cex > 0.25) {
 		lines( c(bigX,bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
-		text( bigX, 0.6, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
+		text( bigX, 1.6, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
 		lines( c(-bigX,-bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
-		text( -bigX, 1.5, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
+		text( -bigX, 2.6, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
 		lines( c(-bigX,bigX), c(bigY,bigY), col='grey40', lty=3, lwd=1)
-		text( -0, bigY, "Crop Log10 P-Value", col='grey40', srt=0, pos=3, cex=legend.cex)
-		points( fold[ord2], y[ord2], pch=".", col=geneCellColor[ord2], cex=pt.cex)
+		text( -0, bigY, "Crop -Log10 P", col='grey40', srt=0, pos=3, cex=legend.cex, offset=0.5)
+		# then do the points again to emphasize
+		redraw1 <- which( fold[ord2] >= bigX*0.9)
+		redraw2 <- which( fold[ord2] <= -bigX*0.9)
+		redraw3 <- which( y[ord2] >= bigY*0.9)
+		redraw <- union( c( redraw1, redraw2), redraw3)
+		if ( length(redraw)) {
+			points( fold[ord2][redraw], y[ord2][redraw], pch=19, col=geneCellColor[ord2][redraw], cex=pt.cex)
+		}
 	}
 
-	# now with all known, we can draw them all
+	# now with all cell clusters known, we can draw their balloons
 	ord <- order( out$Radius, decreasing=T)
 	out <- out[ ord, ]
 	out$Enrichment.Pvalue <- 1
@@ -2048,8 +2053,8 @@
 	out$Drawn[toShow] <- TRUE
 
 	# optional labels to remind which group is which
-	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in Group '", left.label, "'", sep=""), cex=1, font=2)
-	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in Group '", right.label, "'", sep=""), cex=1, font=2)
+	if ( !is.null(left.label)) text( myRangeX[1]*.65, myRangeY[2]*0.025, paste( "UP in '", left.label, "'", sep=""), cex=1, font=2)
+	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in '", right.label, "'", sep=""), cex=1, font=2)
 
 	# and show the cell type color legend
 	legend( 'topleft', names(cellColors), fill=cellColors, bg='white', cex=legend.cex)
