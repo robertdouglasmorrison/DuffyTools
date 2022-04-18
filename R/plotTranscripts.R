@@ -502,7 +502,7 @@
 		doLabel <- whereMarker
 		myPos <- ifelse( fold[whereMarker] > 0, 4, 2)
 	} else {
-		doLabel <- which( pval < cut.pvalue & abs(fold) > cut.fold)
+		doLabel <- which( pval <= cut.pvalue & abs(fold) >= cut.fold)
 		myPos <- ifelse( fold[doLabel] > 0, 4, 2)
 	}
 		
@@ -514,7 +514,7 @@
 			myPos[ fold[doLabel] < 0 & myPos == 4] <- 2
 			myPos[ fold[doLabel] > 0 & myPos == 2] <- 4
 		}
-		text( fold[doLabel], y[doLabel], genes[doLabel], pos=myPos, cex=marker.cex)
+		text( fold[doLabel], y[doLabel], genes[doLabel], pos=myPos, cex=marker.label.cex)
 	}
 
 	if ( length( marker.genes) > 0) {

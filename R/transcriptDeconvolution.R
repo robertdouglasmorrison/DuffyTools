@@ -421,8 +421,8 @@
 			text( 0.9, pcts[j,1], rownames(pcts)[j], pos=2, cex=myTXTCEX[j], col=myTXTCOL[j])
 			text( NS+0.1, pcts[j,NS+nextra], rownames(pcts)[j], pos=4, cex=myTXTCEX[j], col=myTXTCOL[j])
 		}
-		# the barplot is bottom up w.r.t. labels, do that here too
-		legend( "topright", rev(rownames(pcts)), fill=rev(col), bg='white', cex=legend.cex)
+		# the  line plot has no fixed order, so don't reverese the colors
+		legend( "topright", rownames(pcts), fill=col, bg='white', cex=legend.cex)
 		dev.flush()
 		return()
 	}

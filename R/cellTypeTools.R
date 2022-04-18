@@ -2001,7 +2001,7 @@
 		lines( c(-bigX,-bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
 		text( -bigX, 2.6, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
 		lines( c(-bigX,bigX), c(bigY,bigY), col='grey40', lty=3, lwd=1)
-		text( -0, bigY, "Crop -Log10 P", col='grey40', srt=0, pos=3, cex=legend.cex, offset=0.5)
+		text( -0, bigY, "Crop -Log10 P", col='grey40', srt=0, pos=3, cex=legend.cex, offset=0.25)
 		# then do the points again to emphasize
 		redraw1 <- which( fold[ord2] >= bigX*0.9)
 		redraw2 <- which( fold[ord2] <= -bigX*0.9)
