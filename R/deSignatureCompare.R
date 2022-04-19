@@ -370,6 +370,7 @@ compareOneSignature <- function( refDF, targetDF, groupName, mode=c("intersect",
 		allID <- sort( intersect( refID, targetID))
 	}
 	NID <- length(allID)
+	if ( ! NID) return(NULL)
 
 	# find and fill the 2 vectors of fold change data
 	refFold <- targetFold <- rep.int( 0, NID)
