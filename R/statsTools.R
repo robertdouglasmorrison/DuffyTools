@@ -57,3 +57,22 @@
 	return( ans)
 }
 
+
+`two.means.difference` <- function( m1=0, m2=0, sd1=1, sd2=1, n1=5, n2=5,
+					alternative=c("two.sided","less","greater")) {
+
+	alternative <- match.arg( alternative)
+	pvalue.factor <- if (alternative == "two.sided") 2 else 1
+	LOWER.TAIL <- (alternative == "less")
+
+	# calculate the difference in means when we don't have actual values as inputs to t.test
+	mDiff <- m1 - m2
+	sdTerm1 <- sd1^2 / n1
+	sdTerm2 <- sd2^2 / n2
+	sdJoint <- sqrt( sdTerm1 + sdTerm2)
+	z <- mDiff / sdJoint
+	pval <- min( pnorm( z, mean=0, sd=1, lower.tail=LOWER.TAIL) * pvalue.factor, 1.0)
+
+	return( list( "mean.diff"=mDiff, "z"=z, "p.value"=pval))
+}
+
