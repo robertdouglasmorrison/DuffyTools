@@ -38,8 +38,8 @@
 		catch.system( cmdLine)
 	} else {
 		sink( "MAFFT.log.txt")
+		on.exit( sink())
 		catch.system( cmdLine, ignore.stdout=FALSE, ignore.stderr=TRUE)
-		sink()
 	}
 	if ( ! file.exists( outFile)) {
 		cat( "\nError:  No result made by MAFFT")
