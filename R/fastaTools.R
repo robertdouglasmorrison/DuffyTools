@@ -188,11 +188,13 @@ assign( "currentFastaObject", NULL, envir=FastaFilePathEnv)
 }
 
 
-`gene2Fasta` <- function( genes, genomicDNAfilePath, mode=c("gdna","cdna","aa"), verbose=FALSE) {
+`gene2Fasta` <- function( genes, genomicDNAfilePath, mode=c("gdna","cdna","aa"), utr.tail.length=0, verbose=FALSE) {
 
 	mode <- match.arg( mode)
+	if ( mode != "gdna" && utr.tail.length > 0) stop( "UTR tails only compatible with 'gdna' mode.")
 
 	gmap <- getCurrentGeneMap()
+	smap <- getCurrentSeqMap()
 	who <- match( genes, gmap$GENE_ID, nomatch=0)
 	if ( any( who == 0)) {
 		who <- match( genes, shortGeneName(gmap$GENE_ID,keep=1), nomatch=0)
@@ -214,13 +216,17 @@ assign( "currentFastaObject", NULL, envir=FastaFilePathEnv)
 		gdna <- getFastaSeqFromFilePath( filePath=genomicDNAfilePath, seqID=thisSeqID )
 
 		if ( mode == "gdna") {
-			str <- substr( gdna, gmap$POSITION[i], gmap$END[i])
+			str <- substr( gdna, gmap$POSITION[i] , gmap$END[i])
+			if ( utr.tail.length > 0) {
+				gPos <- max( 1, gmap$POSITION[i] - utr.tail.length)
+				gEnd <- min( smap$LENGTH[match(thisSeqID,smap$SEQ_ID)], gmap$END[i] + utr.tail.length)
+				str <- substr( gdna, gPos, gEnd)
+			}
 			if ( gmap$STRAND[i] == "-") str <- myReverseComplement(str)
 		} else {
 			str <- convertGenomicDNAtoCodingDNA( geneID=thisGene, genomicDNA=gdna)
+			if (mode == "aa") str <- DNAtoAA( str, readingFrame=1, clipAtStop=F)
 		} 
-
-		if (mode == "aa") str <- DNAtoAA( str, readingFrame=1, clipAtStop=F)
 
 		outDesc[i] <- thisGene
 		outSeq[i] <- str
