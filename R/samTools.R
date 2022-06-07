@@ -95,7 +95,9 @@ SAM.DiffExpress <- function( fnames, fids, m=NULL,
 				return( abs( rnorm( nNeed, mean=x, sd=useSD)))
 			}))
 		cl <- c( cl, rep( 0, times=nNeed))
-		myGrpNames <- c( myGrpNames, paste( "Not", rep( targetGroup, times=nNeed), sep=" "))
+		otherName <- paste( "Not", targetGroup, sep=" ")
+		if ( length(otherGroups) == 1) otherName <- otherGroups
+		myGrpNames <- c( myGrpNames, rep( otherName, times=nNeed))
 		colnames( mnew)[(nWas+1):(nWas+nNeed)] <- paste( colnames(m)[mycolumn], 1:nNeed, sep="_")
 		m <- mnew
 	}

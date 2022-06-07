@@ -42,6 +42,8 @@ EdgeR.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 	cl[ groupSet == targetGroup] <- 1
 	myGrpNames <- rep( targetGroup, times=length(groupSet))
 	myGrpNames[ cl == 2] <- paste( "Not", targetGroup, sep=" ")
+	otherGroupNames <- setdiff( groupSet, targetGroup)
+	if ( length(otherGroupNames) == 1) myGrpNames[ cl == 2] <- otherGroupNames
 	if ( ! is.null( extraColumn)) {
 		clExtra <- cl
 	}

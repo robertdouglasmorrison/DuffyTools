@@ -95,6 +95,8 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		cl[ groupSet == targetGroup] <- mine
 		myGrpNames <- rep( targetGroup, times=length(groupSet))
 		myGrpNames[ cl == other] <- notTargetGroup <- paste( "Not", targetGroup, sep=" ")
+		otherGroupNames <- setdiff( groupSet, targetGroup)
+		if ( length(otherGroupNames) == 1) myGrpNames[ cl == other] <- notTargetGroup <- otherGroupNames
 		if ( ! is.null( extraColumn)) {
 			clExtra <- cl
 		}
@@ -164,6 +166,8 @@ DESeq.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(
 		cl[ groupSet == targetGroup] <- mine
 		myGrpNames <- rep( targetGroup, times=length(groupSet))
 		myGrpNames[ cl == other] <- notTargetGroup <- paste( "Not", targetGroup, sep=" ")
+		otherGroupNames <- setdiff( groupSet, targetGroup)
+		if ( length(otherGroupNames) == 1) myGrpNames[ cl == other] <- notTargetGroup <- otherGroupNames
 		if ( ! is.null( extraColumn)) {
 			clExtra <- cl
 		}
