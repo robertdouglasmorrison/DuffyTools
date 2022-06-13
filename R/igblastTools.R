@@ -20,9 +20,9 @@
 	# build the names of the VDJ databases we expect to use, and make sure they exist
 	organism <- match.arg( organism)
 	db <- match.arg( db)
-	vFile <- file.path( database.subpath, paste( organism, "_", db, "_V", sep=""))
-	dFile <- file.path( database.subpath, paste( organism, "_", db, "_D", sep=""))
-	jFile <- file.path( database.subpath, paste( organism, "_", db, "_J", sep=""))
+	vFile <- file.path( igblast.path, database.subpath, paste( organism, "_", db, "_V", sep=""))
+	dFile <- file.path( igblast.path, database.subpath, paste( organism, "_", db, "_D", sep=""))
+	jFile <- file.path( igblast.path, database.subpath, paste( organism, "_", db, "_J", sep=""))
 	vFileTest <- paste( vFile, ".ndb", sep="")
 	dFileTest <- paste( dFile, ".ndb", sep="")
 	jFileTest <- paste( jFile, ".ndb", sep="")
@@ -253,6 +253,7 @@
 	vIdent[ vIdent < 80] <- 80
 	colorScale <- color.scale( c( vIdent, 80, 100), cs1=c(1,0.01), cs2=c(0,0), cs3=c(0,1),
 				xrange=c(80,100))
+	colorScale <- colorScale[ 1:length(vIdent)]
 
 	NJ <- nrow(pcts)
 	NV <- ncol(pcts)
@@ -289,7 +290,7 @@
 	colorXlo <- round( NV * 0.33)
 	colorXhi <- NV - colorXlo + 1
 	color.legend( colorXlo, -1.6, colorXhi, -0.9, seq(80, 100, by=5), rect.col=colorscale)
-	text( colorXlo, -1.25, "GermLine Identity", pos=2, cex=1.2, font=2)
+	text( colorXlo, -1.25, "Germline Identity", pos=2, cex=1.2, font=2)
 
 	sizeX <- round( NV * 0.90)
 	draw.circle( sizeX, -1.3, sqrt(0.05), col="dodgerblue", border=1)
@@ -499,7 +500,7 @@
 	colorXlo <- round( NV * 0.33)
 	colorXhi <- NV - colorXlo + 1
 	color.legend( colorXlo, -1.6, colorXhi, -0.9, seq( -15, 15, by=3), rect.col=colorscale)
-	text( (colorXlo+colorXhi)/2, -1.5, "Change in GermLine", pos=1, cex=1.05, font=2)
+	text( (colorXlo+colorXhi)/2, -1.5, "Change in Germline", pos=1, cex=1.05, font=2)
 
 	sizeX <- round( NV * 0.10)
 	draw.circle( sizeX, -1.3, sqrt(0.05), border="dodgerblue", col=NA)
@@ -589,7 +590,7 @@
 	colorXlo <- round( NV * 0.33)
 	colorXhi <- NV - colorXlo + 1
 	color.legend( colorXlo, -1.6, colorXhi, -0.9, seq( -15, 15, by=3), rect.col=colorscale)
-	text( (colorXlo+colorXhi)/2, -1.5, "GermLine Identity", pos=1, cex=1.05, font=2)
+	text( (colorXlo+colorXhi)/2, -1.5, "Germline Identity", pos=1, cex=1.05, font=2)
 
 	sizeX <- round( NV * 0.10)
 	draw.circle( sizeX, -1.3, sqrt(0.02), col="dodgerblue", border=NA)
