@@ -1,184 +1,133 @@
 # igblastTools.R -- various code for working with IgBlast
 
+#		Updates ~2022 to work with IgBlast 1.18
 
-`readIgBlastOutput` <- function( infile="igblastOut.txt", m=7, verbose=TRUE, min.blast.score=40) {
 
-	# scan the output of Blast for the data columns we need
-	# depending on the version of BLAST, the column mode number is different
-	if ( m != 7) {
-		warning( paste( "Unsupported IgBlast Output format...:  m=", m))
-		return( NULL)
+`callIgBlast` <- function( fastafile, outfile="igblastOut.txt", program="igblastn", 
+			igblast.path="~/IgBlast", db=c("IG","TR"), organism=c( "human", "mouse"), 
+			database.subpath="database", outfmt=19, verbose=TRUE) {
+
+	# validate the arguments
+	igblastProgram <- file.path( igblast.path, program)
+	if ( ! file.exists(igblastProgram)) igblastProgram <- file.path( igblast.path, "bin", program)
+	if ( ! file.exists(igblastProgram)) stop( paste( "Can't find IgBlast executable: ", igblastProgram))
+	cmdline <- igblastProgram 
+
+	# push the directory of IgBlast databases to a system env variable
+	sys.path <- file.path( dirname(igblast.path), basename(igblast.path))
+	Sys.setenv( "IGDATA"=sys.path)
+
+	# build the names of the VDJ databases we expect to use, and make sure they exist
+	organism <- match.arg( organism)
+	db <- match.arg( db)
+	vFile <- file.path( database.subpath, paste( organism, "_", db, "_V", sep=""))
+	dFile <- file.path( database.subpath, paste( organism, "_", db, "_D", sep=""))
+	jFile <- file.path( database.subpath, paste( organism, "_", db, "_J", sep=""))
+	vFileTest <- paste( vFile, ".ndb", sep="")
+	dFileTest <- paste( dFile, ".ndb", sep="")
+	jFileTest <- paste( jFile, ".ndb", sep="")
+	if ( ! all( file.exists( c( vFileTest, dFileTest, jFileTest)))) {
+		cat( "\nError:  Could not find needed V/D/J database files for IgBlast.")
+		cat( "\n  Looked for: ", vFile, dFile, jFile)
+		# since we failed, make sure to remove the output file
+		file.delete( outfile)
+		return()
 	}
 
-	# the file has lots of comments, other details, etc.
-	# need to parse by hand
-	blastText <- readLines( infile)
-	if ( length( blastText) < 6) return(NULL)
+	dbArgs <- paste( "-germline_db_V", vFile, "-germline_db_D", dFile, "-germline_db_J", jFile)
+	cmdline <- paste( cmdline, dbArgs)
 
-	keyLines <- grep( "^# IGBLAST", blastText)
-	nKeys <- length( keyLines)
-	keyEnds <- c( keyLines[2:nKeys] - 1, length(blastText))
-	
-	nout <- 0
-	idOut <- vNamOut <- dNamOut <- jNamOut <- vector()
-	vScoreOut <- dScoreOut <- jScoreOut <- vector()
-	pctIdent <- vector()
+	seqType <- if ( db == "TR") "TCR" else "Ig"
+	cmdline <- paste( cmdline, "-ig_seqtype", seqType)
 
+	cmdline <- paste( cmdline, "-organism", organism, "-domain_system imgt")
 
-	selectBestVDJ <- function( seg, nam, pct, eval, score) {
-
-		vn <- dn <- jn <- ""
-		vs <- ds <- js <- 0
-		vp <- dp <- jp <- 0
-
-		seg <- toupper( seg)
-		isV <- which( seg == "V")
-		if ( length(isV)) {
-			best <- which.max( score[isV])
-			vn <- nam[ isV[ best]]
-			vs <- as.numeric( score[ isV[ best]])
-			vp <- as.numeric( pct[ isV[ best]])
-		}
-		isD <- which( seg == "D")
-		if ( length(isD)) {
-			best <- which.max( score[isD])
-			dn <- nam[ isD[ best]]
-			ds <- as.numeric( score[ isD[ best]])
-			dp <- as.numeric( pct[ isD[ best]])
-		}
-		isJ <- which( seg == "J")
-		if ( length(isJ)) {
-			best <- which.max( score[isJ])
-			jn <- nam[ isJ[ best]]
-			js <- as.numeric( score[ isJ[ best]])
-			jp <- as.numeric( pct[ isJ[ best]])
-		}
-
-		bestScore <- max( vs, ds, js)
-		pctIdent <- mean( c(vp, dp, jp)[ which( c(vs, ds, js) > 0)])
-
-		return( list( "Vname"=vn, "Vscore"=vs, "VpctIdent"=vp, 
-				"Dname"=dn, "Dscore"=ds, "DpctIdent"=dp, 
-				"Jname"=jn, "Jscore"=js, "JpctIdent"=jp, 
-				"BestScore"=bestScore, "PctIdentity"=pctIdent))
+	# the optional file for calling CDR3 details
+	auxFile <- file.path( igblast.path, "optional_file", paste( organism, "_gl.aux", sep=""))
+	if ( ! file.exists( auxFile)) {
+		cat( "\n  Waringing: Could not find expected 'auxiliary_data' file: ", auxFile)
 	}
-	
+	cmdline <- paste( cmdline, "-auxiliary_data", auxFile)
+	cmdline <- paste( cmdline, "-num_threads", 4)
 
-	mapply( keyLines, keyEnds, FUN=function( start, stop) {
+	if ( ! file.exists( fastafile)) {
+		cat( "\nError:  Could not find FASTA query file: ", fastafile)
+		# since we failed, make sure to remove the output file
+		file.delete( outfile)
+		return()
+	}
+	cmdline <- paste( cmdline, "-query", fastafile)
+	cmdline <- paste( cmdline, "-outfmt", outfmt, " > ", outfile)
 
-			myID <- sub( "# Query: ", "", blastText[ start+1])
-
-			# the rearangement facts...
-			vmatch <- jmatch <- ""
-			rearange <- grep( "rearangement summary", blastText[ start:stop], fixed=T)
-			#cat( "\nDebug: ", start, stop, myID, rearange)
-
-			if ( ! is.na( who <- rearange[1])) {
-				terms <- strsplit( blastText[ who+start], split="\t")[[1]]
-				vmatch <- terms[1]
-				jmatch <- terms[2]
-			}
-
-			# the blast hits for V,D,J
-			hits <- grep( "Hit table", blastText[ start:stop], fixed=T)
-			bestScore <- 0
-			if ( ! is.na( who <- hits[1])) {
-				n <- 0
-				seg <- nam <- pct <- eval <- score <- vector()
-				for (k in (who+start+2):stop) {
-					terms <- strsplit( blastText[k], split="\t")[[1]]
-					n <- n + 1
-					seg[n] <- terms[1]
-					nam[n] <- terms[3]
-					pct[n] <- terms[4]
-					eval[n] <- terms[13]
-					score[n] <- terms[14]
-				}
-				ans <- selectBestVDJ( seg, nam, pct, eval, score)
-				bestScore <- ans$BestScore
-			} 
-
-			if ( bestScore < min.blast.score) return()
-			nout <<- nout + 1
-			idOut[nout] <<- myID
-			vNamOut[nout] <<- ans$Vname
-			vScoreOut[nout] <<- ans$Vscore
-			dNamOut[nout] <<- ans$Dname
-			dScoreOut[nout] <<- ans$Dscore
-			jNamOut[nout] <<- ans$Jname
-			jScoreOut[nout] <<- ans$Jscore
-			pctIdent[nout] <<- ans$PctIdentity
-			#cat( "\t", unlist( ans))
-			return()
-
-		})
-
-	blastDF <- data.frame( "CONTIG_ID"=idOut, "V_NAME"=vNamOut, "D_NAME"=dNamOut, "J_NAME"=jNamOut,
-				 "V_SCORE"=vScoreOut, "D_SCORE"=dScoreOut, "J_SCORE"=jScoreOut,
-				 "PctIdentity"=pctIdent, stringsAsFactors=FALSE)
-	ttlScore <- blastDF$V_SCORE + blastDF$D_SCORE + blastDF$J_SCORE
-	ord <- order( ttlScore, decreasing=T)
-	blastDF <- blastDF[ ord, ]
-	rownames(blastDF) <- 1:nrow(blastDF)
-
-	# clean up and extract the details we need for later profiling
-	blastDF$V_GROUP <- igblastGroupName( blastDF$V_NAME)
-	blastDF$J_GROUP <- igblastGroupName( blastDF$J_NAME)
-	blastDF$READ_DEPTH <- round( as.numeric( sub( "^NODE.+_cov_", "",  blastDF$CONTIG_ID)), digits=3)
-	blastDF$PctIdentity <- round( as.numeric(  blastDF$PctIdentity), digits=3)
-
-	return( blastDF)
+	# call BLAST
+	if (verbose) cat( "\nCalling IgBLAST: \nCommand line:  ", cmdline, "\n")
+	system( cmdline)
+	if (verbose) cat( "\nDone.\nWrote file: ", outfile, "\n")
+	return()
 }
 
 
+`readIgBlastOutput` <- function( infile="igblastOut.txt", outfmt=19, verbose=TRUE, min.blast.score=40) {
 
-`callIgBlast` <- function( fastafile, outfile="igblastOut.txt", program="igblastn", db=c("Both", "IG", "TR"),
-			path="~/IgBlast", organism=c( "human", "mouse"), outfmt=7) {
+	if ( ! file.exists( infile)) {
+		cat( "\nError:  Could not find IgBlast output file: ", infile)
+		return( NULL)
+	}
 
-	# validate the arguments
-	useprogram <- file.path( path, program)
-	if ( ! file.exists(useprogram)) stop( paste( "Can't find IgBlast executable: ", useprogram))
-	cmdline <- useprogram 
+	# scan the output of Blast for the data columns we need
+	# depending on the version of BLAST, the column mode number is different
+	if ( outfmt == 19) {
+		# the new AIRR format is a perfect tab separated table
+		tbl <- read.delim( infile, as.is=T)
 
-	# push the directory of IgBlast databases to a system env variable
-	path <- file.path( dirname(path), basename(path))
-	Sys.setenv( "IGDATA"=path)
+		# reduce to what we need/want
+		wantedColumns <- c( "sequence_id", "locus", "v_call", "d_call", "j_call", "sequence_alignment_aa",
+					"v_sequence_alignment_aa", "d_sequence_alignment_aa", "j_sequence_alignment_aa",
+					"v_score", "d_score", "j_score", "v_support", "d_support", "j_support",
+					"v_identity", "d_identity", "j_identity", 
+					"fwr1_aa", "cdr1_aa", "fwr2_aa", "cdr2_aa", "fwr3_aa", "cdr3_aa", "fwr4_aa", "cdr3")
+		tbl <- tbl[ , wantedColumns]
 
-	organism <- match.arg( organism)
-	db <- match.arg( db)
-	if ( db == "Both") db <- "IGTR"
-	dbArgs <- paste( " -germline_db_V ", path, "/IMGT_", organism, "_", db, "_Vdb", 
-			" -germline_db_D ", path, "/IMGT_", organism, "_", db, "_Ddb", 
-			" -germline_db_J ", path, "/IMGT_", organism, "_", db, "_Jdb", sep="")
-	cmdline <- paste( cmdline, dbArgs)
+		# trap/catch any missing results cleanly
+		for ( j in 1:ncol(tbl)) tbl[[j]][ is.na( tbl[[j]])] <- ""
 
-	if ( db == "TR") cmdline <- paste( cmdline, " -ig_seqtype TCR ")
+		# keep only the first call for each
+		tbl$v_call <- sub( ",.+", "", tbl$v_call)
+		tbl$d_call <- sub( ",.+", "", tbl$d_call)
+		tbl$j_call <- sub( ",.+", "", tbl$j_call)
 
-	cmdline <- paste( cmdline, " -organism ", organism, " -domain_system kabat ")
-	cmdline <- paste( cmdline, " -auxiliary_data ", file.path( path, paste( organism, "_gl.aux", sep="")))
-	cmdline <- paste( cmdline, " -num_threads ", 4)
+		# force some to be numeric
+		for ( j in c("v_score", "d_score", "j_score", "v_support", "d_support", "j_support", "v_identity", "d_identity", "j_identity")) {
+			tbl[[j]] <- as.numeric( tbl[[j]])
+		}
 
-	if ( ! file.exists( fastafile)) stop( "Can't find FASTA query file: ", fastafile)
-	cmdline <- paste( cmdline, "  -query ", fastafile)
-	cmdline <- paste( cmdline, "  -outfmt ", outfmt, "  > ", outfile)
+		# make the column names uppper case
+		colnames(tbl) <- sub( "_alignment", "", colnames(tbl))
+		colnames(tbl) <- toupper( colnames(tbl))
 
-	# call BLAST
-	cat( "\nCalling IgBLAST: \nCommand line:  ", cmdline, "\n")
-	system( cmdline)
-	cat( "\nDone.\nWrote file: ", outfile, "\n")
-	return()
+		# try to make a read depth value, from the denovo assembly 'coverage' field
+		cover <- sub( ".+_cov_", "", tbl$SEQUENCE_ID)
+		cover <- sub( "_.+", "", cover)
+		cover <- as.numeric( cover)
+		cover[ is.na(cover)] <- 1
+		tbl$READ_DEPTH <- round( cover, digits=1)
+		return(tbl)
+	}
+
+	if ( outfmt != 19) {
+		warning( paste( "Unsupported IgBlast Output format: ", outfmt))
+		return( NULL)
+	}
 }
 
 
 `igblastGroupName` <- function( txt) {
 
 	# the construct names have detailed suffixes that we want to lop off
-	txt <- sub( "-.+", "", txt)
+	txt <- sub( "\\-.+", "", txt)
 	txt <- sub( "\\*.+", "", txt)
 	txt <- sub( "/.+", "", txt)
-	#txt <- sub( "P$", "", txt)
-	#txt <- sub( "P", "", txt)
-	txt <- sub( "D$", "", txt)
+	#txt <- sub( "D$", "", txt)
 
 	# some may be unusual...
 	txt <- sub( "(I)", "1", txt, fixed=T)
@@ -189,67 +138,65 @@
 	txt <- sub( "(VI)", "6", txt, fixed=T)
 	txt <- sub( "(VII)", "7", txt, fixed=T)
 
-	# add some space between the Class and the variant
-	txt <- paste( substr( txt, 1,3), substr( txt, 4, 8), sep="_")
-
-	txt
+	return(txt)
 }
 
 
-`igblastVnames` <- function( mode=c( "IG", "TR")) {
+`igblastVnames` <- function( db=c( "IG", "TR")) {
 
-	mode <- match.arg( mode)
-	if ( mode == "IG") {
-		return( c( paste( "IGH_V", 1:7, sep=""), 
-				paste( "IGK_V", 1:7, sep=""),
-				paste( "IGL_V", 1:9, sep="")))
+	# create the complete list of all V names we maight see
+	db <- match.arg( db)
+	if ( db == "IG") {
+		return( c( paste( "IGHV", 1:8, sep=""), 
+				paste( "IGKV", 1:7, sep=""), paste( "IGKV", 1:6, "D", sep=""),	
+				paste( "IGLV", 1:11, sep="")))
 	}
-	if ( mode == "TR") {
-		return( c( paste( "TRA_V", 1:41, sep=""), 
-				paste( "TRB_V", 1:30, sep=""), "TRB_VA", "TRB_VB", "TRB_VC",
-				paste( "TRD_V", 1:3, sep=""), 
-				paste( "TRG_V", 1:11, sep="")))
-	}
-}
-
-
-`igblastJnames` <- function( mode=c( "IG", "TR")) {
-
-	mode <- match.arg( mode)
-	if ( mode == "IG") {
-		return( c( paste( "IGH_J", 1:6, sep=""), 
-				paste( "IGK_J", 1:5, sep=""),
-				paste( "IGL_J", 1:7, sep="")))
-	}
-	if ( mode == "TR") {
-		return( c( paste( "TRA_J", 1:61, sep=""), 
-				paste( "TRB_J", 1:2, sep=""),
-				paste( "TRD_J", 1:4, sep=""), 
-				paste( "TRG_J", 1:2, sep=""), "TRG_JP", "TRG_JP1", "TRG_JP2"))
+	if ( db == "TR") {
+		return( c( paste( "TRAV", 1:41, sep=""), 
+				paste( "TRBV", 1:30, sep=""), 
+				paste( "TRDV", 1:3, sep=""), 
+				paste( "TRGV", 1:11, sep=""), "TRGVA"))
 	}
 }
 
 
-`profileIgBlastCoverage` <- function( tbl, min.blast.score=100) {
+`igblastJnames` <- function( db=c( "IG", "TR")) {
+
+	# create the complete list of all J names we maight see
+	db <- match.arg( db)
+	if ( db == "IG") {
+		return( c( paste( "IGHJ", 1:6, sep=""), 
+				paste( "IGKJ", 1:5, sep=""),
+				paste( "IGLJ", 1:7, sep="")))
+	}
+	if ( db == "TR") {
+		return( c( paste( "TRAJ", 1:61, sep=""), 
+				paste( "TRBJ", 1:2, sep=""),
+				paste( "TRDJ", 1:4, sep=""), 
+				paste( "TRGJ", 1:2, sep=""), "TRGJP", "TRGJP1", "TRGJP2"))
+	}
+}
+
+
+`profileIgBlastCoverage` <- function( tbl, db=c("IG","TR"), min.v.score=100) {
 
 	# eat the IgBlast result data frame, and present it as read depth percentages and 
 	# germline identity per lymphocyte construct
-	tbl <- subset( tbl, V_SCORE >= min.blast.score)
-	drops <- union( which( tbl$V_NAME == ""), which( tbl$J_NAME == ""))
+	tbl <- subset( tbl, V_SCORE >= min.v.score)
+	drops <- union( which( tbl$V_CALL == ""), which( tbl$J_CALL == ""))
 	if ( length(drops)) tbl <- tbl[ -drops, ]
 	if ( nrow(tbl) < 1) return( NULL)
 
 	# extract the details we need
-	vnam <- tbl$V_GROUP
-	jnam <- tbl$J_GROUP
+	vnam <- igblastGroupName( tbl$V_CALL)
+	jnam <- igblastGroupName( tbl$J_CALL)
 	readDepth <- tbl$READ_DEPTH
-	pctIdent <- tbl$PctIdentity
+	pctIdent <- tbl$V_IDENTITY
 
 	# make a table to accumulate the reads by group
 	# use all possible names, not just those seen in this file
-	mode <- substr( vnam[1], 1, 2)
-	vlevels <- igblastVnames( mode)
-	jlevels <- igblastJnames( mode)
+	vlevels <- igblastVnames( db)
+	jlevels <- igblastJnames( db)
 	vfac <- factor( vnam, levels=vlevels)
 	jfac <- factor( jnam, levels=jlevels)
 	nv <- length( vlevels)
@@ -291,20 +238,21 @@
 	rowMax <- apply( pcts, 1, max)
 	drops <- which( rowMax < min.read.pct)
 	if ( length( drops)) {
-		pcts <- pcts[ -drops, ]
-		ident <- ident[ -drops, ]
+		pcts <- pcts[ -drops, , drop=F]
+		ident <- ident[ -drops, , drop=F]
 	}
 	colMax <- apply( pcts, 2, max)
 	drops <- which( colMax < min.read.pct)
 	if ( length( drops)) {
-		pcts <- pcts[ , -drops]
-		ident <- ident[ , -drops]
+		pcts <- pcts[ , -drops, drop=F]
+		ident <- ident[ , -drops, drop=F]
 	}
 
 	vIdent <- as.vector( ident)
-	vIdent[ vIdent < 90] <- 90
-	colorScale <- color.scale( vIdent, cs1=c(1,0.01), cs2=c(0,0), cs3=c(0,1),
-				xrange=c(90,100))
+	# force the coloring to see a spectrum
+	vIdent[ vIdent < 80] <- 80
+	colorScale <- color.scale( c( vIdent, 80, 100), cs1=c(1,0.01), cs2=c(0,0), cs3=c(0,1),
+				xrange=c(80,100))
 
 	NJ <- nrow(pcts)
 	NV <- ncol(pcts)
@@ -337,10 +285,10 @@
 			xlas=3, main=mainText, mar=c( 6,6,4,2), ...)
 
 	lines( c( -1,NV+2), c(0,0), lty=1, lwd=2, col=1)
-	colorscale <- color.scale( 90:100, cs1=c(1,0.01), cs2=c(0,0), cs3=c(0,1), xrange=c(90,100))
+	colorscale <- color.scale( 80:100, cs1=c(1,0.01), cs2=c(0,0), cs3=c(0,1), xrange=c(80,100))
 	colorXlo <- round( NV * 0.33)
 	colorXhi <- NV - colorXlo + 1
-	color.legend( colorXlo, -1.6, colorXhi, -0.9, seq(90, 100, by=1), rect.col=colorscale)
+	color.legend( colorXlo, -1.6, colorXhi, -0.9, seq(80, 100, by=5), rect.col=colorscale)
 	text( colorXlo, -1.25, "GermLine Identity", pos=2, cex=1.2, font=2)
 
 	sizeX <- round( NV * 0.90)
