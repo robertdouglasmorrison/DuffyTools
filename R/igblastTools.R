@@ -8,6 +8,7 @@
 			database.subpath="database", outfmt=19, verbose=TRUE) {
 
 	# validate the arguments
+	if ( igblast.program == "") stop( "IgBlast executable name is blank.  Give explicit pathname or perhaps modify PATH env var.")
 	if ( ! file.exists(igblast.program)) stop( paste( "Can't find IgBlast executable: ", igblast.program))
 	cmdline <- igblast.program 
 
@@ -102,7 +103,7 @@
 
 		# make the column names uppper case
 		colnames(out) <- sub( "_alignment", "", colnames(out))
-		colnames(tbl) <- toupper( colnames(tbl))
+		colnames(out) <- toupper( colnames(out))
 
 		# try to make a read depth value, from the denovo assembly 'coverage' field
 		cover <- sub( ".+_cov_", "", out$SEQUENCE_ID)
