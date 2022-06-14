@@ -3,15 +3,13 @@
 #		Updates ~2022 to work with IgBlast 1.18
 
 
-`callIgBlast` <- function( fastafile, outfile="igblastOut.txt", program="igblastn", 
+`callIgBlast` <- function( fastafile, outfile="igblastOut.txt", igblast.program=Sys.which("igblastn"), 
 			igblast.path="~/IgBlast", db=c("IG","TR"), organism=c( "human", "mouse"), 
 			database.subpath="database", outfmt=19, verbose=TRUE) {
 
 	# validate the arguments
-	igblastProgram <- file.path( igblast.path, program)
-	if ( ! file.exists(igblastProgram)) igblastProgram <- file.path( igblast.path, "bin", program)
-	if ( ! file.exists(igblastProgram)) stop( paste( "Can't find IgBlast executable: ", igblastProgram))
-	cmdline <- igblastProgram 
+	if ( ! file.exists(igblast.program)) stop( paste( "Can't find IgBlast executable: ", igblast.program))
+	cmdline <- igblast.program 
 
 	# push the directory of IgBlast databases to a system env variable
 	sys.path <- file.path( dirname(igblast.path), basename(igblast.path))
@@ -23,9 +21,9 @@
 	vFile <- file.path( igblast.path, database.subpath, paste( organism, "_", db, "_V", sep=""))
 	dFile <- file.path( igblast.path, database.subpath, paste( organism, "_", db, "_D", sep=""))
 	jFile <- file.path( igblast.path, database.subpath, paste( organism, "_", db, "_J", sep=""))
-	vFileTest <- paste( vFile, ".ndb", sep="")
-	dFileTest <- paste( dFile, ".ndb", sep="")
-	jFileTest <- paste( jFile, ".ndb", sep="")
+	vFileTest <- paste( vFile, ".nsq", sep="")
+	dFileTest <- paste( dFile, ".nsq", sep="")
+	jFileTest <- paste( jFile, ".nsq", sep="")
 	if ( ! all( file.exists( c( vFileTest, dFileTest, jFileTest)))) {
 		cat( "\nError:  Could not find needed V/D/J database files for IgBlast.")
 		cat( "\n  Looked for: ", vFile, dFile, jFile)
@@ -80,38 +78,39 @@
 		# the new AIRR format is a perfect tab separated table
 		tbl <- read.delim( infile, as.is=T)
 
-		# reduce to what we need/want
+		# reduce to what we need/want, may not all be there
 		wantedColumns <- c( "sequence_id", "locus", "v_call", "d_call", "j_call", "sequence_alignment_aa",
 					"v_sequence_alignment_aa", "d_sequence_alignment_aa", "j_sequence_alignment_aa",
 					"v_score", "d_score", "j_score", "v_support", "d_support", "j_support",
 					"v_identity", "d_identity", "j_identity", 
 					"fwr1_aa", "cdr1_aa", "fwr2_aa", "cdr2_aa", "fwr3_aa", "cdr3_aa", "fwr4_aa", "cdr3")
-		tbl <- tbl[ , wantedColumns]
+		where <- match( wantedColumns, colnames(tbl), nomatch=0)
+		out <- tbl[ , where]
 
 		# trap/catch any missing results cleanly
-		for ( j in 1:ncol(tbl)) tbl[[j]][ is.na( tbl[[j]])] <- ""
+		for ( j in 1:ncol(out)) out[[j]][ is.na( out[[j]])] <- ""
 
 		# keep only the first call for each
-		tbl$v_call <- sub( ",.+", "", tbl$v_call)
-		tbl$d_call <- sub( ",.+", "", tbl$d_call)
-		tbl$j_call <- sub( ",.+", "", tbl$j_call)
+		out$v_call <- sub( ",.+", "", out$v_call)
+		out$d_call <- sub( ",.+", "", out$d_call)
+		out$j_call <- sub( ",.+", "", out$j_call)
 
 		# force some to be numeric
 		for ( j in c("v_score", "d_score", "j_score", "v_support", "d_support", "j_support", "v_identity", "d_identity", "j_identity")) {
-			tbl[[j]] <- as.numeric( tbl[[j]])
+			out[[j]] <- as.numeric( out[[j]])
 		}
 
 		# make the column names uppper case
-		colnames(tbl) <- sub( "_alignment", "", colnames(tbl))
+		colnames(out) <- sub( "_alignment", "", colnames(out))
 		colnames(tbl) <- toupper( colnames(tbl))
 
 		# try to make a read depth value, from the denovo assembly 'coverage' field
-		cover <- sub( ".+_cov_", "", tbl$SEQUENCE_ID)
+		cover <- sub( ".+_cov_", "", out$SEQUENCE_ID)
 		cover <- sub( "_.+", "", cover)
 		cover <- as.numeric( cover)
 		cover[ is.na(cover)] <- 1
-		tbl$READ_DEPTH <- round( cover, digits=1)
-		return(tbl)
+		out$READ_DEPTH <- round( cover, digits=1)
+		return(out)
 	}
 
 	if ( outfmt != 19) {
