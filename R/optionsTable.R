@@ -63,6 +63,13 @@
 		out <- env.sub( out)
 		if (verbose) cat( "\tFound:\t", out)
 	} else {
+		# when not found, see if it is 'almost' a match, e.g. a misspelling
+		editDist <- adist( name, tbl$OptionName)
+		closeEnough <- max( 3, round(nchar(name)*0.25))
+		if ( any( editDist <= closeEnough)) {
+			cat( "\n\nWarning: wanted Option entry: ", name, 
+				" is a close but inexact match to some Option names.\n  Using 'default' value instead...\n")
+		}
 		out <- notfound
 		if (verbose) cat( "\tDefault:\t", out)
 	}
@@ -118,6 +125,13 @@
 		out <- as.TRUEorFALSE( out)
 		if (verbose) cat( "\tFound: \t", out)
 	} else {
+		# when not found, see if it is 'almost' a match, e.g. a misspelling
+		editDist <- adist( name, tbl$OptionName)
+		closeEnough <- max( 3, round(nchar(name)*0.25))
+		if ( any( editDist <= closeEnough)) {
+			cat( "\n\nWarning: wanted Option entry: ", name, 
+				" is a close but inexact match to some Option names.\n  Using 'default' value instead...\n")
+		}
 		out <- notfound
 		if (verbose) cat( "\tDefault:\t", out)
 	}

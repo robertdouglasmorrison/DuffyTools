@@ -51,6 +51,13 @@
 
 	col <- base::match( name, colnames(tbl), nomatch=0)
 	if ( col == 0) {
+		# when not found, see if it is 'almost' a match, e.g. a misspelling
+		editDist <- adist( name, colnames(tbl))
+		closeEnough <- max( 3, round(nchar(name)*0.25))
+		if ( any( editDist <= closeEnough)) {
+			cat( "\n\nWarning: wanted Annotation argument: ", name, 
+				" is a close but inexact match to some Annotation columns.\n  Using 'default' value instead...\n")
+		}
 		out <- as.character(notfound)
 		if (verbose) cat( ":\tDefault:\t", out)
 	} else {
@@ -82,6 +89,13 @@
 	if (verbose) cat( "\nAnnotation True: \t", key, ":\t", name, sep="")
 	col <- base::match( name, colnames(tbl), nomatch=0)
 	if ( col == 0) {
+		# when not found, see if it is 'almost' a match, e.g. a misspelling
+		editDist <- adist( name, colnames(tbl))
+		closeEnough <- max( 3, round(nchar(name)*0.25))
+		if ( any( editDist <= closeEnough)) {
+			cat( "\n\nWarning: wanted Annotation argument: ", name, 
+				" is a close but inexact match to some Annotation columns.\n  Using 'default' value instead...\n")
+		}
 		out <- as.logical(notfound)
 		if (verbose) cat( ":\tDefault:\t", out)
 	} else {
