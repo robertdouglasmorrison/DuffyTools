@@ -5,8 +5,6 @@
 
 	# determine if we are running inside an Rstudio session
 	# there should be environment variables as a clue
-	envSet <- Sys.getenv()
-	nRstudio <- length( grep( "^RSTUDIO", names(envSet)))
-	return( nRstudio > 0)
+	return( Sys.getenv("RSTUDIO") == "1")
 }
 
