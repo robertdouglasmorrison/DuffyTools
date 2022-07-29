@@ -66,7 +66,7 @@
 }
 
 
-`readIgBlastOutput` <- function( infile="igblastOut.txt", outfmt=19, verbose=TRUE, min.blast.score=40) {
+`readIgBlastOutput` <- function( infile="igblastOut.txt", outfmt=19, verbose=TRUE) {
 
 	if ( ! file.exists( infile)) {
 		cat( "\nError:  Could not find IgBlast output file: ", infile)
