@@ -199,13 +199,14 @@
 		allPs <- dhyper( 0:k, m, n, k)
 		if ( lowTailWanted) {
 			# the probability of 0 to X genes
-			pvals[i] <- sum( allPs[1:(x+1)])
+			pvals[i] <- sum( allPs[1:(x+1)], na.rm=T)
 		} else {
 			# the probability of X up to K genes
-			pvals[i] <- sum( allPs[(x+1):length(allPs)])
+			pvals[i] <- sum( allPs[(x+1):length(allPs)], na.rm=T)
 		}
 		if (verbose) cat( "\n", i, both[i], enrich[i], pvals[i])
 	}
+	pvals[ is.na(pvals)] <- 1
 	if (verbose) cat( "\n")
 
 	# do correction for multiple comparisons?
@@ -1822,7 +1823,7 @@
 
 # modified version of a volcano plot, that makes one circle per cell type
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
-					gene.pct=5.0, min.enrichment=1.2, label="", sep="\t", label.cex=1, pt.cex=0.65,
+					gene.pct=5.0, min.enrichment=1.2, max.Pvalue=0.01, label="", sep="\t", label.cex=1, pt.cex=0.65,
 					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, 
 					color.alpha=0.75, label.offset.cex=1, legend.cex=0.9, ...) {
 
@@ -1903,8 +1904,9 @@
 
 	# use cell type enrichment to decide who to highlight
 	# as of new cell types allowing 2+ types, all cell type names are always 'short'
-	UPenrich <- cellTypeEnrichment( topCellType[UPgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
-	DOWNenrich <- cellTypeEnrichment( topCellType[DOWNgenes], mode="genes", minEnrich=min.enrichment, upOnly=T, verbose=F)
+	# since we will decide later which balloons to draw, get all the enrichment details, not just the significant here...
+	UPenrich <- cellTypeEnrichment( topCellType[UPgenes], mode="genes", minEnrich=1, maxPvalue=1, upOnly=F, verbose=F)
+	DOWNenrich <- cellTypeEnrichment( topCellType[DOWNgenes], mode="genes", minEnrich=1, maxPvalue=1, upOnly=F, verbose=F)
 
 	# now let's calculate the clusters for each cell type, both UP and DOWN
 	cellFac <- factor( topCellType)
@@ -1920,7 +1922,7 @@
 
 	tapply( 1:NG, cellFac, function(k) {
 		
-		# given all the genes for one cell type, bail if not a read cell type
+		# given all the genes for one cell type, bail if not a real cell type
 		ct <- topCellType[k[1]]
 		if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
 		ctColor <- allCellTransparentColors[ match( ct, allCellNames)]
@@ -2015,10 +2017,11 @@
 	# now with all cell clusters known, we can draw their balloons
 	ord <- order( out$Radius, decreasing=T)
 	out <- out[ ord, ]
+	out$Enrichment <- 1
 	out$Enrichment.Pvalue <- 1
 	toShow <- vector()
 	for ( i in 1:nrow(out)) {
-		# use the enrichment to decide who to show
+		# use the enrichment and P-value to decide who to show
 		myCellType <- out$CellType[i]
 		myUpDown <- out$Direction[i]
 		if ( myUpDown == "UP") {
@@ -2030,8 +2033,9 @@
 			myEnrich <- DOWNenrich$Enrichment[where]
 			myPval <- DOWNenrich$P_Value[where]
 		}
+		out$Enrichment[i] <- myEnrich
 		out$Enrichment.Pvalue[i] <- myPval
-		if ( ! is.na(where) && myEnrich >= min.enrichment) {
+		if ( ! is.na(where) && myEnrich >= min.enrichment && myPval <= max.Pvalue) {
 			draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
 			toShow <- c( toShow, i)
 		}
