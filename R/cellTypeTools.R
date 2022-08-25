@@ -6,62 +6,29 @@
 
 # 2022:  Allowing 2+ cell types per call.  Forces many small changes...
 
-# clean up the cell type names a bit
-`cleanCellTypeName` <- function( cellTypes) {
 
-	cells <- cellTypes
-	cells <- sub( "^B1ab$", "B1a/B1b B cells", cells)
-	cells <- sub( "^Bcell$", "B cells", cells)
-	cells <- sub( "^B.CD5$", "CD5+ B cells", cells)
-	cells <- sub( "^B.Memory$", "Memory B cells", cells)
-	cells <- sub( "^B.Mem$", "Memory B cells", cells)
-	cells <- sub( "^B.Naive$", "Naive B cells", cells)
-	cells <- sub( "^CD4_Tcell$", "CD4+ T cells", cells)
-	cells <- sub( "^CD4Tcell$", "CD4+ T cells", cells)
-	cells <- sub( "^CD4.Cntrl.Mem$", "CD4+ Central Memory T cells", cells)
-	cells <- sub( "^CD4.CntrlMem$", "CD4+ Central Memory T cells", cells)
-	cells <- sub( "^CD4.CenMem$", "CD4+ Central Memory T cells", cells)
-	cells <- sub( "^CD4.Tfh$", "CD4+ T Follicular Helper cells (Tfh)", cells)
-	cells <- sub( "^CD4.Tfr$", "CD4+ T Follicular Regulatory cells (Tfr)", cells)
-	cells <- sub( "^CD4.cTfh$", "CD4+ T Follicular Helper cells (Tfh)", cells)
-	cells <- sub( "^CD4.cTfr$", "CD4+ T Follicular Regulatory cells (Tfr)", cells)
-	cells <- sub( "^CD4.Eff.Mem$", "CD4+ Effector Memory T cells", cells)
-	cells <- sub( "^CD4.EffMem$", "CD4+ Effector Memory T cells", cells)
-	cells <- sub( "^CD4.Naive$", "CD4+ Naive T cells", cells)
-	cells <- sub( "^CD4.Th1$", "CD4+ Type 1 Helper T cells", cells)
-	cells <- sub( "^CD4.Th2$", "CD4+ Type 2 Helper T cells", cells)
-	cells <- sub( "^CD4.Th17$", "CD4+ Type 17 Helper T cells", cells)
-	cells <- sub( "^CD4.Treg$", "CD4+ Regulatory T cells (Treg)", cells)
-	cells <- sub( "^CD8_Tcell$", "CD8+ T cells", cells)
-	cells <- sub( "^CD8Tcell$", "CD8+ T cells", cells)
-	cells <- sub( "^CD8.Cntrl.Mem$", "CD8+ Central Memory T cells", cells)
-	cells <- sub( "^CD8.CntrlMem$", "CD8+ Central Memory T cells", cells)
-	cells <- sub( "^CD8.CenMem$", "CD8+ Central Memory T cells", cells)
-	cells <- sub( "^CD8.CytoxCD62Lh$", "CD8+ Cytotoxic CD62L+ T cells", cells)
-	cells <- sub( "^CD8.CytoxCD62Ll$", "CD8+ Cytotoxic CD62L- T cells", cells)
-	cells <- sub( "^CD8.Eff.Mem$", "CD8+ Effector Memory T cells", cells)
-	cells <- sub( "^CD8.EffMem$", "CD8+ Effector Memory T cells", cells)
-	cells <- sub( "^CD8.EffMem.preTRM$", "CD8+ Effector (pre Tissue Resident Memory) T cells", cells)
-	cells <- sub( "^CD8.Naive$", "CD8+ Naive T cells", cells)
-	cells <- sub( "^Dendritic$", "Dendritic cells", cells)
-	cells <- sub( "^GD.nonVD2$", "Gamma Delta non-VD2 T cells", cells)
-	cells <- sub( "^GD.VD2$", "Gamma Delta VD2+ T cells", cells)
-	cells <- sub( "^Macrophage$", "Macrophages", cells)
-	cells <- sub( "^Monocyte$", "Monocytes", cells)
-	cells <- sub( "^MyeloidDC$", "Myeloid dendritic cells", cells)
-	cells <- sub( "^mDendritic$", "Myeloid dendritic cells", cells)
-	cells <- sub( "^Neutrophil$", "Neutrophils", cells)
-	cells <- sub( "^NKcell$", "NK cells", cells)
-	cells <- sub( "^NK$", "NK cells", cells)
-	cells <- sub( "^NKTcell$", "NKT cells", cells)
-	cells <- sub( "^RBC$", "Red Blood cells", cells)
-	cells <- sub( "^TCRgd$", "Gamma delta T cells", cells)
-	cells <- sub( "^Teff$", "Effector T cells (Teff)", cells)
-	cells <- sub( "^Tfh$", "Follicular helper T cells (Tfh)", cells)
-	cells <- sub( "^Tnaive$", "Naive T cells", cells)
-	cells <- sub( "^Treg$", "Regulatory T cells (Treg)", cells)
-	cells <- sub( "^WholeBlood$", "Whole Blood", cells)
-	cells
+# load gene to cell type association data, by looking up the named data object in the Options.txt file
+`getGeneCellTypesData` <- function( speciesID=getCurrentSpecies(), optionsFile="Options.txt") {
+
+	# build the name of the R data object to be loaded
+	referenceName <- "27.Blood.CellTypes"
+	if ( file.exists( optionsFile)) {
+		referenceName <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
+						notfound=referenceName, verbose=FALSE)
+	}
+	
+	prefix <- getOtherSpeciesFilePrefix( speciesID)
+	referenceName <- paste( prefix, referenceName, "GeneAssociation", ,sep=".")
+
+	# try to load that
+	geneCellTypes <- NULL
+	data( list=referenceName, package="DuffyTools", envir=environment())
+	if ( is.null(geneCellTypes)) {
+		cat( "\nWarning:  tried to load a 'DuffyTools/data/' installed file called: ", referenceName)
+		cat( "\n          expected it to contain a data object named:  'geneCellTypes'")
+		return( NULL)
+	}
+	return( geneCellTypes)
 }
 
 
@@ -71,8 +38,7 @@
 
 	genesIn <- shortGeneName( genes, keep=1)
 	prefix <- getOtherSpeciesFilePrefix( speciesID)
-	geneCellTypes <- NULL
-	data( list=paste( prefix,"GeneCellTypes",sep="."), package="DuffyTools", envir=environment())
+	geneCellTypes <- getGeneCellTypesData( speciesID)
 	if ( is.null(geneCellTypes)) {
 		cat( "\nWarning:  No 'GeneCellTypes' object loaded for species: ", speciesID)
 		return( out)
@@ -120,8 +86,7 @@
 		# speciesID is needed, since orthologging may be required
 		if (is.null(speciesID)) stop( "'speciesID' must not be NULL for gene cell types.")
 		prefix <- getOtherSpeciesFilePrefix( speciesID)
-		geneCellTypes <- NULL
-		data( list=paste( prefix,"GeneCellTypes",sep="."), package="DuffyTools", envir=environment())
+		geneCellTypes <- getGeneCellTypesData( speciesID)
 		if ( is.null(geneCellTypes)) stop( "'GeneCellTypes' object not loaded.")
 
 		# this table often has more than one cell type per gene, to show the diversity
@@ -499,45 +464,56 @@
 }
 
 
-# porting of Life Cycle tools below here...
+# porting of Life Cycle tools to be used as Cell Type tools below here...
 
-`verifyCellTypeSetup` <- function() {
+`verifyCellTypeSetup` <- function( optionsFile="Options.txt") {
 
+	# build the name of the R data object to be loaded
+	referenceName <- "27.Blood.CellTypes"
+	if ( file.exists( optionsFile)) {
+		referenceName <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
+						notfound=referenceName, verbose=FALSE)
+	}
+	
+	prefix <- getOtherSpeciesFilePrefix( speciesID)
+	referenceName <- paste( prefix, referenceName, "TargetMatrix", ,sep=".")
+
+	# try to load that
 	isReady <- exists( "VectorSpace", envir=CellTypeEnv)
-	isRightSpecies <- FALSE
+	isRightSpecies <- isRightReference <- FALSE
 	if ( isReady) {
 		curSpecies <- get( "Species", envir=CellTypeEnv)
 		if( ! is.null( curSpecies)) isRightSpecies <- ( curSpecies == getCurrentSpecies())
+		curReference <- get( "Reference", envir=CellTypeEnv)
+		if( ! is.null( curReference)) isRightReference <- ( curReference == referenceName)
 	}
-	if ( !isReady || !isRightSpecies) CellTypeSetup( dataset="ImmuneCell.TargetMatrix", unitVectorMode="absolute")
+	if ( !isReady || !isRightSpecies || !isRightReference) CellTypeSetup( dataset=referenceName, unitVectorMode="absolute")
 	return()
 }
 
 
-`CellTypeSetup` <- function( dataset=c( "ImmuneCell.TargetMatrix", "Custom"), 
-				unitVectorMode=c("absolute","relative","none","squared","cubed"), 
+`CellTypeSetup` <- function( dataset, unitVectorMode=c("absolute","relative","none","squared","cubed"), 
 				custom.file=NULL, custom.colors=NULL, preNormalize=TRUE, postNormalize=TRUE, 
 				doRMA=FALSE, min.value=0, min.spread=2.0, verbose=FALSE) {
 
-	dataset <- match.arg( dataset)
 	unitVectorMode <- match.arg( unitVectorMode)
 	ans <- NULL
 
 	cat( "\nSetting up CellType dataset:  ", dataset)
 
 	# get the data from the package
-	if ( dataset == "ImmuneCell.TargetMatrix") {
+	if ( tolower(dataset) != "custom") {
 	
-		# make the dataset name from the current species
-		prefix <- getCurrentSpeciesFilePrefix()
-		dataFileName <- paste( prefix, dataset, sep=".")
+		# we were passed in the name of a DuffyTools data object
+		dataFileName <- dataset
 		targetM <- targetColors <- NULL
 		data( list=dataFileName, package="DuffyTools", envir=environment())
 		if ( is.null( targetM)) {
-			cat( "\nFailed to load Cell Type data object: ", dataFileName)
+			cat( "\nFailed to load Cell Type target matrix data object: ", dataFileName)
+			cat( "\n  expected a data object named 'targetM'")
 			return(NULL)
 		}
-		if ( exists( "immuneCellTargetColors")) targetColors <- immuneCellTargetColors
+		if ( ! exists( "targetColors")) targetColors <- rainbow( ncol(targetM), end=0.8)
 
 		ans <- buildCellTypeVectorSpace( file=NULL, tbl=targetM, 
 			unitVectorMode=unitVectorMode, min.value=min.value, min.spread=min.spread, 
@@ -1738,10 +1714,8 @@
 	# get the cell type colors to use/show.  The color map is short names, but the data passed in
 	# may have the longer human readable names
 	cellColors <- getCellTypeColors()
-	longNames <- cleanCellTypeName( names(cellColors))
-	allCellNames <- c( names(cellColors), longNames)
-	allCellColors <- rep( cellColors, times=2)
-	geneCellColor <- allCellColors[ match( celltype, allCellNames)]
+	cellNames <- names(cellColors)
+	geneCellColor <- cellColors[ match( celltype, cellNames)]
 
 	# do the volcano in line now
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
@@ -1876,14 +1850,11 @@
 	# get the cell type colors to use/show.  The color map is short names, but the data passed in
 	# may have the longer human readable names
 	cellColors <- getCellTypeColors()
-	shortCellNames <- names(cellColors)
-	longCellNames <- cleanCellTypeName( shortCellNames)
-	allCellNames <- c( shortCellNames, longCellNames)
-	allCellColors <- rep( cellColors, times=2)
+	cellNames <- names(cellColors)
 	# make some transparent colors too
-	rgbCol <- col2rgb( allCellColors)
-	allCellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
-	geneCellColor <- allCellColors[ debugPtrs <- match( topCellType, shortCellNames)]
+	rgbCol <- col2rgb( cellColors)
+	cellTransparentColors <- rgb( t(rgbCol)/256, alpha=color.alpha)
+	geneCellColor <- cellColors[ debugPtrs <- match( topCellType, cellNames)]
 
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
 	clip.fold <- 10
@@ -1925,7 +1896,7 @@
 		# given all the genes for one cell type, bail if not a real cell type
 		ct <- topCellType[k[1]]
 		if ( is.null(ct) || is.na(ct) || length(ct) < 1 || ct == "") return()
-		ctColor <- allCellTransparentColors[ match( ct, allCellNames)]
+		ctColor <- cellTransparentColors[ match( ct, cellNames)]
 
 		# see how many and where each group falls
 		xUP <- yUP <- xDOWN <- yDOWN <- 0
