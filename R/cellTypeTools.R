@@ -8,37 +8,44 @@
 
 
 # load gene to cell type association data, by looking up the named data object in the Options.txt file
-`getGeneCellTypesData` <- function( speciesID=getCurrentSpecies(), optionsFile="Options.txt") {
+`getCellTypeGeneAssociation` <- function( referenceName=NULL, optionsFile="Options.txt", speciesID=getCurrentSpecies()) {
 
 	# build the name of the R data object to be loaded
-	referenceName <- "27.Blood.CellTypes"
+	if ( is.null( referenceName)) referenceName <- "27.Blood.CellTypes"
 	if ( file.exists( optionsFile)) {
 		referenceName <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
 						notfound=referenceName, verbose=FALSE)
 	}
 	
 	prefix <- getOtherSpeciesFilePrefix( speciesID)
-	referenceName <- paste( prefix, referenceName, "GeneAssociation", ,sep=".")
+	referenceName <- paste( prefix, referenceName, "GeneAssociation", sep=".")
 
 	# try to load that
 	geneCellTypes <- NULL
 	data( list=referenceName, package="DuffyTools", envir=environment())
 	if ( is.null(geneCellTypes)) {
-		cat( "\nWarning:  tried to load a 'DuffyTools/data/' installed file called: ", referenceName)
+		cat( "\nWarning:  tried to load a 'DuffyTools/data/' installed bject file called: ", referenceName)
 		cat( "\n          expected it to contain a data object named:  'geneCellTypes'")
 		return( NULL)
+	}
+
+	neededColumns <- c( "GENE_ID", "CellType", "PctExpression")
+	if ( ! all( neededColumns %in% colnames(geneCellTypes))) {
+		cat( "\nWarning: some required gene cell type columns not found.  Expected: ", neededColumns)
+		return(NULL)
 	}
 	return( geneCellTypes)
 }
 
 
+# map genes to cell types, using the current cellTypeReference dataset.  Allow returning more than one name.
 `gene2CellType` <- function( genes, max.types=1, speciesID=getCurrentSpecies()) {
 
 	out <- rep.int( "", N <- length(genes))
 
 	genesIn <- shortGeneName( genes, keep=1)
 	prefix <- getOtherSpeciesFilePrefix( speciesID)
-	geneCellTypes <- getGeneCellTypesData( speciesID)
+	geneCellTypes <- getCellTypeGeneAssociation( speciesID)
 	if ( is.null(geneCellTypes)) {
 		cat( "\nWarning:  No 'GeneCellTypes' object loaded for species: ", speciesID)
 		return( out)
@@ -86,7 +93,7 @@
 		# speciesID is needed, since orthologging may be required
 		if (is.null(speciesID)) stop( "'speciesID' must not be NULL for gene cell types.")
 		prefix <- getOtherSpeciesFilePrefix( speciesID)
-		geneCellTypes <- getGeneCellTypesData( speciesID)
+		geneCellTypes <- getCellTypeGeneAssociation( speciesID)
 		if ( is.null(geneCellTypes)) stop( "'GeneCellTypes' object not loaded.")
 
 		# this table often has more than one cell type per gene, to show the diversity
@@ -466,17 +473,22 @@
 
 # porting of Life Cycle tools to be used as Cell Type tools below here...
 
-`verifyCellTypeSetup` <- function( optionsFile="Options.txt") {
+`verifyCellTypeSetup` <- function( referenceName=NULL, optionsFile="Options.txt") {
 
 	# build the name of the R data object to be loaded
-	referenceName <- "27.Blood.CellTypes"
+	speciesID <- getCurrentSpeciesFilePrefix()
+	prefix <- getCurrentSpeciesFilePrefix()
+
+	defaultReferenceName <- ""
+	if (speciesID %in% PARASITE_SPECIES) defaultReferenceName <- "Parasite.LifeCycle"
+	if (speciesID %in% MAMMAL_SPECIES) defaultReferenceName <- "27.Blood.CellTypes"
 	if ( file.exists( optionsFile)) {
-		referenceName <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
-						notfound=referenceName, verbose=FALSE)
+		referenceName <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=getCurrentSpecies(), 
+						notfound=defaultReferenceName, verbose=FALSE)
+	} else {
+		referenceName <- defaultReferenceName
 	}
-	
-	prefix <- getOtherSpeciesFilePrefix( speciesID)
-	referenceName <- paste( prefix, referenceName, "TargetMatrix", ,sep=".")
+	referenceName <- paste( prefix, referenceName, "TargetMatrix", sep=".")
 
 	# try to load that
 	isReady <- exists( "VectorSpace", envir=CellTypeEnv)
@@ -525,7 +537,7 @@
 			doRMA=FALSE, verbose=FALSE)
 	}
 
-	if ( dataset == "Custom") {
+	if ( tolower(dataset) == "custom") {
 
 		# pre read the file to make the dimensions construct
 		if ( ! file.exists( custom.file)) stop( paste( "Custom Cell Type Target Matrix file not found: ", custom.file))
@@ -552,6 +564,7 @@
 	CellTypeEnv[[ "VectorSpace" ]] <- ans
 	CellTypeEnv[[ "IntensitySpace" ]] <- ans2
 	CellTypeEnv[[ "Species" ]] <- getCurrentSpecies()
+	CellTypeEnv[[ "Reference" ]] <- dataset
 	if ( ! is.null( ans)) {
 		CellTypeEnv[[ "N_STAGES" ]] <- ncol(ans) - 2   # geneID, Product come first
 		CellTypeEnv[[ "STAGE_NAMES" ]] <- colnames(ans)[3:ncol(ans)]

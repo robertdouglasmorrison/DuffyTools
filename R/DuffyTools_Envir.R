@@ -21,8 +21,8 @@ TargetEnv <- new.env( hash=TRUE, parent=emptyenv())
 TARGET_NAMES <- c( "TargetID", "SpeciesSet", "PrefixSet")
 
 # group names for classes of species
-MAMMAL_SPECIES <- c( "Hs_grc", "Mmu_grc", "Rnor_grc", "MacMu", "MacFas", "Anan", "Drerio", "Gsurd")
-MAMMAL_PREFIXES <- c( "Hs", "Mmus", "Rnor", "MacMu", "MacFas", "Anan", "Dr", "Gsurd")
+MAMMAL_SPECIES <- c( "Hs_grc", "Mmu_grc", "Rnor", "MacMu", "MacFas", "Anan", "Drerio", "Gsurd", "Ocun")
+MAMMAL_PREFIXES <- c( "Hs", "Mmus", "Rnor", "MacMu", "MacFas", "Anan", "Dr", "Gsurd", "Ocun")
 PARASITE_SPECIES <- c( "Pf3D7", "Py17X", "PyYM", "PvSal1", "PvP01", "PbANKA", "PkH", "PchAS", "PCO", "Pcy", "Pvvv", 
 			"PcoAH", "Pvvv", "Povale", "Pmalar")
 PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pv", "PvP01", "Pb", "Pk", "Pch", "Pco", "Pcy", "Pvvv", 
