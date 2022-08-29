@@ -7,8 +7,7 @@
 				groupColumn="Group", geneSets=defaultGeneSets(speciesID), descriptor="CombinedGeneSets", 
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 4 else 2, 
 				min.rpkm=1, min.variance=1, offset=2,
-				addCellTypes=(speciesID %in% MAMMAL_SPECIES), addLifeCycle=(speciesID %in% PARASITE_SPECIES), 
-				doQuSage= TRUE, verbose=TRUE, n.points=2^12, ...)
+				addCellTypes=TRUE, doQuSage= TRUE, verbose=TRUE, n.points=2^12, ...)
 {
 
 	require( qusage)
@@ -156,7 +155,7 @@
 		ans <- do.QuSage( eset=m, labels=grps, contrast=contrast, geneSets=myGeneSets, descriptor=descriptor,
 				group1=group1, group2=group2, path=path, prefix=prefix, makeDownHTML=TRUE,
 				shortNames=myGeneSetShortNames, longNames=myGeneSetNames, addCellTypes=addCellTypes,
-				addLifeCycle=addLifeCycle, doQuSage=doQuSage, n.points=n.points, ...)
+				doQuSage=doQuSage, n.points=n.points, ...)
 		out <- list( ans, "Matrix"=mOrig)
 		return(out)
 
@@ -172,7 +171,7 @@
 				do.QuSage( eset=m, labels=myGroups, contrast=myContrast, geneSets=myGeneSets, descriptor=descriptor,
 					group1=group1, group2=group2, path=path, prefix=prefix, makeDownHTML=(Ngroups>2),
 					shortNames=myGeneSetShortNames, longNames=myGeneSetNames, addCellTypes=addCellTypes,
-					addLifeCycle=addLifeCycle, doQuSage=doQuSage, n.points=n.points, ...)
+					doQuSage=doQuSage, n.points=n.points, ...)
 				return(NULL)
 			}
 		multicore.lapply( allGroups, multicore.qusage)
@@ -189,7 +188,7 @@
 
 do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", group1="Group1", group2="Group2", 
 			path=".", prefix=getCurrentSpeciesFilePrefix(), makeDownHTML=TRUE, 
-			shortNames=names(geneSets), longNames=names(geneSets), addCellTypes=FALSE, addLifeCycle=FALSE,
+			shortNames=names(geneSets), longNames=names(geneSets), addCellTypes=FALSE, 
 			doQuSage=TRUE, n.points=2^12, ...) {
 
 	# having less than 2 items in any group will break qusage.  Check
@@ -224,12 +223,6 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 			cellType <- getGeneSetCellType( pathName, max.type=4)
 			nKeep <- 8
 			out <- data.frame( "PATHWAY"=pathName, "CellType"=cellType, "LOG2FOLD"=pathFold, 
-					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "PIVALUE"=pival, "N_GENES"=pathSize, 
-					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
-		} else if ( addCellTypes) {
-			lifeCycle <- getGeneSetLifeCycle( pathName)
-			nKeep <- 8
-			out <- data.frame( "PATHWAY"=pathName, "LifeCycle"=lifeCycle, "LOG2FOLD"=pathFold, 
 					"PVALUE"=pval, "FDR"=fdr, "VIF"=vif, "PIVALUE"=pival, "N_GENES"=pathSize, 
 					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
 		} else {
@@ -285,24 +278,6 @@ do.QuSage <- function( eset, labels, contrast, geneSets, descriptor="GeneSets", 
 			enrich <- cellTypeEnrichment( out2$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( group1, prefix, "DOWN.QuSage.CellTypeEnrichment.csv", sep=".")
-			f <- file.path( path, f)
-			write.table( enrich, f, sep=",", quote=T, row.names=F)
-		}
-	}
-	if (addLifeCycle) {
-		out1 <- subset( out, LOG2FOLD >= 0.1 & PVALUE <= 0.05)
-		if ( nrow(out1)) {
-			enrich <- lifeCycleEnrichment( out1$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
-							maxPvalue=1, correct=T, verbose=F)
-			f <- paste( group1, prefix, "UP.QuSage.LifeCycleEnrichment.csv", sep=".")
-			f <- file.path( path, f)
-			write.table( enrich, f, sep=",", quote=T, row.names=F)
-		}
-		out2 <- subset( out, LOG2FOLD <= -0.1 & PVALUE <= 0.05)
-		if ( makeDownHTML && nrow(out2)) {
-			enrich <- lifeCycleEnrichment( out2$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
-							maxPvalue=1, correct=T, verbose=F)
-			f <- paste( group1, prefix, "DOWN.QuSage.LifeCycleEnrichment.csv", sep=".")
 			f <- file.path( path, f)
 			write.table( enrich, f, sep=",", quote=T, row.names=F)
 		}

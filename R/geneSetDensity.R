@@ -10,9 +10,7 @@
 					geneMapColumn=if(speciesID %in% MAMMAL_SPECIES) "NAME" else "GENE_ID", 
 					cutPvalue=0.05, cutRankShift=NULL, cutFold=0.1, cutFDR=0.05, 
 					makePlots=TRUE, PLOT.FUN=NULL, makeGeneTables=TRUE, 
-					addCellTypes=(speciesID %in% MAMMAL_SPECIES), 
-					addLifeCycle=(speciesID %in% PARASITE_SPECIES), 
-					doFDR=TRUE, NgeneSets=200, legend.cex=1) {
+					addCellTypes=TRUE, doFDR=TRUE, NgeneSets=200, legend.cex=1) {
 
 	setCurrentSpecies( speciesID)
 	geneMap <- getCurrentGeneMap()
@@ -152,9 +150,6 @@
 	if ( addCellTypes) {
 		cellType <- getGeneSetCellType( out$Name, max.type=4)
 		out <- cbind( out[,1:2], "CellType"=cellType, out[,3:ncol(out)], stringsAsFactors=F)
-	} else if ( addLifeCycle) {
-		lifeCycle <- getGeneSetLifeCycle( out$Name)
-		out <- cbind( out[,1:2], "LifeCycle"=lifeCycle, out[,3:ncol(out)], stringsAsFactors=F)
 	}
 
 	# remove the entries with not enough change
@@ -236,7 +231,7 @@
 			otherGroup <- paste( "{", paste(sort(setdiff(groupIDs,thisSample)),collapse=" + "), "}", sep="")
 		}
 		GENEGROUP <- 4;  FOLDCHANGE <- 5;  PVALUE <- 6;  FDR <- 7;  RANKSHIFT <- 8;  
-		if (addCellTypes || addLifeCycle) {
+		if (addCellTypes) {
 			GENEGROUP <- 5;  FOLDCHANGE <- 6;  PVALUE <- 7;  FDR <- 8;  RANKSHIFT <- 9;  
 		}
 		theseColumns <- ((j-1) * nColumnPerSample) + c(FOLDCHANGE:RANKSHIFT)
@@ -299,12 +294,6 @@
 				f <- paste( thisSample, prefix, "UP.GeneSetCellTypeEnrichment.csv", sep=".")
 				f <- file.path( GS_path, f)
 				write.table( enrich, f, sep=",", quote=T, row.names=F)
-			} else if (addLifeCycle) {
-				enrich <- lifeCycleEnrichment( smlForHTML$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
-							maxPvalue=1, correct=T, verbose=F)
-				f <- paste( thisSample, prefix, "UP.GeneSetLifeCycleEnrichment.csv", sep=".")
-				f <- file.path( GS_path, f)
-				write.table( enrich, f, sep=",", quote=T, row.names=F)
 			}
 		}
 		# down rows
@@ -355,12 +344,6 @@
 				enrich <- cellTypeEnrichment( smlForHTML$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 				f <- paste( thisSample, prefix, "DOWN.GeneSetCellTypeEnrichment.csv", sep=".")
-				f <- file.path( GS_path, f)
-				write.table( enrich, f, sep=",", quote=T, row.names=F)
-			} else if (addLifeCycle) {
-				enrich <- lifeCycleEnrichment( smlForHTML$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
-							maxPvalue=1, correct=T, verbose=F)
-				f <- paste( thisSample, prefix, "DOWN.GeneSetLifeCycleEnrichment.csv", sep=".")
 				f <- file.path( GS_path, f)
 				write.table( enrich, f, sep=",", quote=T, row.names=F)
 			}

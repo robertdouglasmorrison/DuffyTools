@@ -32,7 +32,7 @@
 	dev.type <- getPlotDeviceType( optT)
 	dev.ext <- paste( ".", dev.type, sep="")
 	
-	# rather than force running all the GeneSet tools, just for for and use what you find.  Report missing ones..
+	# rather than force running all the GeneSet tools, just search for and use what you find.  Report missing ones..
 
 	wt.fold <- 1
 	wt.pval <- 0.05
@@ -111,7 +111,7 @@
 		cat( "\n\tDirection:  ", direction)
 
 		# keep the full and short pathway names
-		bigFullName <- bigShortName <- bigGeneCount <- bigCellType <- bigLifeCycle <- vector()
+		bigFullName <- bigShortName <- bigGeneCount <- bigCellType <- vector()
 		dfList <- vector( mode='list')
 		nDF <- 0
 
@@ -126,7 +126,7 @@
 			} else {
 				tmp <- read.delim(f, as.is=T)
 				densityAns <- tmp
-				myColumns <- if( any( c("CellType","LifeCycle") %in% colnames(tmp))) c(2,6,7,4) else c(2,5,6,3)
+				myColumns <- if( "CellType" %in% colnames(tmp)) c(2,6,7,4) else c(2,5,6,3)
 				sml <- tmp[ , myColumns]
 				colnames(sml) <- c( "PathName","LOG2FOLD","PVALUE","N_GENES")
 				bigFullName <- c( bigFullName, sml$PathName)
@@ -134,7 +134,6 @@
 				sml$PathName <- cleanGeneSetModuleNames( sml$PathName, wrapParen=F)  # already cleaned...
 				bigShortName <- c( bigShortName, sml$PathName)
 				if ( "CellType" %in% colnames(tmp)) bigCellType <- c( bigCellType, tmp$CellType)
-				if ( "LifeCycle" %in% colnames(tmp)) bigLifeCycle <- c( bigLifeCycle, tmp$LifeCycle)
 				nDF <- nDF + 1
 				dfList[[nDF]] <- sml
 				names(dfList)[nDF] <- "Density GS"
@@ -154,7 +153,6 @@
 				sml$PathName <- cleanGeneSetName( cleanGeneSetModuleNames( sml$PathName, wrapParen=F))
 				bigShortName <- c( bigShortName, sml$PathName)
 				if ( "CellType" %in% colnames(tmp)) bigCellType <- c( bigCellType, tmp$CellType)
-				if ( "LifeCycle" %in% colnames(tmp)) bigLifeCycle <- c( bigLifeCycle, tmp$LifeCycle)
 				# since it has UP only, invert the signs for DOWN
 				if ( direction == "DOWN") {
 					 sml$LOG2FOLD <- -(sml$LOG2FOLD)
@@ -195,7 +193,6 @@
 				sml$PathName <- cleanGeneSetName( cleanGeneSetModuleNames( sml$PathName, wrapParen=F))
 				bigShortName <- c( bigShortName, sml$PathName)
 				if ( "CellType" %in% colnames(tmp)) bigCellType <- c( bigCellType, tmp$CellType)
-				if ( "LifeCycle" %in% colnames(tmp)) bigLifeCycle <- c( bigLifeCycle, tmp$LifeCycle)
 				# no separate "DOWN' data, so just invert
 				if ( direction == "DOWN") {
 					sml$LOG2FOLD <- -(sml$LOG2FOLD)
@@ -264,7 +261,7 @@
 		# put in the column order we expect
 		out <- ans[ ,c( 1, ncol(ans), 2,4,3, 5:(ncol(ans)-1))]
 
-		doCellType <- doLifeCycle <- FALSE
+		doCellType <- FALSE
 		if ( length(bigCellType)) {
 			out$CellType <- ""
 			out$CellType[ where > 0] <- bigCellType[where]
@@ -272,13 +269,6 @@
 			if ( length(stillMissing)) out$CellType[ stillMissing] <- getGeneSetCellType( ansLongPathNames[ stillMissing], max.type=4)
 			out <- out[ ,c( 1, ncol(out), 2:(ncol(out)-1))]
 			doCellType <- TRUE
-		} else if ( length(bigLifeCycle)) {
-			out$LifeCycle <- ""
-			out$LifeCycle[ where > 0] <- bigLifeCycle[where]
-			stillMissing <- which( out$LifeCycle == "" | is.na(out$LifeCycle))
-			if ( length(stillMissing)) out$LifeCycle[ stillMissing] <- getGeneSetLifeCycle( ansLongPathNames[ stillMissing])
-			out <- out[ ,c( 1, ncol(out), 2:(ncol(out)-1))]
-			doLifeCycle <- TRUE
 		}
 
 		# lastly, we may have a better ordering by using all 3 features
@@ -311,13 +301,6 @@
 			enrich <- cellTypeEnrichment( out$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( grp, prefix, "MetaGeneSets", direction, "CellTypeEnrichment.csv", sep=".")
-			f <- file.path( metaPathwayPath, f)
-			write.table( enrich, f, sep=",", quote=T, row.names=F)
-		}
-		if (doLifeCycle) {
-			enrich <- lifeCycleEnrichment( out$LifeCycle, mode="geneSets", upOnly=F, minEnrich=1, 
-							maxPvalue=1, correct=T, verbose=F)
-			f <- paste( grp, prefix, "MetaGeneSets", direction, "LifeCycleEnrichment.csv", sep=".")
 			f <- file.path( metaPathwayPath, f)
 			write.table( enrich, f, sep=",", quote=T, row.names=F)
 		}
