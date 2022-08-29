@@ -56,23 +56,23 @@ OrthoEnv <- new.env( hash=TRUE, parent=emptyenv())
 
 
 # GeneSet tools
+# changing to be more flexible about user defined cell type datasets
 ALL_GENE_SETS <- c( "Blood.GeneModules", "BloodGen3.GeneModules", "BTM.AntibodyResponses", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
 			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", 
-			"HGNC.GeneFamily", "Reactome", "WikiPathways", "HumanImmuneSubsets", "MouseImmuneSubsets", 
-			"STRING", "CellTypes", "MPMP.Pathways", "ParasiteLifeCycle")
+			"HGNC.GeneFamily", "Reactome", "WikiPathways", 
+			"STRING", "MPMP.Pathways")
 MAMMAL_GENE_SETS <- c( "Blood.GeneModules", "BloodGen3.GeneModules", "BTM.AntibodyResponses", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
 			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", 
-			"HGNC.GeneFamily", "Reactome", "WikiPathways", "HumanImmuneSubsets", "MouseImmuneSubsets", 
-			"STRING", "CellTypes")
+			"HGNC.GeneFamily", "Reactome", "WikiPathways", "STRING")
 PARASITE_GENE_SETS <- c( "Blood.GeneModules", "BloodGen3.GeneModules", 
 			"GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
 			"KEGG.Pathways", "MetabolicPathways", "Panther.Pathways", "PBMC.GeneModules", "STRING",
-			"HGNC.GeneFamily", "Reactome", "WikiPathways", "MPMP.Pathways", "ParasiteLifeCycle")
+			"HGNC.GeneFamily", "Reactome", "WikiPathways", "MPMP.Pathways")
 BACTERIA_GENE_SETS <- c( "GO.BiologicalProcess", "GO.CellularComponent", "GO.MolecularFunction", 
 			"GOslim.BiologicalProcess", "GOslim.CellularComponent", "GOslim.MolecularFunction", 
 			"KEGG.Pathways", "MetabolicPathways", "HGNC.GeneFamily", "Panther.Pathways", "Reactome", 

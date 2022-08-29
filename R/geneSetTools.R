@@ -3,10 +3,20 @@
 
 `defaultGeneSets` <- function( speciesID=getCurrentSpecies()) {
 
-	if ( speciesID %in% MAMMAL_SPECIES) return( MAMMAL_GENE_SETS)
-	if ( speciesID %in% PARASITE_SPECIES) return( PARASITE_GENE_SETS)
-	if ( speciesID %in% BACTERIA_SPECIES) return( BACTERIA_GENE_SETS)
-	return( ALL_GENE_SETS)
+	# expand this to look at the cell type defintions, to add custom names to this list
+	out <- vector()
+	if ( speciesID %in% MAMMAL_SPECIES) out <-  MAMMAL_GENE_SETS
+	if ( speciesID %in% PARASITE_SPECIES) out <- PARASITE_GENE_SETS
+	if ( speciesID %in% BACTERIA_SPECIES) out <- BACTERIA_GENE_SETS
+
+	# look at the current cell type reference name
+	reference <- getCellTypeReference()
+	if ( ! is.null( reference)) {
+		out2 <- paste( reference, c( "AllGeneSets", "TopGeneSets"), sep=".")
+		out <- c( out, out2)
+	}
+
+	return( out)
 }
 
 
