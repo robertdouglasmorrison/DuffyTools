@@ -8,30 +8,37 @@
 
 
 # load gene to cell type association data, by looking up the named data object in the Options.txt file
-`getCellTypeGeneAssociation` <- function( referenceName=NULL, optionsFile="Options.txt", speciesID=getCurrentSpecies()) {
+`getCellTypeGeneAssociation` <- function( reference=getCellTypeReference(), optionsFile="Options.txt", 
+					speciesID=getCurrentSpecies()) {
 
 	# build the name of the R data object to be loaded
-	if ( is.null( referenceName)) referenceName <- "27.Blood.CellTypes"
-	if ( file.exists( optionsFile)) {
-		referenceName <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
-						notfound=referenceName, verbose=FALSE)
+	if ( is.null( reference)) {
+		defaultReference <- ""
+		if (speciesID %in% PARASITE_SPECIES) defaultReference <- "Parasite.LifeCycle"
+		if (speciesID %in% MAMMAL_SPECIES) defaultReference <- "27.Blood.CellTypes"
+		if ( file.exists( optionsFile)) {
+			reference <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
+						notfound=defaultReference, verbose=FALSE)
+		} else {
+			reference <- defaultReference
+		}
 	}
 	
 	prefix <- getOtherSpeciesFilePrefix( speciesID)
-	referenceName <- paste( prefix, referenceName, "GeneAssociation", sep=".")
+	referenceName <- paste( prefix, reference, "GeneAssociation", sep=".")
 
 	# try to load that
 	geneCellTypes <- NULL
 	data( list=referenceName, package="DuffyTools", envir=environment())
 	if ( is.null(geneCellTypes)) {
-		cat( "\nWarning:  tried to load a 'DuffyTools/data/' installed bject file called: ", referenceName)
-		cat( "\n          expected it to contain a data object named:  'geneCellTypes'")
+		cat( "\nWarning:  tried to load a 'DuffyTools/data/' installed object file called: ", referenceName)
+		cat( "\n          expected it to contain a data object named:  'geneCellTypes' \n")
 		return( NULL)
 	}
 
 	neededColumns <- c( "GENE_ID", "CellType", "PctExpression")
 	if ( ! all( neededColumns %in% colnames(geneCellTypes))) {
-		cat( "\nWarning: some required gene cell type columns not found.  Expected: ", neededColumns)
+		cat( "\nWarning: some required gene cell type columns not found.  Expected: ", neededColumns, "\n")
 		return(NULL)
 	}
 	return( geneCellTypes)
@@ -44,10 +51,10 @@
 	out <- rep.int( "", N <- length(genes))
 
 	genesIn <- shortGeneName( genes, keep=1)
-	prefix <- getOtherSpeciesFilePrefix( speciesID)
-	geneCellTypes <- getCellTypeGeneAssociation( speciesID)
+	geneCellTypes <- getCellTypeGeneAssociation( reference=getCellTypeReference(), speciesID=speciesID)
 	if ( is.null(geneCellTypes)) {
 		cat( "\nWarning:  No 'GeneCellTypes' object loaded for species: ", speciesID)
+		cat( "\n  Tried to load 'GeneAssociation' data object for: ", getCellTypeReference())
 		return( out)
 	}
 
@@ -93,8 +100,12 @@
 		# speciesID is needed, since orthologging may be required
 		if (is.null(speciesID)) stop( "'speciesID' must not be NULL for gene cell types.")
 		prefix <- getOtherSpeciesFilePrefix( speciesID)
-		geneCellTypes <- getCellTypeGeneAssociation( speciesID)
-		if ( is.null(geneCellTypes)) stop( "'GeneCellTypes' object not loaded.")
+		geneCellTypes <- getCellTypeGeneAssociation( reference=getCellTypeReference(), speciesID=speciesID)
+		if ( is.null(geneCellTypes)) {
+			cat( "\nWarning:  No 'GeneCellTypes' object loaded for species: ", speciesID)
+			cat( "\n  Tried to load 'GeneAssociation' data object for: ", getCellTypeReference())
+			stop()
+		}
 
 		# this table often has more than one cell type per gene, to show the diversity
 		# limit it to the first/best cell type choice for each gene
@@ -473,56 +484,56 @@
 
 # porting of Life Cycle tools to be used as Cell Type tools below here...
 
-`verifyCellTypeSetup` <- function( referenceName=NULL, optionsFile="Options.txt") {
+`CellTypeSetup` <- function( reference=getCellTypeReference(), optionsFile="Options.txt") {
 
-	# build the name of the R data object to be loaded
-	speciesID <- getCurrentSpeciesFilePrefix()
-	prefix <- getCurrentSpeciesFilePrefix()
-
-	defaultReferenceName <- ""
-	if (speciesID %in% PARASITE_SPECIES) defaultReferenceName <- "Parasite.LifeCycle"
-	if (speciesID %in% MAMMAL_SPECIES) defaultReferenceName <- "27.Blood.CellTypes"
-	if ( file.exists( optionsFile)) {
-		referenceName <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=getCurrentSpecies(), 
-						notfound=defaultReferenceName, verbose=FALSE)
-	} else {
-		referenceName <- defaultReferenceName
+	# get the name of the R data object to be loaded
+	defaultReference <- ""
+	speciesID <- getCurrentSpecies()
+	if (speciesID %in% PARASITE_SPECIES) defaultReference <- "Parasite.LifeCycle"
+	if (speciesID %in% MAMMAL_SPECIES) defaultReference <- "27.Blood.CellTypes"
+	if ( is.null( reference)) {
+		if ( file.exists( optionsFile)) {
+			reference <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=getCurrentSpecies(), 
+							notfound=defaultReference, verbose=FALSE)
+		} else {
+			reference <- defaultReference
+		}
 	}
-	referenceName <- paste( prefix, referenceName, "TargetMatrix", sep=".")
 
-	# try to load that
+	# compare this reference name against what is loaded already
 	isReady <- exists( "VectorSpace", envir=CellTypeEnv)
 	isRightSpecies <- isRightReference <- FALSE
 	if ( isReady) {
 		curSpecies <- get( "Species", envir=CellTypeEnv)
 		if( ! is.null( curSpecies)) isRightSpecies <- ( curSpecies == getCurrentSpecies())
 		curReference <- get( "Reference", envir=CellTypeEnv)
-		if( ! is.null( curReference)) isRightReference <- ( curReference == referenceName)
+		if( ! is.null( curReference)) isRightReference <- ( curReference == reference)
 	}
-	if ( !isReady || !isRightSpecies || !isRightReference) CellTypeSetup( dataset=referenceName, unitVectorMode="absolute")
+	if ( !isReady || !isRightSpecies || !isRightReference) loadCellTypeMatrix( reference, unitVectorMode="absolute")
 	return()
 }
 
 
-`CellTypeSetup` <- function( dataset, unitVectorMode=c("absolute","relative","none","squared","cubed"), 
+`loadCellTypeMatrix` <- function( reference, unitVectorMode=c("absolute","relative","none","squared","cubed"), 
 				custom.file=NULL, custom.colors=NULL, preNormalize=TRUE, postNormalize=TRUE, 
 				doRMA=FALSE, min.value=0, min.spread=2.0, verbose=FALSE) {
 
 	unitVectorMode <- match.arg( unitVectorMode)
 	ans <- NULL
 
-	cat( "\nSetting up CellType dataset:  ", dataset)
+	cat( "\nSetting up CellType dataset:  ", reference)
 
 	# get the data from the package
-	if ( tolower(dataset) != "custom") {
+	if ( tolower(reference) != "custom") {
 	
-		# we were passed in the name of a DuffyTools data object
-		dataFileName <- dataset
+		# turn the name into a DuffyTools data object
+		prefix <- getCurrentSpeciesFilePrefix()
+		referenceName <- paste( prefix, reference, "TargetMatrix", sep=".")
 		targetM <- targetColors <- NULL
-		data( list=dataFileName, package="DuffyTools", envir=environment())
+		data( list=referenceName, package="DuffyTools", envir=environment())
 		if ( is.null( targetM)) {
-			cat( "\nFailed to load Cell Type target matrix data object: ", dataFileName)
-			cat( "\n  expected a data object named 'targetM'")
+			cat( "\nFailed to load Cell Type target matrix data object: ", referenceName)
+			cat( "\n  expected a data object containing 'targetM'")
 			return(NULL)
 		}
 		if ( ! exists( "targetColors")) targetColors <- rainbow( ncol(targetM), end=0.8)
@@ -537,7 +548,7 @@
 			doRMA=FALSE, verbose=FALSE)
 	}
 
-	if ( tolower(dataset) == "custom") {
+	if ( tolower(reference) == "custom") {
 
 		# pre read the file to make the dimensions construct
 		if ( ! file.exists( custom.file)) stop( paste( "Custom Cell Type Target Matrix file not found: ", custom.file))
@@ -564,7 +575,7 @@
 	CellTypeEnv[[ "VectorSpace" ]] <- ans
 	CellTypeEnv[[ "IntensitySpace" ]] <- ans2
 	CellTypeEnv[[ "Species" ]] <- getCurrentSpecies()
-	CellTypeEnv[[ "Reference" ]] <- dataset
+	CellTypeEnv[[ "Reference" ]] <- reference
 	if ( ! is.null( ans)) {
 		CellTypeEnv[[ "N_STAGES" ]] <- ncol(ans) - 2   # geneID, Product come first
 		CellTypeEnv[[ "STAGE_NAMES" ]] <- colnames(ans)[3:ncol(ans)]
@@ -574,9 +585,10 @@
 }
 
 
+# always do the setup check, so we force the cell type target matrix into existence
 `getCellTypeMatrix` <- function( mode=c("IntensitySpace", "VectorSpace")) {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 	mode <- match.arg( mode)
 
 	tbl <- CellTypeEnv[[ mode]]
@@ -589,9 +601,10 @@
 }
 
 
+# change this function to be a 'query only' mode.  Just return what is already loaded
 `getCellTypeColors` <- function() {
 
-	verifyCellTypeSetup()
+	if ( ! exists( "VectorSpace", envir=CellTypeEnv)) return(NULL)
 	colors <- CellTypeEnv[[ "STAGE_COLORS"]]
 	names(colors) <- CellTypeEnv[[ "STAGE_NAMES"]]
 	if ( is.null( colors)) {
@@ -600,6 +613,15 @@
 		colors <- rainbow( nCellTypes, end=0.8)
 	}
 	return( colors)
+}
+
+
+# make this function be a 'query only' mode.  Use it to ask if cell types have been defined yet.
+`getCellTypeReference` <- function() {
+
+	if ( ! exists( "VectorSpace", envir=CellTypeEnv)) return(NULL)
+	reference <- CellTypeEnv[[ "Reference"]]
+	return( reference)
 }
 
 
@@ -707,7 +729,7 @@
 
 `calcCellTypeProfile` <- function( genes, inten) {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	# get the cell type data...  there is 'geneID, product', and then the intensities...
 	vectorSpace <- CellTypeEnv[[ "VectorSpace"]]
@@ -753,7 +775,7 @@
 
 `calcCellTypeProfileFromFile` <- function( f, geneColumn="GENE_ID", intensityColumn="RPKM_M", sep="\t") {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	# open that file and find the needed columns
 	tmp <- read.delim( f, as.is=T, sep=sep)
@@ -781,7 +803,7 @@
 		intensityColumn="RPKM_M", yMax=NULL, legend.cex=0.8, max.labels=20, 
 		mask.low.pct=NULL, mask.low.diff=NULL, label="your label goes here...", sep="\t") {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	# make sure we can read those files
 	filesOK <- file.exists( fnames)
@@ -823,7 +845,7 @@
 			fcolors=NULL, yMax=NULL, legend.cex=0.8, max.labels=20, 
 			mask.low.pct=NULL, mask.low.diff=NULL, label="your label goes here...") {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
 	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
@@ -926,7 +948,7 @@
 `plotCellTypeProfileUnitVectors` <- function( gSet, col=1, lwd=1, legend=NA, plot=TRUE, yMax=1,
 				legend.cex=1, label="", annotate=FALSE) {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	# get the life cycle data...  there is 'geneID, product', and then the intensities...
 	vectorSpace <- CellTypeEnv[[ "VectorSpace"]]
@@ -977,7 +999,7 @@
 `plotCellTypeProfileIntensity` <- function( gSet, col=1, lwd=1, pt.cex=1, legend=NA, plot=TRUE, 
 				legend.cex=1, label="", minYmin=1, minYmax=NULL, threshold=NULL, annotate=FALSE) {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	# get the life cycle data...  there is 'geneID, product', and then the intensities...
 	intenSpace <- CellTypeEnv[[ "IntensitySpace"]]
@@ -1105,7 +1127,7 @@
 					algorithm=c("steepDescent", "nls", "GenSA"), 
 					geneUniverse=NULL, ...) {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	# open that file and find the needed columns
 	tmp <- read.delim( f, as.is=T, sep=sep)
@@ -1147,7 +1169,7 @@
 						algorithm=c("steepDescent", "nls", "GenSA"), 
 						geneUniverse=NULL, ...) {
 								
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	# make sure we can read those files
 	filesOK <- file.exists( fnames)
@@ -1201,7 +1223,7 @@
 						algorithm=c("steepDescent", "nls", "GenSA"), 
 						geneUniverse=NULL, ...) {
 
-	verifyCellTypeSetup()
+	CellTypeSetup()
 
 	N_STAGES <- CellTypeEnv[[ "N_STAGES"]]
 	STAGE_NAMES <- CellTypeEnv[[ "STAGE_NAMES"]]
@@ -1251,7 +1273,7 @@
 					geneUniverse=NULL, ...) {
 
 	# grab the Cell Type data we will need:  the gene intensity in all cell types
-	verifyCellTypeSetup()
+	CellTypeSetup()
 	intensitySpace <- CellTypeEnv[[ "IntensitySpace"]]
 	intensityVectors <- intensitySpace[ , 3:ncol(intensitySpace)]
 	intensityMatrix <- as.matrix( intensityVectors)
@@ -1877,6 +1899,8 @@
 	fold[ fold < -clip.fold] <- -clip.fold
 	pval[ pval < clip.pvalue] <- clip.pvalue
 	y <- -( log10( pval))
+	crop.x <- clip.fold
+	crop.y <- -( log10( clip.pvalue))
 	NG.use <- round( NG * (gene.pct/100) / 10) * 10
 
 	# we wiil look at the top UP and DOWN genes
@@ -1962,16 +1986,18 @@
 		myRangeX[2] <- bigX
 	}
 	# force all dots to be seen, whether we crop or not
-	fold[ fold > bigX] <- bigX
-	fold[ fold < -bigX] <- -bigX
+	crop.x <- min( crop.x, quantile(fold, 0.995, na.rm=T))
+	fold[ fold > crop.x] <- crop.x
+	fold[ fold < -crop.x] <- -crop.x
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
-	bigY <- max( 1, quantile( y, 0.995, na.rm=F), out$Log10.Pvalue+(out$Radius * 1.15))
+	bigY <- max( 1, quantile( y, 0.995, na.rm=T), out$Log10.Pvalue+(out$Radius * 1.15))
 	myRangeY <- c( 0, bigY)
 	if ( ! is.null( forceYmax)) {
 		bigY <- as.numeric(forceYmax)
 		myRangeY[2] <- bigY
 	}
-	y[ y > bigY] <- bigY
+	crop.y <- min( crop.y, max(y))
+	y[ y > crop.y] <- crop.y
 
 	# plot the volcano as a dust cloud, to downplay the genes
 	mainText <- paste( "Volcano by Cell Type:   Enrichment of top ", gene.pct, 
@@ -1982,12 +2008,12 @@
 
 	# show cropping lines?
 	if ( pt.cex > 0.25) {
-		lines( c(bigX,bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
-		text( bigX, 1.6, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
-		lines( c(-bigX,-bigX), c(0,bigY), col='grey40', lty=3, lwd=1)
-		text( -bigX, 2.6, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
-		lines( c(-bigX,bigX), c(bigY,bigY), col='grey40', lty=3, lwd=1)
-		text( -0, bigY, "Crop -Log10 P", col='grey40', srt=0, pos=3, cex=legend.cex, offset=0.25)
+		lines( c(crop.x,crop.x), c(0,crop.y), col='grey40', lty=3, lwd=1)
+		text( crop.x, 1.6, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
+		lines( c(-crop.x,-crop.x), c(0,crop.y), col='grey40', lty=3, lwd=1)
+		text( -crop.x, 2.6, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
+		lines( c(-crop.x,crop.x), c(crop.y,crop.y), col='grey40', lty=3, lwd=1)
+		text( -0, crop.y, "Crop -Log10 P", col='grey40', srt=0, pos=3, cex=legend.cex, offset=0.25)
 		# then do the points again to emphasize
 		redraw1 <- which( fold[ord2] >= bigX*0.9)
 		redraw2 <- which( fold[ord2] <= -bigX*0.9)
