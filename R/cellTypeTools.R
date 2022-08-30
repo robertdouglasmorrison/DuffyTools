@@ -2112,17 +2112,17 @@
 }
 
 
-`writeCellTypeClusterExtras` <- function( tbl, resultsfile, resultsTbl=NULL) {
+`writeCellTypeClusterExtras` <- function( tbl, resultsfile, resultsTbl=NULL, reference=getCellTypeReference()) {
 
 	# given a data frame of details from the cell type volcano cluster plot tool (above), make some supporting files
 	path <- dirname( resultsfile)
 	file.root <- sub(  ".JOINED.txt$", "", basename( resultsfile))
 
-	extras.path <- file.path( path, "CellTypeCluster.SupplementalFiles")
+	extras.path <- file.path( path, paste( reference, "SupplementalFiles", sep="."))
 	if ( ! file.exists( extras.path)) dir.create( extras.path, recursive=T)
 
 	# first write out the overall table of results
-	outfile <- file.path( extras.path, paste( file.root, "CellTypeCluster.Enrichment.Overview.csv", sep="."))
+	outfile <- file.path( extras.path, paste( file.root, reference, "Enrichment.Overview.csv", sep="."))
 	write.csv( tbl, outfile, row.names=F)
 
 	# then visit each cell type cluster that did get drawn
