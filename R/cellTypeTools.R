@@ -23,6 +23,14 @@
 			reference <- defaultReference
 		}
 	}
+
+	# see if this is what is already loaded
+	if ( exists( "Reference", envir=CellTypeEnv)) {
+		curReference <- CellTypeEnv[[ "Reference"]]
+		if ( ! is.null( curReference) && curReference == reference) {
+			if ( exists( "GeneAssociation", envir=CellTypeEnv)) return( CellTypeEnv[[ "GeneAssociation"]])
+		}
+	}
 	
 	prefix <- getOtherSpeciesFilePrefix( speciesID)
 	referenceName <- paste( prefix, reference, "GeneAssociation", sep=".")
@@ -33,7 +41,7 @@
 	# allow the file to exist in the current folder, while default is the installed data object
 	localFile <- file.path( ".", paste( referenceName, "rda", sep="."))
 	if ( file.exists( localFile)) {
-		cat( "\n  loading gene association from file found in current path: ", localFile)
+		cat( "\n  loading gene association from local file: ", localFile)
 		load( localFile, envir=environment())
 	} else {
 		data( list=referenceName, package="DuffyTools", envir=environment())
@@ -49,6 +57,10 @@
 		cat( "\nWarning: some required gene cell type columns not found.  Expected: ", neededColumns, "\n")
 		return(NULL)
 	}
+	
+	# stash a copy for fast retrieval
+	CellTypeEnv[[ "GeneAssociation" ]] <- geneCellTypes
+
 	return( geneCellTypes)
 }
 
@@ -517,7 +529,14 @@
 		curReference <- get( "Reference", envir=CellTypeEnv)
 		if( ! is.null( curReference)) isRightReference <- ( curReference == reference)
 	}
-	if ( !isReady || !isRightSpecies || !isRightReference) loadCellTypeMatrix( reference, unitVectorMode="absolute")
+	if ( !isReady || !isRightSpecies || !isRightReference) {
+		# load the new target matrix
+		loadCellTypeMatrix( reference, unitVectorMode="absolute")
+		# since it changed, remove any items that relate to previous
+		if ( exists( "GeneAssociation", envir=CellTypeEnv)) rm( "GeneAssociation", envir=CellTypeEnv) 
+		if ( exists( "GeneSetAssociation", envir=CellTypeEnv)) rm( "GeneSetAssociation", envir=CellTypeEnv) 
+	}
+
 	return()
 }
 
@@ -542,7 +561,7 @@
 		# allow the file to exist in the current folder, while default is the installed data object
 		localFile <- file.path( ".", paste( referenceName, "rda", sep="."))
 		if ( file.exists( localFile)) {
-			cat( "\n  loading target matrix from file found in current path: ", localFile)
+			cat( "\n  loading target matrix from local file: ", localFile)
 			load( localFile, envir=environment())
 		} else {
 			data( list=referenceName, package="DuffyTools", envir=environment())

@@ -352,14 +352,23 @@
 	# we are now using the generic cell type tools to know which resource to load
 	CellTypeSetup( reference=reference)
 	reference <- getCellTypeReference()
-	geneSetFile <- paste( reference, "GeneSetAssociation", sep=".")
-	localGeneSetFile <- paste( geneSetFile, "rda", sep=".")
-	if ( file.exists( localGeneSetFile)) {
-		load( localGeneSetFile, envir=environment())
+
+	# see if this is what is already loaded
+	if ( exists( "GeneSetAssociation", envir=CellTypeEnv)) {
+		geneSetCellTypes <- CellTypeEnv[[ "GeneSetAssociation"]]
 	} else {
-		data( list=geneSetFile, envir=environment())
+		geneSetFile <- paste( reference, "GeneSetAssociation", sep=".")
+		localFile <- paste( geneSetFile, "rda", sep=".")
+		if ( file.exists( localFile)) {
+			cat( "\n  loading gene set association from local file: ", localFile)
+			load( localFile, envir=environment())
+		} else {
+			data( list=geneSetFile, envir=environment())
+		}
+		if ( is.null( geneSetCellTypes)) return(out)
+		# save a copy for future use
+		CellTypeEnv[[ "GeneSetAssociation"]] <- geneSetCellTypes
 	}
-	if ( is.null( geneSetCellTypes)) return(out)
 
 	# prep what was passed in:  1) clean the names, and then strip any module HTML links
 	namesIn <- cleanGeneSetName( geneSetNames)
