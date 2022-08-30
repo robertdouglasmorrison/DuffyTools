@@ -35,6 +35,12 @@
 	# check that the setup of the cell type tools has occured
 	CellTypeSetup()
 	reference <- getCellTypeReference()
+	doCellType <- FALSE
+	if ( ! is.null( reference) && reference != "") {
+		doCellType <- TRUE
+	} else {
+		reference <- "CellTypes"
+	}
 
 	# rather than force running all the GeneSet tools, just search for and use what you find.  Report missing ones..
 
@@ -115,7 +121,7 @@
 		cat( "\n\tDirection:  ", direction)
 
 		# keep the full and short pathway names
-		bigFullName <- bigShortName <- bigGeneCount <- bigCellType <- vector()
+		bigFullName <- bigShortName <- bigGeneCount <- vector()
 		dfList <- vector( mode='list')
 		nDF <- 0
 
@@ -137,7 +143,6 @@
 				bigGeneCount <- c( bigGeneCount, sml$N_GENES)
 				sml$PathName <- cleanGeneSetModuleNames( sml$PathName, wrapParen=F)  # already cleaned...
 				bigShortName <- c( bigShortName, sml$PathName)
-				if ( "CellType" %in% colnames(tmp)) bigCellType <- c( bigCellType, tmp$CellType)
 				nDF <- nDF + 1
 				dfList[[nDF]] <- sml
 				names(dfList)[nDF] <- "Density GS"
@@ -156,7 +161,6 @@
 				bigGeneCount <- c( bigGeneCount, sml$N_GENES)
 				sml$PathName <- cleanGeneSetName( cleanGeneSetModuleNames( sml$PathName, wrapParen=F))
 				bigShortName <- c( bigShortName, sml$PathName)
-				if ( "CellType" %in% colnames(tmp)) bigCellType <- c( bigCellType, tmp$CellType)
 				# since it has UP only, invert the signs for DOWN
 				if ( direction == "DOWN") {
 					 sml$LOG2FOLD <- -(sml$LOG2FOLD)
@@ -196,7 +200,6 @@
 				bigGeneCount <- c( bigGeneCount, sml$N_GENES)
 				sml$PathName <- cleanGeneSetName( cleanGeneSetModuleNames( sml$PathName, wrapParen=F))
 				bigShortName <- c( bigShortName, sml$PathName)
-				if ( "CellType" %in% colnames(tmp)) bigCellType <- c( bigCellType, tmp$CellType)
 				# no separate "DOWN' data, so just invert
 				if ( direction == "DOWN") {
 					sml$LOG2FOLD <- -(sml$LOG2FOLD)
@@ -265,14 +268,9 @@
 		# put in the column order we expect
 		out <- ans[ ,c( 1, ncol(ans), 2,4,3, 5:(ncol(ans)-1))]
 
-		doCellType <- FALSE
-		if ( length(bigCellType)) {
-			out$CellType <- ""
-			out$CellType[ where > 0] <- bigCellType[where]
-			stillMissing <- which( out$CellType == "" | is.na(out$CellType))
-			if ( length(stillMissing)) out$CellType[ stillMissing] <- geneSetCellType( ansLongPathNames[ stillMissing], max.type=4)
+		if ( doCellType) {
+			out$CellType <- geneSetCellType( ansLongPathNames, max.type=4)
 			out <- out[ ,c( 1, ncol(out), 2:(ncol(out)-1))]
-			doCellType <- TRUE
 		}
 
 		# lastly, we may have a better ordering by using all 3 features

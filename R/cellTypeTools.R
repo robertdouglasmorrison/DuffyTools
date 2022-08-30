@@ -1958,7 +1958,7 @@
 	# decide a scaling factor for turning percentages into a radius
 	# lets say 100% should fill the area from Fold=0 to max X
 	# will be applied to the sqrt of the Pct of Genes, so sqrt(100%) = 10%
-	myBigX <- quantile( abs(fold), 0.995, na.rm=F)
+	myBigX <- quantile( abs(fold), 0.999, na.rm=F)
 	radius.scale.fac <- (myBigX * 0.5) * 0.10
 
 	tapply( 1:NG, cellFac, function(k) {
@@ -2011,7 +2011,7 @@
 
 	# add extra room on X for the labels, and the cell types too
 	# and retune the Y axis limits
-	bigX <- max( 1, quantile( abs(fold), 0.995, na.rm=F), abs(out$Log2Fold)+out$Radius)
+	bigX <- max( 1, quantile( abs(fold), 0.999, na.rm=F), abs(out$Log2Fold)+out$Radius)
 	myRangeX <- c( -bigX, bigX)
 	if ( ! is.null( forceXmax)) {
 		bigX <- as.numeric( forceXmax)
@@ -2019,17 +2019,17 @@
 		myRangeX[2] <- bigX
 	}
 	# force all dots to be seen, whether we crop or not
-	crop.x <- min( crop.x, quantile(fold, 0.995, na.rm=T))
+	crop.x <- min( crop.x, quantile(fold, 0.999, na.rm=T))
 	fold[ fold > crop.x] <- crop.x
 	fold[ fold < -crop.x] <- -crop.x
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
-	bigY <- max( 1, quantile( y, 0.995, na.rm=T), out$Log10.Pvalue+(out$Radius * 1.15))
+	bigY <- max( 1, quantile( y, 0.999, na.rm=T), out$Log10.Pvalue+(out$Radius * 1.15))
 	myRangeY <- c( 0, bigY)
 	if ( ! is.null( forceYmax)) {
 		bigY <- as.numeric(forceYmax)
 		myRangeY[2] <- bigY
 	}
-	crop.y <- min( crop.y, max(y))
+	crop.y <- min( crop.y, max(y), bigY)
 	y[ y > crop.y] <- crop.y
 
 	# plot the volcano as a dust cloud, to downplay the genes
@@ -2042,9 +2042,9 @@
 	# show cropping lines?
 	if ( pt.cex > 0.25) {
 		lines( c(crop.x,crop.x), c(0,crop.y), col='grey40', lty=3, lwd=1)
-		text( crop.x, 1.6, "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
+		text( crop.x, min(1.6,bigY/2), "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
 		lines( c(-crop.x,-crop.x), c(0,crop.y), col='grey40', lty=3, lwd=1)
-		text( -crop.x, 2.6, "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
+		text( -crop.x, max(2.6,bigY/2), "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
 		lines( c(-crop.x,crop.x), c(crop.y,crop.y), col='grey40', lty=3, lwd=1)
 		text( -0, crop.y, "Crop -Log10 P", col='grey40', srt=0, pos=3, cex=legend.cex, offset=0.25)
 		# then do the points again to emphasize
