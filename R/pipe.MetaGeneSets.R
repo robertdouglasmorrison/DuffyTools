@@ -32,6 +32,9 @@
 	dev.type <- getPlotDeviceType( optT)
 	dev.ext <- paste( ".", dev.type, sep="")
 	
+	# check that the setup of the cell type tools has occured
+	CellTypeSetup()
+
 	# rather than force running all the GeneSet tools, just search for and use what you find.  Report missing ones..
 
 	wt.fold <- 1

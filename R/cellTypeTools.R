@@ -29,7 +29,15 @@
 
 	# try to load that
 	geneCellTypes <- NULL
-	data( list=referenceName, package="DuffyTools", envir=environment())
+
+	# allow the file to exist in the current folder, while default is the installed data object
+	localFile <- file.path( ".", paste( referenceName, "rda", sep="."))
+	if ( file.exists( localFile)) {
+		cat( "\n  loading gene association from file found in current path: ", localFile)
+		load( localFile, envir=environment())
+	} else {
+		data( list=referenceName, package="DuffyTools", envir=environment())
+	}
 	if ( is.null(geneCellTypes)) {
 		cat( "\nWarning:  tried to load a 'DuffyTools/data/' installed object file called: ", referenceName)
 		cat( "\n          expected it to contain a data object named:  'geneCellTypes' \n")
@@ -530,7 +538,15 @@
 		prefix <- getCurrentSpeciesFilePrefix()
 		referenceName <- paste( prefix, reference, "TargetMatrix", sep=".")
 		targetM <- targetColors <- NULL
-		data( list=referenceName, package="DuffyTools", envir=environment())
+
+		# allow the file to exist in the current folder, while default is the installed data object
+		localFile <- file.path( ".", paste( referenceName, "rda", sep="."))
+		if ( file.exists( localFile)) {
+			cat( "\n  loading target matrix from file found in current path: ", localFile)
+			load( localFile, envir=environment())
+		} else {
+			data( list=referenceName, package="DuffyTools", envir=environment())
+		}
 		if ( is.null( targetM)) {
 			cat( "\nFailed to load Cell Type target matrix data object: ", referenceName)
 			cat( "\n  expected a data object containing 'targetM'")
