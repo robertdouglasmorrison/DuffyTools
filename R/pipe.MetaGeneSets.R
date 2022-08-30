@@ -34,6 +34,7 @@
 	
 	# check that the setup of the cell type tools has occured
 	CellTypeSetup()
+	reference <- getCellTypeReference()
 
 	# rather than force running all the GeneSet tools, just search for and use what you find.  Report missing ones..
 
@@ -303,7 +304,7 @@
 		if (doCellType) {
 			enrich <- cellTypeEnrichment( out$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
-			f <- paste( grp, prefix, "MetaGeneSets", direction, "CellTypeEnrichment.csv", sep=".")
+			f <- paste( grp, prefix, "MetaGeneSets", direction, reference, "Enrichment.csv", sep=".")
 			f <- file.path( metaPathwayPath, f)
 			write.table( enrich, f, sep=",", quote=T, row.names=F)
 		}

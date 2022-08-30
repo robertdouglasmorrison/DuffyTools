@@ -342,10 +342,8 @@
 }
 
 
-`geneSetCellType` <- function( geneSetNames, max.types=1, reference=getCellTypeReference()) {
-
-	out <- rep.int( "", N <- length(geneSetNames))
-	if ( ! N) return(out)
+`getCellTypeGeneSetAssociation` <- function( reference=getCellTypeReference(), optionsFile="Options.txt", 
+					speciesID=getCurrentSpecies()) {
 
 	geneSetCellTypes <- NULL
 
@@ -365,10 +363,21 @@
 		} else {
 			data( list=geneSetFile, envir=environment())
 		}
-		if ( is.null( geneSetCellTypes)) return(out)
 		# save a copy for future use
-		CellTypeEnv[[ "GeneSetAssociation"]] <- geneSetCellTypes
+		if ( ! is.null( geneSetCellTypes)) CellTypeEnv[[ "GeneSetAssociation"]] <- geneSetCellTypes
 	}
+	return( geneSetCellTypes)
+}
+
+
+`geneSetCellType` <- function( geneSetNames, max.types=1, reference=getCellTypeReference()) {
+
+	out <- rep.int( "", N <- length(geneSetNames))
+	if ( ! N) return(out)
+
+	# we are now using the generic cell type tools to know which resource to load
+	geneSetCellTypes <- getCellTypeGeneSetAssociation( reference=reference)
+	if ( is.null( geneSetCellTypes)) return(out)
 
 	# prep what was passed in:  1) clean the names, and then strip any module HTML links
 	namesIn <- cleanGeneSetName( geneSetNames)
