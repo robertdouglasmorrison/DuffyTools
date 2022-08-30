@@ -269,7 +269,7 @@
 			out$CellType <- ""
 			out$CellType[ where > 0] <- bigCellType[where]
 			stillMissing <- which( out$CellType == "" | is.na(out$CellType))
-			if ( length(stillMissing)) out$CellType[ stillMissing] <- getGeneSetCellType( ansLongPathNames[ stillMissing], max.type=4)
+			if ( length(stillMissing)) out$CellType[ stillMissing] <- geneSetCellType( ansLongPathNames[ stillMissing], max.type=4)
 			out <- out[ ,c( 1, ncol(out), 2:(ncol(out)-1))]
 			doCellType <- TRUE
 		}

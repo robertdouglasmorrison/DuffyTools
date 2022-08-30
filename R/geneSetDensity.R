@@ -148,7 +148,7 @@
 
 	# the result is ready now.   Do we want to add in a column of "Cell Types"?
 	if ( addCellTypes) {
-		cellType <- getGeneSetCellType( out$Name, max.type=4)
+		cellType <- geneSetCellType( out$Name, max.type=4)
 		out <- cbind( out[,1:2], "CellType"=cellType, out[,3:ncol(out)], stringsAsFactors=F)
 	}
 

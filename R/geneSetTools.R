@@ -342,13 +342,23 @@
 }
 
 
-`getGeneSetCellType` <- function( geneSetNames, max.types=1) {
+`geneSetCellType` <- function( geneSetNames, max.types=1, reference=getCellTypeReference()) {
 
 	out <- rep.int( "", N <- length(geneSetNames))
 	if ( ! N) return(out)
 
 	geneSetCellTypes <- NULL
-	data( list="GeneSetCellTypes", envir=environment())
+
+	# we are now using the generic cell type tools to know which resource to load
+	CellTypeSetup( reference=reference)
+	reference <- getCellTypeReference()
+	geneSetFile <- paste( reference, "GeneSetAssociation", sep=".")
+	localGeneSetFile <- paste( geneSetFile, "rda", sep=".")
+	if ( file.exists( localGeneSetFile)) {
+		load( localGeneSetFile, envir=environment())
+	} else {
+		data( list=geneSetFile, envir=environment())
+	}
 	if ( is.null( geneSetCellTypes)) return(out)
 
 	# prep what was passed in:  1) clean the names, and then strip any module HTML links
@@ -386,39 +396,6 @@
 			})
 		}
 	}
-	out
-}
-
-
-`getGeneSetLifeCycle` <- function( geneSetNames) {
-
-	out <- rep.int( "", N <- length(geneSetNames))
-	if ( ! N) return(out)
-
-	geneSetLifeCycle <- NULL
-	data( list="GeneSetLifeCycle", envir=environment())
-	if ( is.null( geneSetLifeCycle)) return(out)
-
-	# prep what was passed in:  1) clean the names, and then strip any module HTML links
-	namesIn <- cleanGeneSetName( geneSetNames)
-	namesIn <- cleanGeneSetModuleNames( namesIn, wrapParentheses=F)
-	knownGeneSets <- geneSetLifeCycle$GeneSetName
-	knownGeneSetsB <- cleanGeneSetName( knownGeneSets)
-
-	# first try is direct perfect match
-	where <- match( namesIn, knownGeneSets, nomatch=0)
-	out[ where > 0] <- geneSetLifeCycle$LifeCycle[ where]
-	where <- match( namesIn, knownGeneSetsB, nomatch=0)
-	out[ where > 0] <- geneSetLifeCycle$LifeCycle[ where]
-
-	# next try is to strip off any gene set prefix from the names
-	stillBlank <- which( out == "")
-	if ( length( stillBlank)) {
-		knownGeneSets2 <- sub( "^[A-Za-z0-9.]+: ", "", knownGeneSets)
-		where2 <- match( namesIn[stillBlank], knownGeneSets2, nomatch=0)
-		out[ stillBlank[ where2 > 0]] <- geneSetLifeCycle$LifeCycle[ where2]
-	}
-
 	out
 }
 
