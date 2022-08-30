@@ -111,9 +111,7 @@
 	# grab the universe of cell type data
 	mode <- match.arg( mode)
 	if ( mode == "geneSets") {
-		geneSetCellTypes <- NULL
-		data( list="GeneSetCellTypes", package="DuffyTools", envir=environment())
-		if ( is.null(geneSetCellTypes)) stop( "'GeneSetCellTypes' object not loaded.")
+		geneSetCellTypes <- getCellTypeGeneSetAssociation()
 		cellTypeUniverse <- geneSetCellTypes$CellType
 	}
 	if ( mode == "genes") {
