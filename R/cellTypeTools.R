@@ -2020,9 +2020,12 @@
 	}
 	# force all dots to be seen, whether we crop or not
 	crop.x <- min( crop.x, quantile(fold, 0.999, na.rm=T))
+	# don't let the crop be smaller than the balloons
+	big.balloon <- max( abs(out$Log2Fold) + out$Radius)
+	if (crop.x < big.balloon) crop.x <- big.balloon
 	fold[ fold > crop.x] <- crop.x
 	fold[ fold < -crop.x] <- -crop.x
-	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.15
+	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.175
 	bigY <- max( 1, quantile( y, 0.999, na.rm=T), out$Log10.Pvalue+(out$Radius * 1.15))
 	myRangeY <- c( 0, bigY)
 	if ( ! is.null( forceYmax)) {
@@ -2044,7 +2047,7 @@
 		lines( c(crop.x,crop.x), c(0,crop.y), col='grey40', lty=3, lwd=1)
 		text( crop.x, min(1.6,bigY/2), "Crop Fold Change", col='grey40', srt=90, pos=4, cex=legend.cex)
 		lines( c(-crop.x,-crop.x), c(0,crop.y), col='grey40', lty=3, lwd=1)
-		text( -crop.x, max(2.6,bigY/2), "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
+		text( -crop.x, min(2.6,bigY/2), "Crop Fold Change", col='grey40', srt=90, pos=2, cex=legend.cex)
 		lines( c(-crop.x,crop.x), c(crop.y,crop.y), col='grey40', lty=3, lwd=1)
 		text( -0, crop.y, "Crop -Log10 P", col='grey40', srt=0, pos=3, cex=legend.cex, offset=0.25)
 		# then do the points again to emphasize
