@@ -220,10 +220,44 @@
 	# if the full set is just a bit larger, go ahead and keep them all?...
 	if ( Nshow * 1.25 > nrow(radarMOD)) Nshow <- nrow(radarMOD)
 
-	# use both Pvalue and magnitudes
+	# use both Pvalue and magnitudes to decide who to draw
 	magnitudes <- diff( apply( radarMOD, 1, range))
 	bestPs <- apply( radarPvalue, 1, min)
 	ord <- diffExpressRankOrder( magnitudes, bestPs, wt.fold=1, wt.pvalue=1)
+
+	# try to not let one single group have all the UP spokes...
+	nUpSpokes <- apply( radarMOD[ ord[1:Nshow], ], MARGIN=2, function(x) sum(x > 0, na.rm=T))
+	whoMostUp <- which.max( nUpSpokes)
+	idealMaxUp <- round( Nshow * 0.8)
+	if ( nUpSpokes[whoMostUp] > idealMaxUp) {
+		# juggle a few elements of 'ord', to put some 'down' rows into the top N
+		nDownWanted <- nUpSpokes[whoMostUp] - idealMaxUp
+		downSpokeRows <- which( radarMOD[ ord, whoMostUp] < 0)
+		# in case there are some top N in the downs, don't let them come in a second time
+		downSpokeRows <- setdiff( downSpokeRows, 1:Nshow)
+		# keep exchanging the least Up for the most Down, until we have enough
+		tryRowNow <- Nshow
+		nDownUsed <- 0
+		while (nDownWanted > 0) {
+			if (tryRowNow <= 1) break
+			# don't swap out one taht is already down
+			if (radarMOD[ ord[tryRowNow], whoMostUp] < 0) {
+				tryRowNow <- tryRowNow - 1
+				next
+			}
+			# at the lowest up row, swap it out
+			nDownUsed <- nDownUsed + 1
+			if (nDownUsed > length(downSpokeRows)) break
+			bestNegRow <- downSpokeRows[ nDownUsed]
+			tmpRow <- ord[ tryRowNow]
+			ord[ tryRowNow] <- ord[ bestNegRow]
+			ord[ bestNegRow] <- tmpRow
+			# successful, so update
+			nDownWanted <- nDownWanted - 1
+			tryRowNow <- tryRowNow - 1
+		}
+	}
+
 	# also adding in piValues too, as a third score/rank metric 
 	bestPIvals <- piValue( magnitudes, bestPs)
 	mShow <- radarMOD[ ord[1:Nshow], ]
