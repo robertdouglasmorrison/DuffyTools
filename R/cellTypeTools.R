@@ -82,7 +82,7 @@
 		where <- match( genesIn, geneCellTypes$GENE_ID, nomatch=0)
 		out[ where > 0] <- geneCellTypes$CellType[ where]
 	} else {
-		# nned to find 2+ cell type entries per gene
+		# need to find 2+ cell type entries per gene
 		# so crop the data to contain just the genes we want, for speed.
 		# and map to where in the output list each gene ends up
 		smlCT <- subset( geneCellTypes, GENE_ID %in% genesIn)
@@ -96,6 +96,15 @@
 				out[ whereOut[k]] <<- cellTypeStr
 				return(NULL)
 			})
+		# Note: a gene could appear twice or more in the output.  Make sure we fill all locations.
+		# because of the way match works, first location always has the full answer
+		dupsIn <- which( duplicated( genesIn))
+		if ( length( dupsIn)) {
+			for ( k in dupsIn) {
+				allWho <- which( genesIn == genesIn[k])
+				out[ allWho] <- out[ allWho[1]]
+			}
+		}
 	}
 	if ( all( out == "")) warning( paste( "No genes mapped to cell types.  Verify current SpeciesID"))
 
