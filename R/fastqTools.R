@@ -803,7 +803,7 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 	initialize <- function( file) {
 
 		cat( "\nInitializing FASTQ writer for: ", file)
-		con <<- gzfile( file, open="w")
+		con <<- gzfile( file, open="wb")
 		filename <<- file
 		return( file)
 	}
