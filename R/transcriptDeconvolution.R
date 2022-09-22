@@ -294,7 +294,7 @@
 
 `plotTranscriptProportions` <- function( pcts, mode=c("bars","auto","pie","lines"), 
 					col=rainbow( nrow(pcts), end=0.82), label="", useLog=FALSE, min.value.show=0.2,
-					pch=22, pt.cex=2.5, lwd=4, legend.cex=0.9, label.cex=0.9, 
+					pch=22, pt.cex=2.5, lwd=4, legend.cex=0.9, label.cex=0.9, cex.axis=1,
 					text.rotation=if( ncol(pcts) < 9) 0 else 90, 
 					gaps=NULL, significance.values=NULL, significance.scaling=FALSE, ...) {
 
@@ -390,7 +390,7 @@
 		plot( 1, 1, type="n", main=paste( "Transcriptome Proportions:   ", label), ylab=yLabel,
 			xlim=xLimits, ylim=yLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
 			xaxt="n", xlab=NA, log=Log, ...)
-		axis( 1, at=1:NS, colnames(pcts), las=LAS, font=2, cex=1.05)
+		axis( 1, at=1:NS, colnames(pcts), las=LAS, font=2, cex.axis=cex.axis)
 		for ( i in 1:NS) {
 			v <- pcts[ ,i]
 			toShow <- which( v >= min.value.show)
@@ -445,7 +445,7 @@
 		xLimits <- c( 0, max(barAts) + 1.15 + ( 0.3 * (NS+length(gaps)-1)))
 		ans <- barplot( pcts, col=col, main=paste( "Transcriptome Proportions:   ", label), 
 			ylab="Proportion per Component", las=LAS, 
-			xlim=xLimits, font.axis=2, font.lab=2, cex.axis=1.1, cex.lab=1.1, 
+			xlim=xLimits, font.axis=2, font.lab=2, cex.axis=cex.axis, cex.lab=1.1, 
 			legend=TRUE, args.legend=list( "cex"=legend.cex, "bg"='white'), ...)
 
 		# calc the center of each band, to send back to caller
