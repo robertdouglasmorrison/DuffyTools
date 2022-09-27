@@ -2029,9 +2029,10 @@
 	}
 	# force all dots to be seen, whether we crop or not
 	crop.x <- min( crop.x, quantile(fold, 0.999, na.rm=T))
-	# don't let the crop be smaller than the balloons
+	# don't let the crop be smaller than the balloons, or too small overall
 	big.balloon <- max( abs(out$Log2Fold) + out$Radius)
 	if (crop.x < big.balloon) crop.x <- big.balloon
+	if (crop.x < 0.5) crop.x <- 0.5
 	fold[ fold > crop.x] <- crop.x
 	fold[ fold < -crop.x] <- -crop.x
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.175
