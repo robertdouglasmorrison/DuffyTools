@@ -16,6 +16,7 @@
 		defaultReference <- ""
 		if (speciesID %in% PARASITE_SPECIES) defaultReference <- "Parasite.LifeCycle"
 		if (speciesID %in% MAMMAL_SPECIES) defaultReference <- "27.Blood.CellTypes"
+		if (speciesID %in% BACTERIA_SPECIES) defaultReference <- "TB.Phenotypes"
 		if ( file.exists( optionsFile)) {
 			reference <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
 						notfound=defaultReference, verbose=FALSE)
@@ -121,6 +122,11 @@
 	mode <- match.arg( mode)
 	if ( mode == "geneSets") {
 		geneSetCellTypes <- getCellTypeGeneSetAssociation()
+		if ( is.null(geneSetCellTypes)) {
+			cat( "\nWarning:  No 'GeneSetCellTypes' object loaded for species: ", speciesID)
+			cat( "\n  Tried to load 'GeneAssociation' data object for: ", getCellTypeReference())
+			return(NULL)
+		}
 		cellTypeUniverse <- geneSetCellTypes$CellType
 	}
 	if ( mode == "genes") {
@@ -131,7 +137,7 @@
 		if ( is.null(geneCellTypes)) {
 			cat( "\nWarning:  No 'GeneCellTypes' object loaded for species: ", speciesID)
 			cat( "\n  Tried to load 'GeneAssociation' data object for: ", getCellTypeReference())
-			stop()
+			return(NULL)
 		}
 
 		# this table often has more than one cell type per gene, to show the diversity
@@ -634,6 +640,10 @@
 	mode <- match.arg( mode)
 
 	tbl <- CellTypeEnv[[ mode]]
+	if ( is.null(tbl)) {
+		cat( "\n  Warning: no cell type matrix available for current species and cell type reference name.")
+		return(NULL)
+	}
 	genes <- tbl$GENE_ID
 
 	# get just the values, not the IDs and Products
@@ -1957,6 +1967,7 @@
 	# since we will decide later which balloons to draw, get all the enrichment details, not just the significant here...
 	UPenrich <- cellTypeEnrichment( topCellType[UPgenes], mode="genes", minEnrich=1, maxPvalue=1, upOnly=F, verbose=F)
 	DOWNenrich <- cellTypeEnrichment( topCellType[DOWNgenes], mode="genes", minEnrich=1, maxPvalue=1, upOnly=F, verbose=F)
+	if ( is.null(UPenrich) || is.null(DOWNenrich)) return(NULL)
 
 	# now let's calculate the clusters for each cell type, both UP and DOWN
 	cellFac <- factor( topCellType)
