@@ -4,29 +4,18 @@
 
 `getTranscriptDeconvolutionTargetMatrix` <- function( speciesID=getCurrentSpecies(), target=NULL) {
 
-	# grapb the 'most appropriate' target
-	if ( speciesID %in% PARASITE_SPECIES) {
-		targetM <- getLifeCycleMatrix()
-		# the life cycle data is all genes
-		# while a typical target is the higher expressing subset of genes
-		bigV <- apply( targetM, 1, max, na.rm=T)
-		keep <- which( bigV >= 5.0)  # RPKM threshold of detection in PF
-		targetM <- targetM[ keep, ]
-		return( targetM)
-	}
-
 	if ( speciesID != getCurrentSpecies()) {
 		oldSpecies <- getCurrentSpecies()
 		setCurrentSpecies( speciesID)
 		on.exit( setCurrentSpecies( oldSpecies))
 	}
 	myPrefix <- getCurrentSpeciesFilePrefix()
-	if ( is.null( target)) target <- "ImmuneCell.TargetMatrix"
-
-	f <- paste( myPrefix, target, sep=".")
+	CellTypeSetup()
+	reference <- getCellTypeReference()
+	datafile <- paste( myPrefix, reference, "TargetMatrix", sep=".")
 	targetM <- NULL
-	data( list=f, package="DuffyTools", envir=environment())
-	if ( is.null( targetM)) cat( "\nFailed to load target data.  Tried: ", f)
+	data( list=datafile, package="DuffyTools", envir=environment())
+	if ( is.null( targetM)) cat( "\nFailed to load deconvolution target matrix.  Tried: ", datafile)
 	return( targetM)
 }
 

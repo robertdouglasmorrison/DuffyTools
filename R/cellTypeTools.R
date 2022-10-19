@@ -440,8 +440,10 @@
 	rownames(m) <- shortGeneName( rownames(m), keep=1)
 
 	# step 1:  get the cell type data, and down-select the gene sets to use
+	CellTypeSetup()
+	reference <- getCellTypeReference()
 	if ( getCurrentSpecies() != speciesID) setCurrentSpecies( speciesID)
-	dataSetName <- paste( getCurrentSpeciesFilePrefix(), "HumanImmuneSubsets", sep=".")
+	dataSetName <- paste( getCurrentSpeciesFilePrefix(), reference, "AllGeneSets", sep=".")
 	allGeneSets <- NULL
 	data( list=dataSetName, envir=environment())
 	if ( is.null( allGeneSets)) {
