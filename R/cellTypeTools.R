@@ -622,6 +622,11 @@
 		targetColors <- custom.colors
 	}
 
+	# no matter what, force these 2 views to have identical genes
+	finalGenes <- intersect( ans$GENE_ID, ans2$GENE_ID)
+	ans <- ans[ match( finalGenes, ans$GENE_ID), ]
+	ans2 <- ans2[ match( finalGenes, ans2$GENE_ID), ]
+
 	CellTypeEnv[[ "VectorSpace" ]] <- ans
 	CellTypeEnv[[ "IntensitySpace" ]] <- ans2
 	CellTypeEnv[[ "Species" ]] <- getCurrentSpecies()
