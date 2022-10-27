@@ -118,10 +118,6 @@
 	# make a single combined .CSV file of all the gene sets together
 	combineRadarPlotResults( radarPath)
 
-	# clean up
-	if ( exists( "radarM")) rm( radarM)
-	if ( exists( "radarMA")) rm( radarMA)
-
 	return( invisible( out))
 }
 
@@ -356,10 +352,6 @@
 	for ( k in 1:ncol(mOut)) outOrd <- c( outOrd, (k+5), (ncol(mOut)+k+5), (ncol(mOut)*2+k+5))
 	out <- out[ , outOrd]
 
-	# clean up
-	if ( exists( "radarM")) rm( radarM)
-	if ( exists( "radarMA")) rm( radarMA)
-
 	return(out)
 }
 
@@ -524,10 +516,6 @@
 	# reorder to get the 2 values per group together
 	outOrd <- c( 1:2, seq( 3, ncol(out), by=2), seq( 4, ncol(out), by=2))
 	out <- out[ , outOrd]
-
-	# clean up
-	if ( exists( "radarM")) rm( radarM)
-	if ( exists( "radarMA")) rm( radarMA)
 
 	return(out)
 }
