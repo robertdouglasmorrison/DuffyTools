@@ -12,17 +12,8 @@
 					speciesID=getCurrentSpecies()) {
 
 	# build the name of the R data object to be loaded
-	if ( is.null( reference)) {
-		defaultReference <- ""
-		if (speciesID %in% PARASITE_SPECIES) defaultReference <- "Parasite.LifeCycle"
-		if (speciesID %in% MAMMAL_SPECIES) defaultReference <- "27.Blood.CellTypes"
-		if (speciesID %in% BACTERIA_SPECIES) defaultReference <- "TB.Phenotypes"
-		if ( file.exists( optionsFile)) {
-			reference <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
-						notfound=defaultReference, verbose=FALSE)
-		} else {
-			reference <- defaultReference
-		}
+	if ( is.na( reference)) {
+		reference <- defaultCellTypeReference( optionsFile=optionsFile, speciesID=speciesID)
 	}
 
 	# see if this is what is already loaded
@@ -521,18 +512,10 @@
 
 `CellTypeSetup` <- function( reference=getCellTypeReference(), optionsFile="Options.txt") {
 
-	# get the name of the R data object to be loaded
-	defaultReference <- ""
+	# get the name of the R data object all ready loaded or to be loaded
 	speciesID <- getCurrentSpecies()
-	if (speciesID %in% PARASITE_SPECIES) defaultReference <- "Parasite.LifeCycle"
-	if (speciesID %in% MAMMAL_SPECIES) defaultReference <- "27.Blood.CellTypes"
-	if ( is.null( reference)) {
-		if ( file.exists( optionsFile)) {
-			reference <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=getCurrentSpecies(), 
-							notfound=defaultReference, verbose=FALSE)
-		} else {
-			reference <- defaultReference
-		}
+	if ( is.na( reference)) {
+		reference <- defaultCellTypeReference( optionsFile=optionsFile, speciesID=speciesID)
 	}
 
 	# compare this reference name against what is loaded already
@@ -551,7 +534,6 @@
 		if ( exists( "GeneAssociation", envir=CellTypeEnv)) rm( "GeneAssociation", envir=CellTypeEnv) 
 		if ( exists( "GeneSetAssociation", envir=CellTypeEnv)) rm( "GeneSetAssociation", envir=CellTypeEnv) 
 	}
-
 	return()
 }
 
@@ -675,11 +657,28 @@
 }
 
 
-# make this function be a 'query only' mode.  Use it to ask if cell types have been defined yet.
+# make this function be a 'query only' mode.  Use it to ask for the currently defined reference
 `getCellTypeReference` <- function() {
 
-	if ( ! exists( "VectorSpace", envir=CellTypeEnv)) return(NULL)
+	if ( ! exists( "VectorSpace", envir=CellTypeEnv)) return(NA)
 	reference <- CellTypeEnv[[ "Reference"]]
+	return( reference)
+}
+
+
+# get the default reference to use for the given species
+`defaultCellTypeReference` <- function( optionsFile="Options.txt", speciesID=getCurrentSpecies()) {
+
+	defaultReference <- NA
+	if (speciesID %in% PARASITE_SPECIES) defaultReference <- "Parasite.LifeCycle"
+	if (speciesID %in% MAMMAL_SPECIES) defaultReference <- "27.Blood.CellTypes"
+	if (speciesID %in% BACTERIA_SPECIES) defaultReference <- "TB.Phenotypes"
+	if ( file.exists( optionsFile)) {
+		reference <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
+					notfound=defaultReference, verbose=FALSE)
+	} else {
+		reference <- defaultReference
+	}
 	return( reference)
 }
 
