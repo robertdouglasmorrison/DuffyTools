@@ -1481,6 +1481,8 @@
 		# regardless of how we ended, use the best we saw
 		model.pcts <- best.model
 		rmsd <- best.rmsd
+		# when done force it to exactly 100%
+		model.pcts <- model.pcts / sum(model.pcts,na.rm=T)
 
 		if (makePlots == "final") {
 			labelText <- paste( "'SteepDescent' Model Fit to:  ", sid, "\nIteration: ", i, "    RMS_Deviation: ", round(rmsd,dig=4))
@@ -1518,10 +1520,10 @@
 		model.pcts <- coef( fitAns)
 		names(model.pcts) <- STAGE_NAMES
 		resids <- residuals(fitAns)
-		#fits <- fitted(fitAns)
-		#obs <- intenUse
-		#names(obs) <- names(resids) <- names(fits) <- genes
 		rmsd <- sqrt( mean( resids^2))
+
+		# when done force it to exactly 100%
+		model.pcts <- model.pcts / sum(model.pcts,na.rm=T)
 
 		out <- list( "model.pcts"=model.pcts, "rmsd"=rmsd, "Iterations"=nIter)
 
@@ -1621,6 +1623,7 @@
 			return(NULL)
 		} 
 
+		# when done force it to exactly 100%
 		model.pcts <-  fitAns$BestFit / sum( fitAns$BestFit)		
 		rmsd <- fitAns$RMS.Deviation
 		out <- list( "model.pcts"=model.pcts, "rmsd"=rmsd, "Iterations"=nIter)
