@@ -1211,7 +1211,7 @@
 				geneUniverse=geneUniverse, ...)
 	if (makePlots != "none") {
 		# new plot printing wrapper lets us not append the device type suffix
-		plotFile <- paste( sid, "CellTypeProportions", algorithm, sep=".")
+		plotFile <- paste( sid, getCurrentSpeciesFilePrefix(), getCellTypeReference(), "FitProportions", algorithm, sep=".")
 		plotFile <- file.path( plot.path, plotFile)
 		printPlot( plotFile)
 	}
@@ -1264,7 +1264,7 @@
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
 			# new plot printing wrapper lets us not append the device type suffix
-			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, sep=".")
+			plotFile <- paste( fids[i], getCurrentSpeciesFilePrefix(), getCellTypeReference(), "FitProportions", algorithm, sep=".")
 			plotFile <- file.path( plot.path, plotFile)
 			printPlot( plotFile)
 		}
@@ -1311,7 +1311,7 @@
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
 			# new plot printing wrapper lets us not append the device type suffix
-			plotFile <- paste( fids[i], "CellTypeProportions", algorithm, sep=".")
+			plotFile <- paste( fids[i], getCurrentSpeciesFilePrefix(), getCellTypeReference(), "FitProportions", algorithm, sep=".")
 			plotFile <- file.path( plot.path, plotFile)
 			printPlot( plotFile)
 		}

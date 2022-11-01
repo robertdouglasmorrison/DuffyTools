@@ -204,8 +204,8 @@
 		if ( label == "") label <- paste( "Sample =", fids[1], "  Algorithm =", algorithm, "  Log =", useLog)
 		plotTranscriptProportions(pcts, col=plot.col, label=label)
 		# new plot printing method does not need explicit extension
-		plotFile <- paste( "TranscriptProportions", algorithm, sep=".")
-		if ( length(fids) == 1) plotFile <- paste( fids[1], if (useLog) "YesLog" else "NoLog", plotFile, sep=".")
+		plotFile <- paste( getCurrentSpeciesFilePrefix(), getCellTypeReference(), "DeconvProportions", algorithm, sep=".")
+		if ( length(fids) == 1) plotFile <- paste( fids[1], plotFile, sep=".")
 		plotFile <- file.path( plot.path, plotFile)
 		printPlot( plotFile)
 	}
@@ -271,8 +271,8 @@
 	if (plot) {
 		if ( label == "") label <- paste( "Sample =", colnames(m)[1], "  Algorithm =", algorithm, "  Log =", useLog)
 		plotTranscriptProportions(pcts, col=plot.col, label=label)
-		plotFile <- paste( "TranscriptProportions", algorithm, sep=".")
-		if ( ncol(m) == 1) plotFile <- paste( colnames(m)[1], if (useLog) "YesLog" else "NoLog", plotFile, sep=".")
+		plotFile <- paste( getCurrentSpeciesFilePrefix(), getCellTypeReference(), "DeconvProportions", algorithm, sep=".")
+		if ( length(fids) == 1) plotFile <- paste( fids[1], plotFile, sep=".")
 		plotFile <- file.path( plot.path, plotFile)
 		printPlot( plotFile)
 	}
