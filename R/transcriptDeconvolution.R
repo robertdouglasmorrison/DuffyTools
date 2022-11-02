@@ -126,7 +126,7 @@
 
 `fileSet.TranscriptDeconvolution` <- function( files, fids, targetM=getTranscriptDeconvolutionTargetMatrix(), 
 					geneColumn="GENE_ID", intensityColumn="RPKM_M",
-					sep="\t", useLog=FALSE, normalize=FALSE, minIntensity=0, 
+					sep="\t", useLog=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL, geneUniverse=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA","steepDescent"),
 					startFractions=NULL, plot=TRUE, plot.path=".", plot.col=NULL, 
@@ -161,7 +161,7 @@
 			f <- files[ i]
 			tbl <- read.delim( f, sep=sep, as.is=T)
 			if (i > 1) verbose <<- FALSE
-			# allow suing specific starting percentages
+			# allow usuing specific starting percentages
 			# note that previous runs output 0 to 100, but the low level tool wants 0 to 1.0
 			if ( ! is.null( startFractions)) {
 				wh <- which( colnames(startFractions) == fids[i])[1]
@@ -172,7 +172,7 @@
 			}
 			fitAns <- fit.transcriptBlend( tbl, targetM, geneColumn=geneColumn, 
 					intensityColumn=intensityColumn, useLog=useLog, 
-					normalize=normalize, minIntensity=minIntensity, 
+					minIntensity=minIntensity, 
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
 					geneUniverse=geneUniverse,
@@ -215,7 +215,7 @@
 
 
 `matrix.TranscriptDeconvolution` <- function( m, targetM=getTranscriptDeconvolutionTargetMatrix(), 
-					useLog=FALSE, normalize=FALSE, minIntensity=0, 
+					useLog=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL, geneUniverse=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA","steepDescent"),
 					plot=TRUE, plot.path=".", plot.col=NULL, label="", verbose=TRUE) {
@@ -240,7 +240,7 @@
 			if (i > 1) verbose <<- FALSE
 			fitAns <- fit.transcriptBlend( tbl, targetM, geneColumn="GENE_ID", 
 					intensityColumn="INTENSITY", useLog=useLog, 
-					normalize=normalize, minIntensity=minIntensity, 
+					minIntensity=minIntensity, 
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
 					geneUniverse=geneUniverse,

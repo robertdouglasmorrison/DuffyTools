@@ -79,7 +79,7 @@
 
 # the NLS fit function:  find the optimal blend
 `fit.transcriptBlend` <- function( x, m, geneColumn="GENE_ID", intensityColumn="RPKM_M", useLog=FALSE, 
-				normalize=TRUE, minIntensity=0, arrayFloorIntensity=NULL, 
+				minIntensity=0, arrayFloorIntensity=NULL, 
 				dropLowVarianceGenes=NULL, geneUniverse=NULL,
 				algorithm=c("port", "default", "plinear", "LM", "GenSA", "steepDescent"), 
 				startFractions=NULL, verbose=TRUE) {
@@ -185,26 +185,17 @@
 		cat( colnames(mUse), "\n")
 	}
 
-	# log scale and/or normalize ??
+	# log scale transform ??
 	if ( useLog) {
 		intenUse <- log2( intenUse + 1)
 		mUse <- log2( mUse + 1)
 	}
-	if ( normalize) {
-		# we may use Quankenbush (total intensity normalize)
-		mSums <- apply( mUse, MARGIN=2, sum, na.rm=T)
-		tSum <- sum( intenUse)
-		medSum <- median( c( mSums, tSum))
-		mScale <- medSum / mSums
-		tScale <- medSum / tSum
-		for (j in 1:ncol(mUse)) mUse[,j] <- mUse[ ,j] * mScale[j]
-		intenUse <- intenUse * tScale
-		# we may force use of quantile normalize
-		#mPreNorm <- cbind( intenUse, mUse)
-		#mPostNorm <- rankEquivIntensity( mPreNorm, verbose=FALSE)
-		#intenUse <- mPostNorm[ ,1]
-		#mUse <- mPostNorm[ ,2:ncol(mPostNorm)]
-	}
+
+	# always force the deconvolution reference matrix to match the magnitude scaling of the observed...
+	mSums <- apply( mUse, MARGIN=2, sum, na.rm=T)
+	tSum <- sum( intenUse, na.rm=T)
+	mScale <- tSum / mSums
+	for (j in 1:ncol(mUse)) mUse[,j] <- mUse[ ,j] * mScale[j]
 
 	# set the controls used by NLS
 	controlList <- nls.control( tol=1e-05, maxiter=500, minFactor=1/2048, warnOnly=T)
@@ -217,27 +208,27 @@
 		if ( length(startFractions) != NC) stop( "'startFractions' length incompatible with target matrix")
 	}
 	starts <- list( "WTi"=startFractions)
+	WTi <- startFractions
 
+	# never let a coefficient go negative
+	# and since all the model terms are the same scale as our sample, never let a coefficient get too big either
+	lowerBound <- rep.int( 0, NC)
+	upperBound <- rep.int( 1.2, NC)
 	algorithm <- match.arg( algorithm)
+
+	# load what we need and call it
 	if (algorithm == "GenSA") require( GenSA)
 	if (algorithm == "LM") require( minpack.lm)
 	if (verbose) cat( "\nFitting Algorithm:  ", algorithm)
 
 	if ( algorithm == "port") {
-		lowerBound <- rep.int( 0, NC)
-		upperBound <- rep.int( 100, NC)
 		fitAns <- try( nls( intenUse ~ transcriptBlend( mUse, WTi), start=starts,
 				control=controlList, algorithm="port", lower=lowerBound, 
 				upper=upperBound))
 	} else if (algorithm == "GenSA") {
-		WTi <- startFractions
-		lowerBound <- rep.int( 0, NC)
-		upperBound <- rep.int( 100, NC)
 		fitAns <- try( do.TranscriptBlend.GenSA( intenUse, mUse, WTi, start=starts,
 				lower=lowerBound, upper=upperBound))
 	} else if (algorithm == "LM") {
-		lowerBound <- rep.int( 0, NC)
-		upperBound <- rep.int( 100, NC)
 		fitAns <- try( nlsLM( intenUse ~ transcriptBlend( mUse, WTi), start=starts,
 				control=controlList, algorithm="LM"))  
 	} else if (algorithm == "steepDescent") {
