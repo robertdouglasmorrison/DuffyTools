@@ -197,8 +197,9 @@
 	cat( "  Done.\n")
 
 	# standardize the values to 100 %
+	# NO, let's not do this here anymore.  Allow original values to be passed back
 	pcts <- ans
-	for ( i in 1:NS) pcts[ , i] <- ans[ , i] * 100 / sum( ans[ , i])
+	# for ( i in 1:NS) pcts[ , i] <- ans[ , i] * 100 / sum( ans[ , i])
 
 	if (plot) {
 		if ( label == "") label <- paste( "Sample =", fids[1], "  Algorithm =", algorithm, "  Log =", useLog)
@@ -292,6 +293,10 @@
 	ND <- nrow(pcts)
 	mode <- match.arg( mode)
 	fids <- colnames(pcts)
+
+	# previously, the proportions were alway true percentages, that sum to 100%.
+	# No longer a given.  Force it now
+	for ( i in 1:NS) pcts[ ,i] <- pcts[ ,i] * 100 / sum( pcts[ ,i], na.rm=T)
 
 	doPie <- (( mode == "pie") || (mode == "auto" && NS < 3))
 	doBars <- (( mode == "bars") || (mode == "auto" && NS > 2))

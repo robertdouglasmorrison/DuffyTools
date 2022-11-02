@@ -57,7 +57,13 @@
 		ans <- ans * scaleFac
 	}
 
-	# OK, make our result file, using an input file as a guide
+	# if units were TPM, force that per million rule
+	if (grepl( "TPM", intensityColumn)) {
+		scaleFac <- 1000000 / sum(ans)
+		ans <- ans * scaleFac
+	}
+
+	# OK, make our result file, using one input file as a guide
 	oldDF <- read.delim( fset[1], as.is=T, sep=sep)
 
 	gids <- names(ans)
@@ -65,7 +71,7 @@
 	prods <- rep.int( "", NG)
 	prods[wh > 0] <- oldDF$PRODUCT[ wh]
 
-	out <- data.frame( "GENE_ID"=gids, "PRODUCT"=prods, "RPKM_M"=as.numeric(ans), stringsAsFactors=F)
+	out <- data.frame( "GENE_ID"=gids, "PRODUCT"=prods, "RPKM_M"=round(ans,digits=3), stringsAsFactors=F)
 	ord <- order( out$RPKM_M, decreasing=T)
 	out <- out[ ord, ]
 	rownames(out) <- 1:nrow(out)
@@ -213,7 +219,7 @@
 	# never let a coefficient go negative
 	# and since all the model terms are the same scale as our sample, never let a coefficient get too big either
 	lowerBound <- rep.int( 0, NC)
-	upperBound <- rep.int( 1.2, NC)
+	upperBound <- rep.int( 5, NC)
 	algorithm <- match.arg( algorithm)
 
 	# load what we need and call it
@@ -266,6 +272,8 @@
 
 		out <- list( "BestFit"=fractions, "Observed"=obs, "Residuals"=resids, 
 				"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
+	
+		cat( "\n\nDebug: Fit NLS: \n"); print(fractions)
 	}
 
 	return( invisible(out))
@@ -318,6 +326,7 @@
 	# extract the answers
 	fractions <- ans$par
 	# Clean up:  don't let any final calls be below zero percent
+	# and let's get rid of the idea that final proportions must sum to 1.0
 	fractions[ fractions < 0] <- 0
 
 	GenSA.Trace <<- ans$trace.mat
@@ -337,6 +346,9 @@
 
 	out <- list( "BestFit"=fractions, "Observed"=inten, "Residuals"=resids, 
 			"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
+
+	cat( "\n\nDebug: Fit GenSA: \n"); print(fractions)
+
 	return( out)
 }
 
@@ -366,8 +378,9 @@
 	
 	for ( i in 1:max.iterations) {
 			
-		# make the latest model with the current ratios, making sure the percentages sum to exactly one
-		model.pcts <- model.pcts / sum( model.pcts)
+		# make the latest model with the current percentages
+		# remove the forcing of summing to one
+		# model.pcts <- model.pcts / sum( model.pcts)
 		modelInten <- transcriptBlend( m, model.pcts)
 				
 		# assess the current deviation
@@ -417,7 +430,8 @@
 		model.pcts <- model.pcts + netDiff
 		# prevent negative contributions, and renormalize
 		model.pcts[ model.pcts < 0] <- 0
-		model.pcts <- model.pcts / sum( model.pcts)
+		# remove the forcing of summing to one
+		# model.pcts <- model.pcts / sum( model.pcts)
 			
 		# and go around again
 	}
@@ -432,7 +446,8 @@
 	# Clean up:  don't let any final calls be below zero percent
 	wts <- model.pcts
 	wts[ wts < 0] <- 0
-	wts <- wts / sum(wts)
+	# remove the forcing of summing to one
+	# wts <- wts / sum(wts)
 	names( wts) <- colnames(m)
 	model <- transcriptBlend( m, wts)
 	resids <- inten - model
@@ -449,6 +464,9 @@
 
 	out <- list( "BestFit"=wts, "Observed"=inten, "Residuals"=resids, 
 			"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
+	
+	cat( "\n\nDebug: Fit Steepest Descent: \n"); print(wts)
+
 	return( out)
 }
 

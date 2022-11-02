@@ -1355,6 +1355,8 @@
 		inten <- inten[ keep]
 	}
 	NG <- length( genes)
+
+	# make the stage profile of the given data
 	obsAns <- calcCellTypeProfile( genes, inten)
 	obsProfile <- obsAns$Profile
 	whereGene <- match( genes, intensitySpace$GENE_ID, nomatch=0)
@@ -1743,8 +1745,16 @@
 	# once we drop out, assemble the results
 	cellPercents <- round( model.pcts * 100, digits=4)
 	names(cellPercents) <- STAGE_NAMES
-		
-	out <- list( "Iterations"=iterations, "RMSD"=rmsd, "CellProportions"=cellPercents)
+
+	# rather than send back percentages that must sum to 100, let's instead make this 
+	# be how many units of each cell type, such that the total intensity would best match
+	# the total intensity of the given input.
+	observedSum <- sum( inten, na.rm=T)
+	modelSums <- apply( intensityMatrix[ whereGene, ], 2, sum, na.rm=T)
+	scaleFac <- observedSum / mean( modelSums)
+	cellProportions <- cellPercents * scaleFac
+
+	out <- list( "Iterations"=iterations, "RMSD"=rmsd, "CellProportions"=cellProportions)
 	return( out)
 }
 
