@@ -272,8 +272,6 @@
 
 		out <- list( "BestFit"=fractions, "Observed"=obs, "Residuals"=resids, 
 				"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
-	
-		cat( "\n\nDebug: Fit NLS: \n"); print(fractions)
 	}
 
 	return( invisible(out))
