@@ -238,7 +238,7 @@
 		fitAns <- try( nlsLM( intenUse ~ transcriptBlend( mUse, WTi), start=starts,
 				control=controlList, algorithm="LM"))  
 	} else if (algorithm == "steepDescent") {
-		fitAns <- try( do.TranscriptBlend.SteepDescent( intenUse, mUse, start=startFractions))
+		fitAns <- try( do.TranscriptBlend.SteepDescent( intenUse, mUse, start=startFractions, verbose=verbose))
 	} else {
 		fitAns <- try( nls( intenUse ~ transcriptBlend( mUse, WTi), start=starts,
 				control=controlList, algorithm=algorithm))
@@ -347,13 +347,11 @@
 	out <- list( "BestFit"=fractions, "Observed"=inten, "Residuals"=resids, 
 			"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
 
-	cat( "\n\nDebug: Fit GenSA: \n"); print(fractions)
-
 	return( out)
 }
 
 
-`do.TranscriptBlend.SteepDescent` <- function( inten, m, start, max.iterations=200, tolerance=1) {
+`do.TranscriptBlend.SteepDescent` <- function( inten, m, start, max.iterations=200, tolerance=1, verbose=TRUE) {
 
 	# do our own steepest descent optimazation in Gene Intensity space
 	# minimize delta gene expression by adjusting cell type proportions
@@ -370,7 +368,7 @@
 		
 	# ready to iteratively compare the model to the observed. 
 	# track the best and some metrics for seeing stalling
-	cat( "\n")
+	if (verbose) cat( "\n")
 	prevRMSD <- 99999999
 	best.model <- model.pcts
 	best.rmsd <- prevRMSD
@@ -386,7 +384,7 @@
 		# assess the current deviation
 		deltas <- inten - modelInten
 		rmsd <- round( sqrt( mean( deltas^2)), digits=4)
-		cat( "\rIter: ", i, "   RMSD: ", rmsd)
+		if (verbose) cat( "\rIter: ", i, "   RMSD: ", rmsd)
 						
 		if ( rmsd <= tolerance) {
 			cat( "\nConverged..")
@@ -465,8 +463,6 @@
 	out <- list( "BestFit"=wts, "Observed"=inten, "Residuals"=resids, 
 			"RMS.Deviation"=rms, "R2.CoD"=r2.cod, "R2.Pearson"=r2.pearson, "Pvalue"=pv)
 	
-	cat( "\n\nDebug: Fit Steepest Descent: \n"); print(wts)
-
 	return( out)
 }
 

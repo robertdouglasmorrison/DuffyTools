@@ -1183,7 +1183,7 @@
 					sep="\t", max.iterations=100, rate=1, tolerance=0.01,
 					makePlots=c("all","final","none"), plot.path=".",
 					algorithm=c("steepDescent", "nls", "GenSA"), 
-					geneUniverse=NULL, ...) {
+					geneUniverse=NULL, verbose=TRUE, ...) {
 
 	CellTypeSetup()
 
@@ -1208,7 +1208,7 @@
 	algorithm <- match.arg( algorithm)
 	ans <-  fitCellTypeProfile( gset, inten, sid=sid, col=col, max.iterations=max.iterations, rate=rate, 
 				tolerance=tolerance, makePlots=makePlots, plot.path=plot.path, algorithm=algorithm, 
-				geneUniverse=geneUniverse, ...)
+				geneUniverse=geneUniverse, verbose=verbose, ...)
 	if (makePlots != "none") {
 		# new plot printing wrapper lets us not append the device type suffix
 		plotFile <- paste( sid, getCurrentSpeciesFilePrefix(), getCellTypeReference(), "FitProportions", algorithm, sep=".")
@@ -1225,7 +1225,7 @@
 						max.iterations=100, rate=1, tolerance=0.01, 
 						makePlots=c("all","final","none"), plot.path=".",
 						algorithm=c("steepDescent", "nls", "GenSA"), 
-						geneUniverse=NULL, ...) {
+						geneUniverse=NULL, verbose=TRUE, ...) {
 								
 	CellTypeSetup()
 
@@ -1259,7 +1259,7 @@
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, 
 					plot.path=plot.path, algorithm=algorithm, 
-					geneUniverse=geneUniverse, ...)
+					geneUniverse=geneUniverse, verbose=verbose, ...)
 		m[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
@@ -1279,7 +1279,7 @@
 `fitCellTypeProfileFromMatrix` <- function( m, fcolors=1:ncol(m),  max.iterations=100, rate=1, tolerance=0.01, 
 						makePlots=c("all","final","none"), plot.path=".", 
 						algorithm=c("steepDescent", "nls", "GenSA"), 
-						geneUniverse=NULL, ...) {
+						geneUniverse=NULL, verbose=TRUE, ...) {
 
 	CellTypeSetup()
 
@@ -1306,7 +1306,7 @@
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, 
 					plot.path=plot.path, algorithm=algorithm, 
-					geneUniverse=geneUniverse, ...)
+					geneUniverse=geneUniverse, verbose=verbose, ...)
 		mOut[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
@@ -1328,7 +1328,7 @@
 					max.iterations=100, rate=1, tolerance=0.01, fit.starts=NULL,
 					makePlots=c("all","final","none"), plot.path=".", sleep=0.01, 
 					algorithm=c("steepDescent", "nls", "GenSA"), 
-					geneUniverse=NULL, ...) {
+					geneUniverse=NULL, verbose=TRUE, ...) {
 
 	# grab the Cell Type data we will need:  the gene intensity in all cell types
 	CellTypeSetup()
@@ -1393,7 +1393,7 @@
 		
 		# ready to iteratively compare the model to the observed. 
 		# track the best and some metrics for seeing stalling
-		cat( "\n")
+		if (verbose) cat( "\n")
 		prevRMSD <- 10000
 		best.model <- model.pcts
 		best.rmsd <- prevRMSD
@@ -1417,7 +1417,7 @@
 			# assess the current deviation
 			deltas <- cellM[,1] - cellM[,2]
 			rmsd <- round( sqrt( mean( deltas^2)), digits=4)
-			cat( "\rIter: ", i, "   RMSD: ", rmsd)
+			if (verbose) cat( "\rIter: ", i, "   RMSD: ", rmsd)
 			
 			# plot it to show progress
 			if (makePlots == "all") {
