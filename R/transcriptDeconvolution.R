@@ -507,6 +507,14 @@
 	grpLabels <- base::levels(grpFac)
 	if ( ! all( 1:NG %in% grpPtrs)) stop( "Some group levels have zero members")
 
+	# previously, we were gauranteed that all proportions summed to 100%.  No longer always true.
+	# But we need them to be for comparitive plotting.  So do it now with a warning
+	pctSums <- apply( pcts, 2, sum, na.rm=T)
+	if ( any( round(pctSums) != 100)) {
+		cat( "\n  Note: normalizing Proportions to sum to 100% for plotting.")
+		for ( j in 1:NC) pcts[ ,j] <- pcts[ ,j] * 100 / pctSums[j]
+	}
+
 	bigOut <- vector( mode="list")
 	nOut <- 0
 
@@ -619,7 +627,7 @@
 		}
 		if ( plot.mode == "lines") {
 			# we can show the stats between adjacent groups, step along the list of stats
-			smallX <- if ( NG > 2) 0.15 else -0.075
+			smallX <- if ( NG > 2) 0.15 else -0.1
 			if ( NG > 8) smallX <- 0.28
 			smallY <- diff( range( as.vector( pctsGrp), na.rm=T)) * 0.01
 			if ( useLog) smallY <- 0
@@ -639,7 +647,7 @@
 					myY <-ifelse( upDownCall > 0, pctsGrp[where,i2]+smallY, pctsGrp[where,i2]-smallY)
 					statsColor <- col[where]
 					if ( ! is.null(stats.color)) statsColor <- stats.color[1]
-					text( myX, myY, textToShow, col=statsColor, cex=1.95)
+					text( myX, myY, textToShow, col=statsColor, cex=2, pos=2, offset=0.15)
 				}
 			}
 		}

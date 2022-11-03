@@ -1507,8 +1507,10 @@
 		# call the Nonlinear Least Squares (NLS)
 		controlList <- nls.control( maxiter=max.iterations, minFactor=1/512, warnOnly=TRUE, tol=1e-3)
 		starts <- list( "modelPcts"=fit.starts)
-		lowerBound <- rep.int( -0.0000001, N_STAGES)   # allow a small tolerance, so true zero is a valid answer
-		upperBound <- rep.int(  1.0000001, N_STAGES)
+		# allow a small tolerance, so true zero is a valid answer, and force zero limits later
+		lowerBound <- rep.int( -0.0000001, N_STAGES)
+		# allow any one dimension to exceed 100% and the scale it back later
+		upperBound <- rep.int(  2.0, N_STAGES)
 		nIter <<- 0
 		fitAns <- try( nls( obsProfile ~ nlsModelCellTypeProfile( modelPcts), start=starts,
 				control=controlList, algorithm="port", lower=lowerBound, 
@@ -1520,6 +1522,7 @@
 		} 
 
 		model.pcts <- coef( fitAns)
+		model.pcts[ model.pcts < 0] <- 0
 		names(model.pcts) <- STAGE_NAMES
 		resids <- residuals(fitAns)
 		rmsd <- sqrt( mean( resids^2))
@@ -1549,6 +1552,7 @@
 
 		# low level function called by NLS to give the current cell type profile of a set of pcts
 		model.pcts <- modelPcts
+		model.pcts[ model.pcts < 0] <- 0
 		modelInten <- rep.int( 0, NG)
 		for ( j in 1:N_STAGES) {
 			thisV <- intensityMatrix[,j] * model.pcts[j]
