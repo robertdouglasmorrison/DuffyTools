@@ -19,11 +19,19 @@ abline.segment <- function( a=NULL, b=NULL, reg=NULL, x1, x2, origin=0, log="", 
 	y1 <- slope * (x1-origin) + intercept
 	y2 <- slope * (x2-origin) + intercept
 	if ( log != "") {
-		if ( log == "2") {
+		if ( grepl("x10", log)) {
+			y1 <- slope * (log10(x1)-origin) + intercept
+			y2 <- slope * (log10(x2)-origin) + intercept
+		}
+		if ( grepl("x2",log)) {
+			y1 <- slope * (log2(x1)-origin) + intercept
+			y2 <- slope * (log2(x2)-origin) + intercept
+		}
+		if ( grepl("y2",log)) {
 			y1 <- 2 ^ y1
 			y2 <- 2 ^ y2
 		}
-		if ( log == "10") {
+		if ( grepl("y10",log)) {
 			y1 <- 10 ^ y1
 			y2 <- 10 ^ y2
 		}
