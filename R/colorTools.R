@@ -2,7 +2,7 @@
 
 
 rainbow <- function (n, s = 1, v = 1, start = 0, end = max(1, n - 1)/n, alpha = 1,
-				cosineShiftMagnitude=0.03) {
+				cosineShiftMagnitude=0.03, rev=FALSE) {
 
 	if ((n <- as.integer(n[1L])) < 1) return( character())
 	if (start == end || any(c(start, end) < 0) || any(c(start, end) > 1)) 
@@ -25,7 +25,9 @@ rainbow <- function (n, s = 1, v = 1, start = 0, end = max(1, n - 1)/n, alpha = 
 		x <- (x + modX) %% 1
 	}
 
-	hsv(h=x, s, v, alpha)
+	out <- hsv(h=x, s, v, alpha)
+	if (rev) out <- rev(out)
+	out
 }
 
 

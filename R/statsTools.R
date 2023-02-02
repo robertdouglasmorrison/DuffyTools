@@ -76,3 +76,16 @@
 	return( list( "mean.diff"=mDiff, "z"=z, "p.value"=pval))
 }
 
+
+`MAD.outliers` <- function( x, alpha=3, beta=1.4826) {
+
+	med <- median( x, na.rm=T)
+	abdev <- abs( x - med)
+	mad <- beta * median( abdev)
+	cutmin <- med - (mad * alpha)
+	cutmax <- med + (mad * alpha)
+	outliers <- sort( which( x < cutmin | x > cutmax))
+	if ( length(outliers) && ! is.null(names(x))) names(outliers) <- names(x)[outliers]
+	return( outliers)
+}
+

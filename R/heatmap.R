@@ -8,6 +8,7 @@
 			cexRow = 0.2 + 1/log10(nr), cexCol = 0.2 + 1/log10(nc), labRow = NULL, labCol = NULL, 
 			colRowLab = par('fg'), colColLab = par('fg'), main = NULL, xlab = NULL, ylab = NULL, 
 			RdendroWidth = 1, CdendroHeight = 1, heatWidth = 4, heatHeight = 4,
+			show.values=FALSE, show.cex=0.75, show.digits=2,
 			keep.dendro = FALSE, verbose = getOption("verbose"), ...) {
 
     scale <- if (symm && missing(scale)) "none" else match.arg(scale)
@@ -136,6 +137,10 @@
     image(1L:nc, 1L:nr, x, xlim = 0.5 + c(0, nc), ylim = 0.5 + c(0, nr), 
     	axes = FALSE, xlab = "", ylab = "", col=heatColors, ...)
 
+	if (show.values) {
+		for ( ix in 1:nr) text( rep.int(ix,nc), 1:nc, as.character( round(x[ix,],dig=show.digits)), cex=show.cex)
+	}
+	
     	nColors <- length( myColors <- unique(colColLab))
     	if ( nColors == 1) {
     		axis(1, 1L:nc, labels = labCol, las = 2, line = -0.5, tick = 0, cex.axis = cexCol,
@@ -179,7 +184,7 @@
         frame()
     if (!is.null(main)) {
         par(xpd = NA)
-        title(main, cex.main = 1.5 * op[["cex.main"]])
+        title(main, cex.main = 1.5 * op[["cex.main"]], line= -1)
     }
     invisible(list(rowInd = rowInd, colInd = colInd, Rowv = if (keep.dendro && 
         doRdend) ddr, Colv = if (keep.dendro && doCdend) ddc))
@@ -199,3 +204,33 @@
 	text( at, 1, values, pos=1, ...)
 	if ( ! is.null(label)) text( N/2, 2, label, pos=3)
 }
+
+
+`correlationHeatmap` <- function( m, Rowv=NA, Colv=NA, show.values=TRUE, show.digits=2, show.cex=0.75, ...) {
+
+	# given a square matrix of correlation coefficients (-1...+1)
+	require( gplots)
+	require( heatmap.plus)
+
+	# hard wire to a read green color ramp
+	colorRamp <- rainbow( 201, start=0.05, end=0.4, cosineShiftMagnitude=0, rev=T)
+	colorRampValues <- seq( -1, 1, by=0.01)
+
+	# force CC matrix to -1/+1 just in case
+	m[ m > 1] <- 1
+	m[ m < -1] <- -1
+	
+	# when not using row dendrograms, invert to make it traditional with cell 1,1 in upper left
+	if ( is.na( Rowv)) {
+		mtmp <- m
+		for (i in 1:ncol(m)) mtmp[,i] <- rev( m[,i])
+		rownames(mtmp) <- rev( rownames(m))
+		m <- mtmp
+	}
+	
+	# plot that heat
+	ans <- heatmap( m, heatColors=colorRamp, Rowv=Rowv, Colv=Colv, scale="none", 
+			show.value=show.values, show.digits=show.digits, show.cex=show.cex, ...)
+	return( invisible(ans))
+}
+
