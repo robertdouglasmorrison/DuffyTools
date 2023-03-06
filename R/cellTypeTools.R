@@ -78,16 +78,18 @@
 		# so crop the data to contain just the genes we want, for speed.
 		# and map to where in the output list each gene ends up
 		smlCT <- subset( geneCellTypes, GENE_ID %in% genesIn)
-		smlGeneFac <- factor(smlCT$GENE_ID)
-		whereOut <- match( levels(smlGeneFac), genesIn)
-		k <- 0
-		tapply( 1:nrow(smlCT), smlGeneFac, function(x) {
+		if (nrow(smlCT)) {
+			smlGeneFac <- factor(smlCT$GENE_ID)
+			whereOut <- match( levels(smlGeneFac), genesIn)
+			k <- 0
+			tapply( 1:nrow(smlCT), smlGeneFac, function(x) {
 				if ( length(x) > max.types) x <- x[ 1:max.types]
 				cellTypeStr <- paste( smlCT$CellType[x], ":", smlCT$PctExpression[x], "%", sep="", collapse="; ")
 				k <<- k + 1
 				out[ whereOut[k]] <<- cellTypeStr
 				return(NULL)
-			})
+				})
+		}
 		# Note: a gene could appear twice or more in the output.  Make sure we fill all locations.
 		# because of the way match works, first location always has the full answer
 		dupsIn <- which( duplicated( genesIn))
@@ -510,7 +512,7 @@
 
 # porting of Life Cycle tools to be used as Cell Type tools below here...
 
-`CellTypeSetup` <- function( reference=getCellTypeReference(), optionsFile="Options.txt") {
+`CellTypeSetup` <- function( reference=getCellTypeReference(), optionsFile="Options.txt", reload=FALSE) {
 
 	# get the name of the R data object all ready loaded or to be loaded
 	speciesID <- getCurrentSpecies()
@@ -519,7 +521,7 @@
 	}
 
 	# compare this reference name against what is loaded already
-	isReady <- exists( "VectorSpace", envir=CellTypeEnv)
+	isReady <- ( exists( "VectorSpace", envir=CellTypeEnv) && !reload)
 	isRightSpecies <- isRightReference <- FALSE
 	if ( isReady) {
 		curSpecies <- get( "Species", envir=CellTypeEnv)
@@ -619,6 +621,56 @@
 		if ( ! is.null( targetColors)) CellTypeEnv[[ "STAGE_COLORS"]] <- targetColors
 	}
 	cat( "\nDone.\n")
+}
+
+
+`reshapeCellTypeMatrix` <- function( f, geneColumn="GENE_ID", intensityColumn="RPKM_M", verbose=TRUE) {
+
+	# allow the reference cell type matrix to alter its distribution to match a given transcriptome
+	
+	# read in the given transcriptome, that we will use as the new distribution
+	if ( is.character(f)) {
+		tbl <- read.delim(f, as.is=T)
+		cat( "\nReshaping CellType data to mimic: ", basename(f))
+	} else if ( is.data.frame(f)) {
+		tbl <- f
+	}
+	if ( ! all( c(geneColumn, intensityColumn) %in% colnames(tbl))) stop( "Required columns not found in transcriptome file")
+	givenGenes <- shortGeneName( tbl[[ geneColumn]], keep=1)
+	givenInten <- as.numeric( tbl[[ intensityColumn]])
+	
+	# get the current cell type matrix
+	cellDF <- CellTypeEnv[[ "IntensitySpace" ]]
+	if ( is.null(cellDF)) stop( "run 'CellTypeSetup()' first, before reshaping the Cell Type Matrix")
+	cellM <- as.matrix( cellDF[ , 3:ncol(cellDF)])	# GeneID, Product, then the cell types...
+	cellGenes <- shortGeneName( cellDF$GENE_ID, keep=1)
+	
+	# about to use REI (quantile normalization) to do the reshaping
+	# only use the given genes that are in the matrix already
+	use <- match( cellGenes, givenGenes, nomatch=NA)
+	cat( "\n  Doing Rank Equivalent Intensity normalization..")
+	newInten <- rankEquivIntensity( cellM, targetIntensity=givenInten[use], blendMode="targetOnly")
+	
+	# we cannot let the reshaping turn 'ON' genes that were completely off originally.  Check and prevent
+	newInten[ cellM <= 0] <- 0
+	
+	# now restore the global normalization magnitude that we started with
+	globalSum <- median( apply( cellM, 2, sum, na.rm=T))
+	for ( i in 1:ncol(newInten)) newInten[ , i] <- newInten[ , i] * globalSum / sum( newInten[ , i], na.rm=T)
+	
+	# with these modified expression profiles done, now we can redo the unit vectors
+	newVect <- newInten
+	for( i in 1:nrow( newInten)) {
+		oneV <- newInten[ i, ]
+		newVect[i, ] <- oneV / sum(oneV, na.rm=T)
+	}
+	
+	# put these reshaped matrices back in place
+	ans <- cbind( cellDF[ ,1:2], newVect, stringsAsFactors=F)
+	ans2 <- cbind( cellDF[ ,1:2], round(newInten,digits=3), stringsAsFactors=F)
+	CellTypeEnv[[ "VectorSpace" ]] <- ans
+	CellTypeEnv[[ "IntensitySpace" ]] <- ans2
+	return(NULL)
 }
 
 

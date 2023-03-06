@@ -1,7 +1,6 @@
 # normalizeTools.R    - do RMA (Robust Multi-chip Average) and other normalization techniques
 
 
-
 `duffyRMA` <- function( m, targetBGlevel=NULL, magnitudeScale=NULL, columnSets=list( "all"=1:ncol(m)),
 			verbose=FALSE) {
 
@@ -38,7 +37,6 @@
 	}
 	return( mOut)
 }
-
 
 
 `duffyRMA.bgSubtract` <- function( m, targetBGlevel=NULL, verbose=FALSE) {
@@ -284,11 +282,12 @@
 }
 
 
-
-`rankEquivIntensity` <- function(m, columnSets=list( "all"=1:ncol(m)), verbose=TRUE) {
+`rankEquivIntensity` <- function(m, columnSets=list( "all"=1:ncol(m)), targetIntensity=NULL, 
+				blendMode=c("none", "targetOnly", "sqrtmean", "logmean"), verbose=TRUE) {
 
 	# turn an object of multiple slide intensities
 	# into a Rank Equivalent Intensity (REI) object
+	# this ie commonly called "quantile normalization"
 	nr <- nrow(m)
 	nc <- ncol(m)
 
@@ -302,6 +301,20 @@
 		rankInt[ ,i] <- m[ord ,i]
 	}
 
+	# typically, all slides get normalized to the mean of their own data.  But allow the use of
+	# a external target vector of intensity, that every slide will get normalized to.
+	useTarget <- FALSE
+	blendMode <- match.arg( blendMode)
+	if ( ! is.null( targetIntensity)) {
+		#verify size is the same
+		if ( length( targetIntensity) != nr) stop( "rankEquivIntensity: 'targetIntensity' vector not same size as matrix.")
+		ord <- base::order( targetIntensity, decreasing=TRUE, na.last=TRUE)
+		targetIntensity <- targetIntensity[ ord]
+		useTarget <- TRUE
+	} else {
+		if ( blendMode != "none") stop( "rankEquivIntensity: 'blendMode' only used with optional 'targetIntensity' vector.")
+	}
+	
 	# now do each group of columns
 	for ( l in 1:length( columnSets)) {
 	  
@@ -312,22 +325,37 @@
 			cat( "RMA error:  invalid slide column(s):   given: ", useCols, "   possible: ", 1:nc)
 			next
 		}
-		if ( length( useCols) < 2) next
-
-		# now average each row to get a REI for each rank
-		rei <- apply( rankInt[ , useCols], 1, sqrtmean, na.rm=TRUE)
-	
-		# make sure they're still ordered
-		rei <- base::sort( rei, decreasing=TRUE)
-
-		# now build the new set of Rank Equiv Intensities
-		for (i in applyCols) {
-			newInt[ ,i] <- rei[ ranks[ ,i] ]
+		
+		if ( ! useTarget) {
+			if ( length( useCols) < 2) next
+			# now average each row to get a REI for each rank
+			rei <- apply( rankInt[ , useCols], 1, sqrtmean, na.rm=TRUE)	
+			# make sure they're still ordered
+			rei <- base::sort( rei, decreasing=TRUE)
+			# now build the new set of Rank Equiv Intensities
+			for (i in applyCols) {
+				newInt[ ,i] <- rei[ ranks[ ,i]]
+			}
+		} else {
+			# we were given explicit intensities to use, just assign them
+			for (i in applyCols) {
+				if ( blendMode == "targetOnly") {
+					newInt[ ,i] <- targetIntensity[ ranks[ ,i]]
+				} else {
+					tmpM <- matrix( c( rankInt[ , i], targetIntensity), nrow=nr, ncol=2)
+					if ( blendMode == "sqrtmean") {
+						rei <- apply( tmpM, 1, sqrtmean, na.rm=TRUE)
+					} else {
+						# log mean can't do zeros
+						rei <- apply( tmpM+1, 1, logmean, na.rm=TRUE)
+						rei <- ifelse( rei >= 1, rei-1, 0)
+					}	
+					newInt[ ,i] <- rei[ ranks[ ,i]]
+				}
+			}
 		}
-
 	}
 
 	# pass this back
 	return( newInt)
 }
-
