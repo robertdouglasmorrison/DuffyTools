@@ -878,7 +878,8 @@
 	# now do a summation by stage, and express as percentages...
 	allSums <- apply( myVectors, MARGIN=2, FUN=sum, na.rm=T)
 	bigSum <- sum( allSums)
-	ans <- allSums * 100 / bigSum
+	# prevent divide by zero
+	ans <- allSums * 100 / max( bigSum, 1, na.rm=T)
 
 	out <- list( "Profile"=ans, "IntensityVectors"=myIntens)
 	return( out)
@@ -1000,7 +1001,7 @@
 		cellMaxes <- apply( m, 2, max, na.rm=T)
 		drops <- which( cellMaxes < as.numeric( mask.low.pct))
 		if ( length( drops)) {
-		 	m <- m[ , -drops]
+		 	m <- m[ , -drops, drop=F]
 		 	NC <- ncol(m)
 		 	if (NC < 2) {
 		 		cat( "\nMasked away too many cell types..")
@@ -1012,7 +1013,7 @@
 		cellDiffs <- apply( m, 2, function(x) diff( range( x, na.rm=T)))
 		drops <- which( cellDiffs < as.numeric( mask.low.diff))
 		if ( length( drops)) {
-		 	m <- m[ , -drops]
+		 	m <- m[ , -drops, drop=F]
 		 	NC <- ncol(m)
 		 	if (NC < 2) {
 		 		cat( "\nMasked away too many cell types..")
@@ -1032,7 +1033,7 @@
 
 	barSpace <- c( 0, N/4)
 
-	if ( is.null( yMax)) yMax <- max(m) * 1.15
+	if ( is.null( yMax)) yMax <- max(m, na.rm=T) * 1.15
 	mainText <- paste( "Cell Type Expression Profile Plot:\n", label)
 
 	mp <- barplot(m, beside=T, col=col, border=border, main=mainText, 

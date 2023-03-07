@@ -381,7 +381,7 @@
 				
 		# assess the current deviation
 		deltas <- inten - modelInten
-		rmsd <- round( sqrt( mean( deltas^2)), digits=4)
+		rmsd <- round( sqrt( mean( deltas^2, na.rm=T)), digits=4)
 		if (verbose) cat( "\rIter: ", i, "   RMSD: ", rmsd)
 						
 		if ( rmsd <= tolerance) {
@@ -426,6 +426,7 @@
 		model.pcts <- model.pcts + netDiff
 		# prevent negative contributions, and renormalize
 		model.pcts[ model.pcts < 0] <- 0
+		model.pcts[ is.nan(model.pcts)] <- 0
 		# remove the forcing of summing to one
 		# model.pcts <- model.pcts / sum( model.pcts)
 			
@@ -455,7 +456,7 @@
 	# also do the more general coefficient of determination
 	meanI <- mean( inten, na.rm=T)
 	SStotal <- sum( (inten - meanI) ^ 2)
-	SSresid <- sum( resids ^ 2)
+	SSresid <- sum( resids ^ 2, na.rm=T)
 	r2.cod <- 1.0 - (SSresid / SStotal)
 
 	out <- list( "BestFit"=wts, "Observed"=inten, "Residuals"=resids, 
