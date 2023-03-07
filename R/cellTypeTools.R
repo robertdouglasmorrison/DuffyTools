@@ -713,6 +713,8 @@
 `getCellTypeReference` <- function() {
 
 	if ( ! exists( "VectorSpace", envir=CellTypeEnv)) return(NA)
+	refSpecies <- CellTypeEnv[[ "Species" ]] 
+	if ( refSpecies != getCurrentSpecies()) return(NA)
 	reference <- CellTypeEnv[[ "Reference"]]
 	return( reference)
 }
