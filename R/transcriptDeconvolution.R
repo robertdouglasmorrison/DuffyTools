@@ -9,6 +9,13 @@
 		setCurrentSpecies( speciesID)
 		on.exit( setCurrentSpecies( oldSpecies))
 	}
+
+	# let's update this system to use the exact same data as from the cell type tools
+	CellTypeSetup()
+	targetM <- getCellTypeMatrix()
+	return( targetM)
+	
+	# old method...
 	myPrefix <- getCurrentSpeciesFilePrefix()
 	CellTypeSetup()
 	reference <- getCellTypeReference()

@@ -667,7 +667,7 @@
 	
 	# put these reshaped matrices back in place
 	ans <- cbind( cellDF[ ,1:2], newVect, stringsAsFactors=F)
-	ans2 <- cbind( cellDF[ ,1:2], round(newInten,digits=3), stringsAsFactors=F)
+	ans2 <- cbind( cellDF[ ,1:2], round(newInten,digits=5), stringsAsFactors=F)
 	CellTypeEnv[[ "VectorSpace" ]] <- ans
 	CellTypeEnv[[ "IntensitySpace" ]] <- ans2
 	return(NULL)
