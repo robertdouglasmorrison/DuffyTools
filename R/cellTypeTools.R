@@ -170,7 +170,13 @@
 		cellTbl <- round( cellTbl * length(cellTypes) / sum(cellTbl))
 		givenTbl <- cellTbl[ cellTbl > 0]
 	} else {
+		# old format is just a single cell type per gene
 		givenTbl <- table( cellTypes)
+		# in this case, make sure we only keep one cell type per gene in the universe
+		if ( mode == "genes") {
+			use <- which( ! duplicated( geneCellTypes$GENE_ID))
+			cellTypeUniverse <- geneCellTypes$CellType[use]
+		}
 	}
 	givenPcts <- givenTbl * 100 / sum(givenTbl)
 	givenNames <- names( givenTbl)
