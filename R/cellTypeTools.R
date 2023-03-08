@@ -2165,6 +2165,8 @@
 	out$Enrichment <- 1
 	out$Enrichment.Pvalue <- 1
 	toShow <- vector()
+	
+	# do in two passes, to see who should be drawn, and then repeat to draw them
 	for ( i in 1:nrow(out)) {
 		# use the enrichment and P-value to decide who to show
 		myCellType <- out$CellType[i]
@@ -2181,11 +2183,41 @@
 		out$Enrichment[i] <- myEnrich
 		out$Enrichment.Pvalue[i] <- myPval
 		if ( ! is.na(where) && myEnrich >= min.enrichment && myPval <= max.Pvalue) {
-			draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
+			#draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
 			toShow <- c( toShow, i)
 		}
 	}
-
+	out$Drawn <- FALSE
+	out$Drawn[toShow] <- TRUE
+	
+	# the to draw criteria was on enrichment alone.  But there may be cell types more UP and significant
+	# that don't quite meet the enrichment criteria.  Find them and call them to be drawn to
+	toShowUp <- intersect( toShow, which( out$Log2Fold > 0))
+	toShowDown <- intersect( toShow, which( out$Log2Fold < 0))
+	if ( length(toShowUp)) {
+		minUpFold <- min( out$Log2Fold[toShowUp], na.rm=T)
+		minUpPval <- min( out$Log10.Pvalue[toShowUp], na.rm=T)
+		minUpRad <- min( out$Radius[toShowUp], na.rm=T)
+		extraUp <- which( out$Log2Fold > minUpFold & out$Log10.Pvalue > minUpPval & out$Radius > minUpRad)
+		if ( length(extraUp)) toShow <- sort( union( toShow, extraUp))
+	}
+	if ( length(toShowDown)) {
+		minDownFold <- max( out$Log2Fold[toShowDown], na.rm=T)
+		minDownPval <- min( out$Log10.Pvalue[toShowDown], na.rm=T)
+		minDownRad <- min( out$Radius[toShowDown], na.rm=T)
+		extraDown <- which( out$Log2Fold < minDownFold & out$Log10.Pvalue > minDownPval & out$Radius > minDownRad)
+		if ( length(extraDown)) toShow <- sort( union( toShow, extraDown))
+	}
+	
+	# draw every one from the best to the last good one worth showing by enrichment
+	if ( length(toShow)) {
+		for ( i in toShow) {
+			draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
+		}
+		toShow <- sort( union( toShow, 1:max(toShow)))
+	}
+	out$Drawn[toShow] <- TRUE
+	
 	if ( length( toShow)) {
 		P.text <- as.PvalueText( out$Enrichment.Pvalue[toShow], digits=3) 
 		ctLabels <- paste( out$CellType[toShow], "\n(N=", out$N_Genes[toShow], ", P=", P.text, ")", sep="")
@@ -2197,9 +2229,6 @@
 					offset=(out$Radius[toShow]*label.offset.cex), pos=c(2,4))
 		}
 	}
-
-	out$Drawn <- FALSE
-	out$Drawn[toShow] <- TRUE
 
 	# optional labels to remind which group is which
 	if ( !is.null(left.label)) text( myRangeX[1]*.65, myRangeY[2]*0.025, paste( "UP in '", left.label, "'", sep=""), cex=1, font=2)
