@@ -160,21 +160,18 @@
 	# almost ready to calculate enrichment.
 	# in the past, these cell type strings were always just a single cell type.  Now they can instead
 	# be the relative percentages of 2+ cell types.  Always of the form:   CellType1:XX%; CellType2:YY%; etc
-	maxTermsPerCellType <- 1
 	isNewFormat <- any( grepl( "; ", cellTypes))
 	if ( isNewFormat) {
 		# first we need to know how many cell types any element could contain, so count the terms
 		# to know the upper limit
 		cellTermLists <- strsplit( cellTypes, split="; ")
-		nTermsEach <- sapply( cellTermLists, length)
-		maxTermsPerCellType <- max( nTermsEach, na.rm=T)
 		# now make it one common pool of terms, and then proportionalize them based on their relative %
 		cellTerms <- unlist( cellTermLists)
 		cellTermCellNames <- sub( "\\:[0-9]+%", "", cellTerms)
 		cellTermPcts <- sub( "(.+\\:)([0-9]+)(%)", "\\2", cellTerms)
 		# use the percentages to prorate all the cell terms, and then scale back to how many cell types we were given
 		cellTbl <- table( rep( cellTermCellNames, times=as.numeric(cellTermPcts)))
-		cellTbl <- round( cellTbl * length(cellTerms) / sum(cellTbl))
+		cellTbl <- round( cellTbl * length(cellTypes) / sum(cellTbl))
 		cellTbl <- cellTbl[ cellTbl > 0]
 		# given this scaled by proportion list, recreate what the full flat list would have been
 		cellTypes <- rep( names(cellTbl), times=as.numeric(cellTbl))
@@ -184,14 +181,14 @@
 		givenTbl <- table( cellTypes)
 	}
 	# now we must do the same to the cell universe side.  These used to have exactly one entry each,
-	# but the new format allows 2+ entries each.  Trim the universe to have no more than that many each too.
-	# By definition, each element of the universe is sorted by decreasing percentage, so use the first K each.
+	# but the new format allows 2+ entries each.  Trim the universe to have of each too.
+	# By definition, each element of the universe is sorted by decreasing percentage, so use the first one.
 	if ( mode == "genes") {
-		use <- unlist( tapply( 1:nrow(geneCellTypes), factor(geneCellTypes$GENE_ID), function(x) x[1:maxTermsPerCellType]))
+		use <- unlist( tapply( 1:nrow(geneCellTypes), factor(geneCellTypes$GENE_ID), function(x) x[1]))
 		geneCellTypes <- geneCellTypes[ use, ]
 		cellTypeUniverse <- geneCellTypes$CellType
 	} else {
-		use <- unlist( tapply( 1:nrow(geneSetCellTypes), factor(geneSetCellTypes$GeneSetName), function(x) x[1:maxTermsPerCellType]))
+		use <- unlist( tapply( 1:nrow(geneSetCellTypes), factor(geneSetCellTypes$GeneSetName), function(x) x[1]))
 		geneSetCellTypes <- geneSetCellTypes[ use, ]
 		cellTypeUniverse <- geneSetCellTypes$CellType
 	}
@@ -1988,7 +1985,7 @@
 # modified version of a volcano plot, that makes one circle per cell type
 `plotCellTypeClusters` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="AVG_PVALUE", 
 					gene.pct=5.0, min.enrichment=1.2, max.Pvalue=0.01, label="", sep="\t", label.cex=1, pt.cex=0.65,
-					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, 
+					left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, forceDEorder=FALSE,
 					color.alpha=0.75, label.offset.cex=1, legend.cex=0.9, ...) {
 
 	require( plotrix)
@@ -2028,12 +2025,15 @@
 	}
 	NG <- length(genes)
 
-	# make sure we are in DE order
-	ord <- diffExpressRankOrder( fold, pval)
-	genes <- genes[ord]
-	fold <- fold[ord]
-	pval <- pval[ord]
-	topCellType <- topCellType[ord]
+	# make sure we are in DE order, or leave the data exactly as given
+	if (forceDEorder) {
+		ord <- diffExpressRankOrder( fold, pval)
+		genes <- genes[ord]
+		fold <- fold[ord]
+		pval <- pval[ord]
+		topCellType <- topCellType[ord]
+	}
+	
 	# drawing order is different, to overlay the more DE on top
 	ord2 <- rev( diffExpressRankOrder( abs(fold), pval))
 
@@ -2078,10 +2078,15 @@
 	outRadius <- outColor <- vector()
 	nout <- 0
 
+	# we want to not let a few outlier values skew the scaling, so we will use a high quantile
+	highQuantile <- 0.999
+	#if (NG.use < 201) highQuantile <- 0.95
+	#if (NG.use < 101) highQuantile <- 0.90
+	
 	# decide a scaling factor for turning percentages into a radius
 	# lets say 100% should fill the area from Fold=0 to max X
 	# will be applied to the sqrt of the Pct of Genes, so sqrt(100%) = 10%
-	myBigX <- quantile( abs(fold), 0.999, na.rm=F)
+	myBigX <- quantile( abs(fold), highQuantile, na.rm=F)
 	radius.scale.fac <- (myBigX * 0.5) * 0.10
 
 	tapply( 1:NG, cellFac, function(k) {
@@ -2134,7 +2139,7 @@
 
 	# add extra room on X for the labels, and the cell types too
 	# and retune the Y axis limits
-	bigX <- max( 1, quantile( abs(fold), 0.999, na.rm=F), abs(out$Log2Fold)+out$Radius)
+	bigX <- max( 1, quantile( abs(fold), highQuantile, na.rm=F), abs(out$Log2Fold)+out$Radius)
 	myRangeX <- c( -bigX, bigX)
 	if ( ! is.null( forceXmax)) {
 		bigX <- as.numeric( forceXmax)
@@ -2142,7 +2147,7 @@
 		myRangeX[2] <- bigX
 	}
 	# force all dots to be seen, whether we crop or not
-	crop.x <- min( crop.x, quantile(fold, 0.999, na.rm=T))
+	crop.x <- min( crop.x, quantile(fold, highQuantile, na.rm=T))
 	# don't let the crop be smaller than the balloons, or too small overall
 	big.balloon <- max( abs(out$Log2Fold) + out$Radius)
 	if (crop.x < big.balloon) crop.x <- big.balloon
@@ -2150,11 +2155,11 @@
 	fold[ fold > crop.x] <- crop.x
 	fold[ fold < -crop.x] <- -crop.x
 	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.175
-	bigY <- max( 1, quantile( y, 0.999, na.rm=T), out$Log10.Pvalue+(out$Radius * 1.15))
-	myRangeY <- c( 0, bigY)
+	bigY <- max( 1, quantile( y, highQuantile*0.9, na.rm=T), out$Log10.Pvalue+(out$Radius * 1.15))
+	myRangeY <- c( 0, bigY*1.01)
 	if ( ! is.null( forceYmax)) {
 		bigY <- as.numeric(forceYmax)
-		myRangeY[2] <- bigY
+		myRangeY[2] <- bigY*1.01
 	}
 	crop.y <- min( crop.y, max(y), bigY)
 	y[ y > crop.y] <- crop.y
@@ -2216,32 +2221,33 @@
 	out$Drawn[toShow] <- TRUE
 	
 	# the to draw criteria was on enrichment alone.  But there may be cell types more UP and significant
-	# that don't quite meet the enrichment criteria.  Find them and call them to be drawn to
-	toShowUp <- intersect( toShow, which( out$Log2Fold > 0))
-	toShowDown <- intersect( toShow, which( out$Log2Fold < 0))
-	if ( length(toShowUp)) {
-		minUpFold <- min( out$Log2Fold[toShowUp], na.rm=T)
-		minUpPval <- min( out$Log10.Pvalue[toShowUp], na.rm=T)
-		minUpRad <- min( out$Radius[toShowUp], na.rm=T)
-		extraUp <- which( out$Log2Fold > minUpFold & out$Log10.Pvalue > minUpPval & out$Radius > minUpRad)
-		if ( length(extraUp)) toShow <- sort( union( toShow, extraUp))
-	}
-	if ( length(toShowDown)) {
-		minDownFold <- max( out$Log2Fold[toShowDown], na.rm=T)
-		minDownPval <- min( out$Log10.Pvalue[toShowDown], na.rm=T)
-		minDownRad <- min( out$Radius[toShowDown], na.rm=T)
-		extraDown <- which( out$Log2Fold < minDownFold & out$Log10.Pvalue > minDownPval & out$Radius > minDownRad)
-		if ( length(extraDown)) toShow <- sort( union( toShow, extraDown))
-	}
+	# that don't quite meet the enrichment criteria.  Find them and call them to be drawn too
+	# turning off now that cell type enrichment is more precise...
+	#toShowUp <- intersect( toShow, which( out$Log2Fold > 0))
+	#toShowDown <- intersect( toShow, which( out$Log2Fold < 0))
+	#if ( length(toShowUp)) {
+	#	minUpFold <- min( out$Log2Fold[toShowUp], na.rm=T)
+	#	minUpPval <- min( out$Log10.Pvalue[toShowUp], na.rm=T)
+	#	minUpRad <- min( out$Radius[toShowUp], na.rm=T)
+	#	extraUp <- which( out$Log2Fold > minUpFold & out$Log10.Pvalue > minUpPval & out$Radius > minUpRad)
+	#	if ( length(extraUp)) toShow <- sort( union( toShow, extraUp))
+	#}
+	#if ( length(toShowDown)) {
+	#	minDownFold <- max( out$Log2Fold[toShowDown], na.rm=T)
+	#	minDownPval <- min( out$Log10.Pvalue[toShowDown], na.rm=T)
+	#	minDownRad <- min( out$Radius[toShowDown], na.rm=T)
+	#	extraDown <- which( out$Log2Fold < minDownFold & out$Log10.Pvalue > minDownPval & out$Radius > minDownRad)
+	#	if ( length(extraDown)) toShow <- sort( union( toShow, extraDown))
+	#}
+	#out$Drawn[toShow] <- TRUE
+	#}
 	
 	# draw every one from the best to the last good one worth showing by enrichment
 	if ( length(toShow)) {
 		for ( i in toShow) {
 			draw.circle( out$Log2Fold[i], out$Log10.Pvalue[i], out$Radius[i], border=1, col=out$Color[i])
 		}
-		toShow <- sort( union( toShow, 1:max(toShow)))
 	}
-	out$Drawn[toShow] <- TRUE
 	
 	if ( length( toShow)) {
 		P.text <- as.PvalueText( out$Enrichment.Pvalue[toShow], digits=3) 
