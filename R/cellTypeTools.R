@@ -157,33 +157,52 @@
 	drops <- c( which( cellTypes == ""), which( is.na( cellTypes)))
 	if ( length( drops)) cellTypes <- cellTypes[ -drops]
 
-	# ready to calculate enrichment
+	# almost ready to calculate enrichment.
 	# in the past, these cell type strings were always just a single cell type.  Now they can instead
 	# be the relative percentages of 2+ cell types.  Always of the form:   CellType1:XX%; CellType2:YY%; etc
+	maxTermsPerCellType <- 1
 	isNewFormat <- any( grepl( "; ", cellTypes))
 	if ( isNewFormat) {
-		cellTerms <- unlist( strsplit( cellTypes, split="; "))
+		# first we need to know how many cell types any element could contain, so count the terms
+		# to know the upper limit
+		cellTermLists <- strsplit( cellTypes, split="; ")
+		nTermsEach <- sapply( cellTermLists, length)
+		maxTermsPerCellType <- max( nTermsEach, na.rm=T)
+		# now make it one common pool of terms, and then proportionalize them based on their relative %
+		cellTerms <- unlist( cellTermLists)
 		cellTermCellNames <- sub( "\\:[0-9]+%", "", cellTerms)
 		cellTermPcts <- sub( "(.+\\:)([0-9]+)(%)", "\\2", cellTerms)
 		# use the percentages to prorate all the cell terms, and then scale back to how many cell types we were given
 		cellTbl <- table( rep( cellTermCellNames, times=as.numeric(cellTermPcts)))
-		cellTbl <- round( cellTbl * length(cellTypes) / sum(cellTbl))
-		givenTbl <- cellTbl[ cellTbl > 0]
+		cellTbl <- round( cellTbl * length(cellTerms) / sum(cellTbl))
+		cellTbl <- cellTbl[ cellTbl > 0]
+		# given this scaled by proportion list, recreate what the full flat list would have been
+		cellTypes <- rep( names(cellTbl), times=as.numeric(cellTbl))
+		givenTbl <- table( cellTypes)
 	} else {
 		# old format is just a single cell type per gene
 		givenTbl <- table( cellTypes)
-		# in this case, make sure we only keep one cell type per gene in the universe
-		if ( mode == "genes") {
-			use <- which( ! duplicated( geneCellTypes$GENE_ID))
-			cellTypeUniverse <- geneCellTypes$CellType[use]
-		}
 	}
+	# now we must do the same to the cell universe side.  These used to have exactly one entry each,
+	# but the new format allows 2+ entries each.  Trim the universe to have no more than that many each too.
+	# By definition, each element of the universe is sorted by decreasing percentage, so use the first K each.
+	if ( mode == "genes") {
+		use <- unlist( tapply( 1:nrow(geneCellTypes), factor(geneCellTypes$GENE_ID), function(x) x[1:maxTermsPerCellType]))
+		geneCellTypes <- geneCellTypes[ use, ]
+		cellTypeUniverse <- geneCellTypes$CellType
+	} else {
+		use <- unlist( tapply( 1:nrow(geneSetCellTypes), factor(geneSetCellTypes$GeneSetName), function(x) x[1:maxTermsPerCellType]))
+		geneSetCellTypes <- geneSetCellTypes[ use, ]
+		cellTypeUniverse <- geneSetCellTypes$CellType
+	}
+
+	# now fully ready to calculate enrichment.
 	givenPcts <- givenTbl * 100 / sum(givenTbl)
 	givenNames <- names( givenTbl)
 	allTbl <- table( cellTypeUniverse)
 	allPcts <- allTbl * 100 / sum(allTbl)
-	allExpect <- allPcts * length(cellTypes) / 100
 	allNames <- names( allTbl)
+	allExpect <- allPcts * length(cellTypes) / 100
 	
 	# we will only consider the names in the Universe
 	both <- allNames
