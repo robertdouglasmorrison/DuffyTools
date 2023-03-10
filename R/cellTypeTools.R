@@ -2250,15 +2250,29 @@
 	}
 	
 	if ( length( toShow)) {
-		P.text <- as.PvalueText( out$Enrichment.Pvalue[toShow], digits=3) 
-		ctLabels <- paste( out$CellType[toShow], "\n(N=", out$N_Genes[toShow], ", P=", P.text, ")", sep="")
-		if ( length(toShow) > 2) {
-			thigmophobe.labels( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
-					offset=(out$Radius[toShow]*label.offset.cex))
+		P.text <- as.PvalueText( out$Enrichment.Pvalue, digits=3) 
+		ctLabels <- paste( out$CellType, "\n(N=", out$N_Genes, ", P=", P.text, ")", sep="")
+		# decide how to align the labels for each side separately
+		toShowRight <- intersect( toShow, which(out$Log2Fold > 0))
+		if ( length(toShowRight) > 2) {
+			posRight <- thigmophobe( out$Log2Fold[toShowRight], out$Log10.Pvalue[toShowRight])
+		} else if (length(toShowRight) == 2) {
+			posRight <- thigmophobe( c(out$Log2Fold[toShowRight],mean(out$Log2Fold[toShowRight])), c(out$Log10.Pvalue[toShowRight],mean(out$Log10.Pvalue[toShowRight])))[1:2]
 		} else {
-			text( out$Log2Fold[toShow], out$Log10.Pvalue[toShow], label=ctLabels, col=1, cex=label.cex,
-					offset=(out$Radius[toShow]*label.offset.cex), pos=c(2,4))
+			posRight <- NULL
 		}
+		if ( length(toShowRight)) text( out$Log2Fold[toShowRight], out$Log10.Pvalue[toShowRight], label=ctLabels[toShowRight], col=1, cex=label.cex,
+					offset=(out$Radius[toShowRight]*label.offset.cex), pos=posRight)
+		toShowLeft <- intersect( toShow, which(out$Log2Fold < 0))
+		if ( length(toShowLeft) > 2) {
+			posLeft <- thigmophobe( out$Log2Fold[toShowLeft], out$Log10.Pvalue[toShowLeft])
+		} else if (length(toShowLeft) == 2) {
+			posLeft <- thigmophobe( c(out$Log2Fold[toShowLeft],mean(out$Log2Fold[toShowLeft])), c(out$Log10.Pvalue[toShowLeft],mean(out$Log10.Pvalue[toShowLeft])))[1:2]
+		} else {
+			posLeft <- NULL
+		}
+		if ( length(toShowLeft)) text( out$Log2Fold[toShowLeft], out$Log10.Pvalue[toShowLeft], label=ctLabels[toShowLeft], col=1, cex=label.cex,
+					offset=(out$Radius[toShowLeft]*label.offset.cex), pos=posLeft)
 	}
 
 	# optional labels to remind which group is which
