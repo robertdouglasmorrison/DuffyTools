@@ -2286,6 +2286,69 @@
 }
 
 
+# forest plot for cell types
+`plotCellTypeForest` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", 
+					cell.min.pct=10.0,  label="", sep="\t", xRange=c(-0.4,0.4),
+					left.label=NULL, right.label=NULL, text.cex=0.9, pt.cex=1.25) {
+
+	if ( is.character(file)) {
+		tmp <- read.delim( file, as.is=T, sep=sep)
+		cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
+	} else if (is.data.frame(file)) {
+		tmp <- file
+	} else {
+		stop( "Argument 'file' must be a character string or a data frame.")
+	}
+	if ( !( all( c( geneColumn, foldColumn) %in% colnames(tmp)))) {
+		cat( "\nMissing columns:  looked for: ", geneColumn, foldColumn, 
+			"\n  \tFound: ", colnames(tmp))
+		return()
+	}
+
+	# extract the parts we want
+	fold <- as.numeric( tmp[[ foldColumn]])
+	# there may be a median bias in the fold change data, that we don't want to 
+	# react to.  Subtract that out
+	meanFold <- mean( fold, na.rm=T)
+
+	# Note:  With the new 2+ types per gene, with percentages, we have to do something different
+	# we want the top type and its percentage
+	celltype <- if ( "CellType" %in% colnames(tmp)) tmp$CellType else gene2CellType(genes, max.type=5)
+	topCellType <- sub( "; .*", "", celltype)
+	topCellName <- sub( "\\:.*", "", topCellType)
+	topCellPct <- as.numeric( sub( "(.+\\:)([0-9]+)(%$)", "\\2", topCellType))
+	
+	# get the set of cell types and their colors
+	CellTypeSetup()
+	allCellColors <- getCellTypeColors()
+	allCellNames <- names( allCellColors)
+	N <- length( allCellNames)
+	
+	# set up to use a Forest Plot closure
+	fp <- forestPlot()
+	fp$setup( xRange=xRange, yBig=N, main=paste( "Forest Plot: ", label), text.cex=text.cex,
+			meanDiffMode=FALSE, sub="      Log2 Fold Change", dividerLines=T)
+	fp$mean.header( label1=right.label, label2=left.label, cex=text.cex*1.15, prefix="Upregulated in",
+			offset=1.2, groupName="Cell Type")
+			
+	# now step thru each cell type and evaluate the distribution
+	usePct <- which( topCellPct >= cell.min.pct)
+	for ( i in 1:N) {
+		thisCell <- allCellNames[i]
+		usePct <- which( topCellPct >= cell.min.pct)
+		useCell <- which( topCellName == thisCell)
+		useNow <- intersect( usePct, useCell)
+		if ( length(useNow) < 3) next
+		fp$mean.line( x1=(fold[useNow]-meanFold), yRow=i, label=thisCell, col=allCellColors[i], 
+				cex=text.cex*0.9, pt.cex=pt.cex)
+	}
+	
+	# done
+	out <- fp$result.text()
+	return( invisible( out))
+}
+
+
 `writeCellTypeClusterExtras` <- function( tbl, resultsfile, resultsTbl=NULL, reference=getCellTypeReference()) {
 
 	# given a data frame of details from the cell type volcano cluster plot tool (above), make some supporting files
