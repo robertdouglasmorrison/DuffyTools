@@ -2288,8 +2288,9 @@
 
 # forest plot for cell types
 `plotCellTypeForest` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", 
-					cell.min.pct=10.0,  label="", sep="\t", xRange=c(-0.4,0.4),
-					left.label=NULL, right.label=NULL, text.cex=0.9, pt.cex=1.25) {
+				main="Cell Type Forest Plot", xRange=NULL,
+				left.label=NULL, right.label=NULL, cell.min.pct=10.0,  sep="\t", 
+				text.cex=0.9, pt.cex=1.25) {
 
 	if ( is.character(file)) {
 		tmp <- read.delim( file, as.is=T, sep=sep)
@@ -2306,7 +2307,9 @@
 	}
 
 	# extract the parts we want
+	genes <- shortGeneName( as.character( tmp[[ geneColumn]]), keep=1)
 	fold <- as.numeric( tmp[[ foldColumn]])
+	if ( is.null( xRange)) xRange <- quantile( fold, probs=c(0.05,0.95), na.rm=T)
 	# there may be a median bias in the fold change data, that we don't want to 
 	# react to.  Subtract that out
 	meanFold <- mean( fold, na.rm=T)
@@ -2326,7 +2329,7 @@
 	
 	# set up to use a Forest Plot closure
 	fp <- forestPlot()
-	fp$setup( xRange=xRange, yBig=N, main=paste( "Forest Plot: ", label), text.cex=text.cex,
+	fp$setup( xRange=xRange, yBig=N, main=main, text.cex=text.cex,
 			meanDiffMode=FALSE, sub="      Log2 Fold Change", dividerLines=T)
 	fp$mean.header( label1=right.label, label2=left.label, cex=text.cex*1.15, prefix="Upregulated in",
 			offset=1.2, groupName="Cell Type")
