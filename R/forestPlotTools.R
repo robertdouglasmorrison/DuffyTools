@@ -29,6 +29,7 @@ forestPlot <- function( )  {
 			text3Loc <<- myXlim[2] + xWidth*0.28
 			pvalLoc <<- myXlim[2] + xWidth*0.58
 			xlim <- c( leftLabelLoc-xWidth*0.1, pvalLoc+xWidth*0.05)
+			tableNames <- c( "Label", "Group1", "Group2", "Difference", "P_Value")
 		} else {
 			xWidth <- diff( myXlim) * 0.5
 			leftLabelLoc <<- myXlim[1] - xWidth
@@ -37,12 +38,13 @@ forestPlot <- function( )  {
 			text3Loc <<- myXlim[2] + xWidth*0.33
 			pvalLoc <<- myXlim[2] + xWidth*0.8
 			xlim <- c( leftLabelLoc-xWidth*0.1, pvalLoc+xWidth*0.05)
+			tableNames <- c( "Label", "N_Mean_SD", "Unused", "CI", "P_Value")
 		}
 		yMax <<- yBig
 		ylim <- c( 0.25, yBig+1.5)
 		text.cex <<- text.cex
 		textTable <<- matrix( "", yMax,5)
-		colnames(textTable) <<- c( "Label", "Group1", "Group2", "Difference", "P_Value")
+		colnames(textTable) <<- tableNames 
 		annotateText <<- annotateText
 
 		# make the plot window
