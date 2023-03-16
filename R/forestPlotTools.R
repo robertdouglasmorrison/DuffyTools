@@ -10,7 +10,7 @@ forestPlot <- function( )  {
 
 
 	setup <- function( xRange, yBig, main="Forest Plot", noDifference=0, symmetricX=TRUE, text.cex=0.75,
-				annotateText=TRUE, meanDiffMode=TRUE, sub="", dividerLines=FALSE) {
+				annotateText=TRUE, meanDiffMode=TRUE, sub=NULL, dividerLines=FALSE) {
 	
 		# given the numeric range of values to be drawn, set up our bounds}
 		myXlim <- range( xRange)
@@ -46,9 +46,10 @@ forestPlot <- function( )  {
 		annotateText <<- annotateText
 
 		# make the plot window
-		plot( 1,1, type="n", main=main, sub=sub, xlim=xlim, ylim=ylim, xaxt="n", yaxt="n",
+		plot( 1,1, type="n", main=main, xlim=xlim, ylim=ylim, xaxt="n", yaxt="n",
 			ylab=NA, xlab=NA, frame.plot=annotateText)
 		axis( side=1, at=pretty( myXlim), cex.axis=text.cex*1.1)
+		if ( ! is.null(sub)) title( sub=sub, line=2.25, cex=text.cex*1.1)
 
 		lines( rep.int(noDifference,2), c(-1, yBig+0.5), col=1, lwd=1)
 		if (annotateText) lines( xlim*2, rep.int(yBig+0.5,2), col=1, lwd=1)
