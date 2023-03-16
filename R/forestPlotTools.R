@@ -18,7 +18,8 @@ forestPlot <- function( )  {
 			bigX <- max( abs(xRange))
 			myXlim <- c( -bigX, bigX)
 		}
-		xDataLim <<- myXlim
+		# because R stretches the plot limits a bit, do that here too for clipping later
+		xDataLim <<- myXlim * 1.025
 
 		# place all the items we will draw relative to this
 		if (meanDiffMode) {
@@ -145,21 +146,23 @@ forestPlot <- function( )  {
 		textTable[ yRow, 5] <<- pvalText
 
 		# now draw the line and marks
+		smallX <- diff( range( xDataLim)) * 0.02
 		xx1 <- ci[1]
 		xx2 <- ci[2]
 		clipLeft <- clipRight <- FALSE
 		if ( xx1 < xDataLim[1]) {
 			clipLeft <- TRUE
 			xx1 <- xDataLim[1]
+			xx2 <- max( xx1+smallX, xx2)
 		}
 		if ( xx2 > xDataLim[2]) {
 			clipRight <- TRUE
 			xx2 <- xDataLim[2]
+			xx1 <- min( xx1, xx2-smallX)
 		}
 		lines( c(xx1,xx2), c(yRow,yRow), lwd=lwd, col=col)
 		# show arror head to denote more data
 		if ( any( c( clipLeft,clipRight))) {
-			smallX <- diff( range( xDataLim)) * 0.02
 			smallY <- 0.1
 			if ( clipLeft) {
 				lines( c(xx1,xx1+smallX), c(yRow,yRow+smallY), lwd=lwd, col=col)
@@ -170,7 +173,10 @@ forestPlot <- function( )  {
 				lines( c(xx2,xx2-smallX), c(yRow,yRow-smallY), lwd=lwd, col=col)
 			}
 		}
-		if ( meanAns >= xx1 && meanAns <= xx2) points( meanAns, yRow, pch=pch, col=col, bg=col, cex=pt.cex)
+		# always show the mean mark.  Clip to limits if needed
+		if ( meanAns < xDataLim[1]) meanAns <- xx1
+		if ( meanAns > xDataLim[2]) meanAns <- xx2
+		points( meanAns, yRow, pch=pch, col=col, bg=col, cex=pt.cex)
 
 		# done
 		return()

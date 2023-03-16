@@ -2347,6 +2347,7 @@
 	}
 	
 	# done
+	dev.flush()
 	out <- fp$result.text()
 	return( invisible( out))
 }
