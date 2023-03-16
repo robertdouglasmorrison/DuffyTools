@@ -97,8 +97,8 @@ forestPlot <- function( )  {
 		textTable[ yMax, 5] <<- "P-value"
 
 		# put UP in Grp 1 on the right side
-		if (annotateText) text( xDataLim[2]*0.6, 0.05, paste( prefix, " '", label1, "'", sep=""), cex=text.cex*cex)
-		if (annotateText) text( xDataLim[1]*0.6, 0.05, paste( prefix, " '", label2, "'", sep=""), cex=text.cex*cex)
+		if (annotateText) text( xDataLim[2]*0.6, 0, paste( prefix, " '", label1, "'", sep=""), cex=text.cex*cex)
+		if (annotateText) text( xDataLim[1]*0.6, 0, paste( prefix, " '", label2, "'", sep=""), cex=text.cex*cex)
 		return()
 	}
 
