@@ -742,6 +742,39 @@
 }
 
 
+# get the gene IDs from the 'Top N' gene set definitions
+`getCellTypeTopGenes` <- function( n=100) {
+
+	# use the current species and cell type reference name, to know which gene set to load
+	ref <- getCellTypeReference()
+	if (is.na(ref)) {
+		cat( "\nWarning: no cell type reference defined.  Perhaps run 'CellTypeSetup()'")
+		return(NA)
+	}
+	prefix <- getCurrentSpeciesFilePrefix()
+	dataSetName <- paste( prefix, ref, "TopGeneSets", sep=".")
+	allGeneSets <- NULL
+	data( list=dataSetName, envir=environment())
+	if ( is.null( allGeneSets)) {
+		cat( "\nFailed to load wanted cell type gene set dataset: ", dataSetName)
+		return(NA)
+	}
+	geneSetNames <- names(allGeneSets)
+
+	# use the N we were given to find those genes
+	pattern <- paste( "top", as.character(n), "genes$", sep=" ")
+	hits <- grep( pattern, geneSetNames)
+	if ( ! length(hits)) {
+		sizesSeen <- sub( "(^.+: top )([0-9]+)( genes$)", "\\2", geneSetNames)
+		cat( "\nDebug: ", head( sizesSeen, 12))
+		cat( "\nWarning: no gene sets have N =", n, "  \tChoices: ", sort(unique(sizesSeen)))
+		return(NA)
+	}
+	out <- sort( unique( unlist( allGeneSets[ hits])))
+	return(out)
+}
+
+
 # get the default reference to use for the given species
 `defaultCellTypeReference` <- function( optionsFile="Options.txt", speciesID=getCurrentSpecies()) {
 
@@ -2290,7 +2323,7 @@
 `plotCellTypeForest` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", 
 				main="Cell Type Forest Plot", xRange=NULL,
 				left.label=NULL, right.label=NULL, cell.min.pct=10.0,  sep="\t", 
-				text.cex=0.9, pt.cex=1.25) {
+				text.cex=0.9, pt.cex=1.25, geneUniverse=NULL) {
 
 	if ( is.character(file)) {
 		tmp <- read.delim( file, as.is=T, sep=sep)
@@ -2313,6 +2346,15 @@
 	# there may be a median bias in the fold change data, that we don't want to 
 	# react to.  Subtract that out
 	meanFold <- mean( fold, na.rm=T)
+
+	# if given a gene universe, to limit the set of genes, apply that now
+	if ( ! is.null( geneUniverse)) {
+		geneUniverse <- shortGeneName( geneUniverse, keep=1)
+		keep <- which( genes %in% geneUniverse)
+		genes <- genes[ keep]
+		fold <- fold[ keep]
+		tmp <- tmp[ keep, ]
+	}
 
 	# Note:  With the new 2+ types per gene, with percentages, we have to do something different
 	# we want the top type and its percentage
