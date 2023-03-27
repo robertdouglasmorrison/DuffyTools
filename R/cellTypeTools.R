@@ -582,8 +582,20 @@
 		# allow the file to exist in the current folder, while default is the installed data object
 		localFile <- file.path( ".", paste( referenceName, "rda", sep="."))
 		if ( file.exists( localFile)) {
-			cat( "\n  loading target matrix from local file: ", localFile)
+			cat( "\n  Loading target matrix from local file: ", localFile)
 			load( localFile, envir=environment())
+			if ( is.null(targetM) || is.null(targetColors)) {
+				cat( "\nError: Local target matrix file must contain 'targetMatrix' and 'targetColors' objects")
+				stop()
+			}
+			if ( ncol(targetM) != length(targetColors)) {
+				cat( "\nError: Length of 'targetColors' vector must match column width of 'targetMatrix'")
+				stop()
+			}
+			if ( any( colnames(targetM) != names(targetColors))) {
+				cat( "\nError: Names of 'targetColors' vector must match column names of 'targetMatrix'")
+				stop()
+			}
 		} else {
 			data( list=referenceName, package="DuffyTools", envir=environment())
 		}
