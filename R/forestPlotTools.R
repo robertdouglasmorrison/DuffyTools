@@ -32,7 +32,7 @@ forestPlot <- function( )  {
 			xlim <- c( leftLabelLoc-xWidth*0.1, pvalLoc+xWidth*0.05)
 			tableNames <- c( "Label", "Group1", "Group2", "Difference", "P_Value")
 		} else {
-			xWidth <- diff( myXlim) * 0.5
+			xWidth <- diff( myXlim) * 0.4
 			leftLabelLoc <<- myXlim[1] - xWidth
 			text1Loc <<- myXlim[1] - xWidth*0.35
 			text2Loc <<- myXlim[1] - xWidth*0.15

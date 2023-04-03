@@ -782,7 +782,15 @@
 		cat( "\nWarning: no gene sets have N =", n, "  \tChoices: ", sort(unique(sizesSeen)))
 		return(NA)
 	}
-	out <- sort( unique( unlist( allGeneSets[ hits])))
+	outList <- allGeneSets[ hits]
+	
+	# layout as a data frame
+	cellNames <- sub( paste( ": ", pattern, sep=""), "", names(outList))
+	out <- data.frame()
+	for ( i in 1:length(outList)) {
+		sml <- data.frame( "GENE_ID"=outList[[i]], "CellType"=cellNames[i], stringsAsFactors=F)
+		out <- rbind( out, sml)
+	}
 	return(out)
 }
 
@@ -2332,11 +2340,13 @@
 
 
 # forest plot for cell types
-`plotCellTypeForest` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", 
-				main="Cell Type Forest Plot", xRange=NULL,
-				left.label=NULL, right.label=NULL, cell.min.pct=10.0,  sep="\t", 
-				text.cex=0.9, pt.cex=1.25, geneUniverse=NULL) {
+`plotCellTypeForest` <- function( file, cell.min.pct=NULL, cell.top.N=NULL,
+				geneColumn="GENE_ID", foldColumn="LOG2FOLD", 
+				main="Cell Type Forest Plot", xRange=NULL, xMeanNormalize=TRUE,
+				left.label=NULL, right.label=NULL, sep="\t", 
+				text.cex=0.9, pt.cex=1.25, lwd=3, geneUniverse=NULL) {
 
+	# can be given a filename or a data frame
 	if ( is.character(file)) {
 		tmp <- read.delim( file, as.is=T, sep=sep)
 		cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
@@ -2355,9 +2365,8 @@
 	genes <- shortGeneName( as.character( tmp[[ geneColumn]]), keep=1)
 	fold <- as.numeric( tmp[[ foldColumn]])
 	if ( is.null( xRange)) xRange <- quantile( fold, probs=c(0.05,0.95), na.rm=T)
-	# there may be a median bias in the fold change data, that we don't want to 
-	# react to.  Subtract that out
-	meanFold <- mean( fold, na.rm=T)
+	meanFold <- 0
+	if (xMeanNormalize) meanFold <- mean( fold, na.rm=T)
 
 	# if given a gene universe, to limit the set of genes, apply that now
 	if ( ! is.null( geneUniverse)) {
@@ -2368,36 +2377,53 @@
 		tmp <- tmp[ keep, ]
 	}
 
-	# Note:  With the new 2+ types per gene, with percentages, we have to do something different
-	# we want the top type and its percentage
-	celltype <- if ( "CellType" %in% colnames(tmp)) tmp$CellType else gene2CellType(genes, max.type=5)
-	topCellType <- sub( "; .*", "", celltype)
-	topCellName <- sub( "\\:.*", "", topCellType)
-	topCellPct <- as.numeric( sub( "(.+\\:)([0-9]+)(%$)", "\\2", topCellType))
-	
 	# get the set of cell types and their colors
 	CellTypeSetup()
 	allCellColors <- getCellTypeColors()
 	allCellNames <- names( allCellColors)
 	N <- length( allCellNames)
+
+	# allow specifying the genes to use by either a 'TopN' size, or a percentage threshold for cell specific expression
+	if ( ! is.null( cell.min.pct)) {
+		# Note:  With the new 2+ types per gene, with percentages, we have to do something different
+		# we want the top type and its percentage
+		celltype <- gene2CellType(genes, max.type=5)
+		topCellType <- sub( "; .*", "", celltype)
+		topCellName <- sub( "\\:.*", "", topCellType)
+		topCellPct <- as.numeric( sub( "(.+\\:)([0-9]+)(%$)", "\\2", topCellType))
+		usePct <- which( topCellPct >= cell.min.pct)
+	} else if ( ! is.null( cell.top.N)) {
+		topN <- getCellTypeTopGenes( as.integer( cell.top.N))
+		topNgenes <- topN$GENE_ID
+		topNcelltype <- topN$CellType
+		keepGenes <- intersect( genes, topNgenes)
+		where <- match( keepGenes, genes)
+		genes <- genes[ where]
+		fold <- fold[ where]
+		tmp <- tmp[ where, ]
+		whereTop <- match( keepGenes, topNgenes)
+		topCellName <- topNcelltype[ whereTop]
+		usePct <- 1:length(genes)
+	} else {
+		stop( "plotCellTypeForest: must specify either 'cell.min.pct' or 'cell.top.N'")
+	}
+	
 	
 	# set up to use a Forest Plot closure
 	fp <- forestPlot()
 	fp$setup( xRange=xRange, yBig=N, main=main, text.cex=text.cex,
 			meanDiffMode=FALSE, sub="      Log2 Fold Change", dividerLines=T)
 	fp$mean.header( label1=right.label, label2=left.label, cex=text.cex*1.15, prefix="Upregulated in",
-			offset=1.2, groupName="Cell Type")
+			offset=1.3, groupName="Cell Type")
 			
 	# now step thru each cell type and evaluate the distribution
-	usePct <- which( topCellPct >= cell.min.pct)
 	for ( i in 1:N) {
 		thisCell <- allCellNames[i]
-		usePct <- which( topCellPct >= cell.min.pct)
 		useCell <- which( topCellName == thisCell)
 		useNow <- intersect( usePct, useCell)
 		if ( length(useNow) < 3) next
 		fp$mean.line( x1=(fold[useNow]-meanFold), yRow=i, label=thisCell, col=allCellColors[i], 
-				cex=text.cex*0.9, pt.cex=pt.cex)
+				lwd=lwd, cex=text.cex*0.9, pt.cex=pt.cex)
 	}
 	
 	# done
