@@ -788,7 +788,8 @@
 	cellNames <- sub( paste( ": ", pattern, sep=""), "", names(outList))
 	out <- data.frame()
 	for ( i in 1:length(outList)) {
-		sml <- data.frame( "GENE_ID"=outList[[i]], "CellType"=cellNames[i], stringsAsFactors=F)
+		genes <- outList[[i]]
+		sml <- data.frame( "GENE_ID"=genes, "Rank"=1:length(genes), "CellType"=cellNames[i], stringsAsFactors=F)
 		out <- rbind( out, sml)
 	}
 	return(out)
