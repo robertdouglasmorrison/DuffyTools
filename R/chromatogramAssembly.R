@@ -82,6 +82,11 @@
 		print( head( refStats, 10))
 	}
 
+	# allow catching when 2+ hits are equally good
+	longRefName <- refName
+	bestRefHits <- which( refStats == refStats[1])
+	if ( length(bestRefHits) > 1) longRefName <- paste( names(refStats)[bestRefHits], collapse="|")
+
 	# Step 3:  now with the best reference DNA known, we may want to clean the chromatograms for 
 	# typical sequence errors and artifacts
 	if ( doCleaning) {
@@ -237,7 +242,7 @@
 	# there is a tiny chance that the final AA call is all 'no call' Xs.
 	if ( grepl( "^X+$", finalAA)) edAA <- NA
 
-	out <- list( "ReferenceName"=refName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), 
+	out <- list( "ReferenceName"=longRefName, "ReferenceAA"=refAA, "ReferenceDNA"=as.character(refDNA), 
 			"ConsensusAA"=finalAA, "ConfidenceAA"=finalAAconf, "EditDistanceAA"=edAA, 
 			"ConsensusDNA"=finalDNAstr, "ConfidenceDNA"=finalDNAconf, "EditDistanceDNA"=edDNA,
 			"FragmentDetails"=seqDF, "BaseMatrix"=baseM, "ConfidenceMatrix"=confM)

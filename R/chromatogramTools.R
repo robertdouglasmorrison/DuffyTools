@@ -1371,16 +1371,24 @@
 	if ( min.signal.percent > 1) min.signal.percent <- min.signal.percent / 100
 
 	# make sure the front center portion -- which should be high height -- is
-	centerPts <- round( c( NP*0.2, NP*0.5))
-	meanHt <- mean( smoothHts[ centerPts[1] : centerPts[2]], na.rm=T)
+	#centerPts <- round( c( NP*0.2, NP*0.5))
+	#meanHt <- mean( smoothHts[ centerPts[1] : centerPts[2]], na.rm=T)
+	# the above logic is not robust enough.  Have some chromatograms with very long
+	# low signal tails, that exceed 80% of the full length.  Try something with no
+	# assumptions about total length
+	avgQuant <- rev( quantile( smoothHts, seq( 0,1,by=0.01)))
+	useForMean <- which( avgQuant >= (avgQuant[5]/10))
+	meanHt <- mean( avgQuant[ useForMean[2:length(useForMean)]], na.rm=T)
 	cropHtCutoff <- round( meanHt * min.signal.percent)
 
 	# keep all the front, but
-	# find the first place in the back half that is below the minimum height
-	badRight <- which( smoothHts[ centerPts[2] : NP] < cropHtCutoff)
+	# find the first place from the back that is below the minimum height
+	# but exempt the first 5%
+	badRight <- which( smoothHts < cropHtCutoff)
+	exempt <- 1:round(NP*0.05)
 	keepLeft <- 1
 	if ( length( badRight)) {
-		keepRight <- min( badRight) + centerPts[2] - 1
+		keepRight <- min( setdiff(badRight,exempt), na.rm=T)
 	} else {
 		keepRight <- NP
 	}
