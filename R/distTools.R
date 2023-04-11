@@ -149,4 +149,25 @@
 	return( dm)
 }
 
-		
+
+`expressionDist` <- function(x) {
+
+	# given a matrix of gene expression data, return a distance matrix of transcriptome similarity
+	if ( ! is.matrix(x)) stop( "'expressionDist()' expects a matrix of gene expression values")
+	N <- ncol(x)
+	out <- matrix( 0, nrow=N, ncol=N)
+	rownames(out) <- colnames(out) <- colnames(x)
+
+	# use Euclidian Distance in N dimensions
+	for ( i in 1:(N-1)) {
+		x1 <- as.numeric( x[ ,i])
+		for (j in (i+1):N) {
+			x2 <- as.numeric( x[ ,j])
+			dx <- x1 - x2
+			dd <- sum( dx * dx, na.rm=T)
+			out[ i, j] <- out[ j, i] <- round( sqrt(dd), digits=3)
+		}
+	}
+	return(out)
+}
+

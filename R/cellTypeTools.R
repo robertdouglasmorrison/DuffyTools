@@ -2434,6 +2434,54 @@
 }
 
 
+# phlyo tree plot for cell type transcriptomes plus other data
+`plotCellTypeDistanceTree` <- function( x=NULL, sampleIDs=NULL, intensityColumn=NULL,
+				main=paste( getCurrentSpecies(), ": ", getCellTypeReference(), sep=""),
+				col=NULL, tree.type="p", label.offset=1, text.cex=1.0, text.font=1, verbose=F, ...) {
+
+	# get the current cell type target matrix and coloring
+	tm <- getCellTypeMatrix()
+	cellColors <- getCellTypeColors()
+	cellGenes <- rownames(tm)
+
+	# allow adding optional data, from either a vector of filenames or a matrix of gene data
+	if ( ! is.null(x) && is.matrix(x)) {
+		gm <- x
+	} else if ( ! is.null(x) && is.character(x)) {
+		fset <- x
+		if ( is.null(sampleIDs)) {
+			suffix <- paste( getCurrentSpeciesFilePrefix(), "transcript.txt", sep=".")
+			fids <- sub( suffix, "", basename(fset))
+		} else {
+			fids <- sampleIDs
+		}
+		if ( is.null(intensityColumn)) intensityColumn <- getExpressionUnitsColumn( verbose=verbose)
+		gm <- expressionFileSetToMatrix( fset, fids, intensityColumn=intensityColumn, verbose=verbose)
+	}
+	if ( exists( "gm")) {
+		gmGenes <- shortGeneName(rownames(gm),keep=1)
+		if (is.null(col)) col <- 1
+		if ( length(col) != ncol(gm)) col <- rep( col, length.out=ncol(gm))
+		useGenes <- intersect( cellGenes, gmGenes)
+		whCell <- match( useGenes, cellGenes)
+		m1 <- tm[ whCell, ]
+		whGM <- match( useGenes, gmGenes)
+		m2 <- gm[ whGM, ]
+		tm <- cbind( m1, m2)
+		cellColors <- c( cellColors, col)
+	}
+	
+	# turn gene expresssion into a distance matrix
+	dm <- expressionDist( tm)
+
+	# and use the phylo tree tool to render it
+	nams <- colnames(dm)
+	ans <- plotPhyloTree( seqs=nams, dm=dm, tree.type=tree.type, cex=text.cex, tree.font=text.font, main=main,
+				col=cellColors, ...)
+	return( invisible( ans))
+}
+
+
 `writeCellTypeClusterExtras` <- function( tbl, resultsfile, resultsTbl=NULL, reference=getCellTypeReference()) {
 
 	# given a data frame of details from the cell type volcano cluster plot tool (above), make some supporting files
