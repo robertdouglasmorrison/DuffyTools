@@ -407,8 +407,7 @@
 }
 
 
-
-clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
+`clipFastq` <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 
 	# clip bases off an existing fastq file
 
@@ -453,6 +452,89 @@ clipFastq <- function( filein, fileout, clip5prime=0, clip3prime=0) {
 	close( conOut)
 	cat( "\nN_reads trimmed:            ", round( as.integer(nread)/4))
 	cat( "\nNew Read Length:  ", base::nchar( newSeqs[1]), "\n")
+
+	return()
+}
+
+
+`cropBases` <- function( mySEQ, myScores, laneID, crop5primePattern=NULL, crop3primePattern=NULL) {
+
+	# get the lengths
+	nlines <- length( mySEQ)
+	nbases <- base::nchar( mySEQ)
+	nscoreCh <- base::nchar( myScores)
+
+	# ready to do the pattern search
+	newSEQ <- mySEQ
+	newScores <- myScores
+	if ( ! is.null( crop3primePattern)) {
+		hitPt <- regexpr( crop3primePattern, newSEQ)
+		goodHit <- which( hitPt > 0)
+		if ( length(goodHit)) {
+			newSEQ[goodHit] <- substr( newSEQ[goodHit], 1, hitPt[goodHit]-1)
+			newScores[goodHit] <- substr( newScores[goodHit], 1, hitPt[goodHit]-1)
+		}
+	}
+	if ( ! is.null( crop5primePattern)) {
+		hitPt <- regexpr( crop5primePattern, newSEQ)
+		hitLen <- attributes(hitPt)$match.length
+		goodHit <- which( hitPt > 0)
+		if ( length(goodHit)) {
+			newSEQ[goodHit] <- substring( newSEQ[goodHit], hitPt[goodHit] + hitLen[goodHit])
+			newScores[goodHit] <- substring( newScores[goodHit], hitPt[goodHit] + hitLen[goodHit])
+		}
+	}
+
+	# ready.
+	out <- list( "seqs"=newSEQ, "scores"=newScores)
+	return( out)
+}
+
+
+`cropFastq` <- function( filein, fileout, crop5primePattern=NULL, crop3primePattern=NULL) {
+
+	# crop bases off an existing fastq file reads, using a DNA regular expression pattern
+
+	filein <- allowCompressedFileName( filein)
+	if ( ! file.exists( filein)) stop( paste("Can't find input file: ", filein))
+	conIn <- openCompressedFile( filein, open="r")
+
+	if ( regexpr( ".gz$", fileout) > 0) {
+		conOut <- gzfile( fileout, open="w")
+	} else {
+		conOut <- file( fileout, open="w")
+	}
+
+	chunkSize <- 800000
+	nread <- 0
+
+	cat( "\nCropping  ( 5' | 3') = ", crop5primePattern, crop3primePattern, "\n")
+	repeat {
+		chunk <- readLines( conIn, n=chunkSize)
+		if ( length( chunk) < 1) break
+
+		nread <- nread + length( chunk)
+
+		# get the lines we want
+		ids <- chunk[ seq( 1, length(chunk), by=4)]
+		seqs <- chunk[ seq( 2, length(chunk), by=4)]
+		scores <- chunk[ seq( 4, length(chunk), by=4)]
+
+		ans <- cropBases( seqs, scores, ids, crop5=crop5primePattern, crop3=crop3primePattern)
+
+		newSeqs <- ans$seq
+		newScores <- ans$scores
+
+		newLen <- base::nchar( newSeqs[1])
+		newIds <- sub( "=[0-9]+$", base::paste( "=",newLen, sep=""), ids) 
+		newId2 <- sub( "@","+", newIds, fixed=TRUE)
+		writeLines( base::paste( newIds, newSeqs, newId2, newScores, sep="\n"), con=conOut)
+		cat( ".")
+	}
+
+	close( conIn)
+	close( conOut)
+	cat( "\nN_reads trimmed:            ", round( as.integer(nread)/4))
 
 	return()
 }
