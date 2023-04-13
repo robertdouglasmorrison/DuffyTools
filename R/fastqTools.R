@@ -467,26 +467,29 @@
 	# ready to do the pattern search
 	newSEQ <- mySEQ
 	newScores <- myScores
+	n3cropped <- n5cropped <- 0
 	if ( ! is.null( crop3primePattern)) {
 		hitPt <- regexpr( crop3primePattern, newSEQ)
 		goodHit <- which( hitPt > 0)
-		if ( length(goodHit)) {
+		if ( nNow <- length(goodHit)) {
 			newSEQ[goodHit] <- substr( newSEQ[goodHit], 1, hitPt[goodHit]-1)
 			newScores[goodHit] <- substr( newScores[goodHit], 1, hitPt[goodHit]-1)
+			n3cropped <- nNow
 		}
 	}
 	if ( ! is.null( crop5primePattern)) {
 		hitPt <- regexpr( crop5primePattern, newSEQ)
 		hitLen <- attributes(hitPt)$match.length
 		goodHit <- which( hitPt > 0)
-		if ( length(goodHit)) {
+		if ( nNow <- length(goodHit)) {
 			newSEQ[goodHit] <- substring( newSEQ[goodHit], hitPt[goodHit] + hitLen[goodHit])
 			newScores[goodHit] <- substring( newScores[goodHit], hitPt[goodHit] + hitLen[goodHit])
+			n5cropped <- nNow
 		}
 	}
 
 	# ready.
-	out <- list( "seqs"=newSEQ, "scores"=newScores)
+	out <- list( "seqs"=newSEQ, "scores"=newScores, "n5cropped"=n5cropped, "n3cropped"=n3cropped)
 	return( out)
 }
 
@@ -507,8 +510,9 @@
 
 	chunkSize <- 800000
 	nread <- 0
+	n5cropped <- n3cropped <- 0
 
-	cat( "\nCropping  ( 5' | 3') = ", crop5primePattern, crop3primePattern, "\n")
+	cat( "\nCropping reads by sequence pattern (5' | 3') = ", crop5primePattern, "|", crop3primePattern, "\n")
 	repeat {
 		chunk <- readLines( conIn, n=chunkSize)
 		if ( length( chunk) < 1) break
@@ -524,6 +528,8 @@
 
 		newSeqs <- ans$seq
 		newScores <- ans$scores
+		n5cropped <- n5cropped + ans$n5cropped
+		n3cropped <- n3cropped + ans$n3cropped
 
 		newLen <- base::nchar( newSeqs[1])
 		newIds <- sub( "=[0-9]+$", base::paste( "=",newLen, sep=""), ids) 
@@ -534,7 +540,10 @@
 
 	close( conIn)
 	close( conOut)
-	cat( "\nN_reads trimmed:            ", round( as.integer(nread)/4))
+	cat( "\nN_Reads scanned:              ", round( as.integer(nread)/4))
+	cat( "\nN_Reads cropped from 5' end:  ", n5cropped)
+	cat( "\nN_Reads cropped from 3' end:  ", n3cropped)
+	cat( "\nWrote new FASTQ file:         ", fileout)
 
 	return()
 }
