@@ -29,6 +29,7 @@ geneSetEnrichment <- function( genes, geneSets=defaultGeneSets(),
 		# we may be given just a subset of valid genes in the 'universe'
 		if ( ! is.null( geneUniverse)) {
 			#shrink the universe of all known genes
+			geneUniverse <- as.GeneUniverse( geneUniverse)
 			keepers <- which( pathTable$GeneID %in% geneUniverse)
 			pathTable <- pathTable[ keepers, ]
 		}

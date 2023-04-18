@@ -117,7 +117,7 @@
 		geneSetCellTypes <- getCellTypeGeneSetAssociation()
 		if ( is.null(geneSetCellTypes)) {
 			cat( "\nWarning:  No 'GeneSetCellTypes' object loaded for species: ", speciesID)
-			cat( "\n  Tried to load 'GeneAssociation' data object for: ", getCellTypeReference())
+			cat( "\n  Tried to load 'GeneSetAssociation' data object for: ", getCellTypeReference())
 			return(NULL)
 		}
 		cellTypeUniverse <- geneSetCellTypes$CellType
@@ -142,7 +142,7 @@
 
 		# allow the caller to shrink the universe, as from arrays with less than all genes present
 		if ( ! is.null( geneUniverse)) {
-			geneUniverse <- shortGeneName( geneUniverse, keep=1)
+			geneUniverse <- as.GeneUniverse( geneUniverse)
 			keep <- which( geneCellTypes$GENE_ID %in% geneUniverse)
 			if (verbose) cat( "\nReducing Gene Universe from ", nrow(geneCellTypes), " to ", length(keep))
 			geneCellTypes <- geneCellTypes[ keep, ]
@@ -1477,6 +1477,7 @@
 
 	# allow being passed in a gene universe of a subset of genes to use in the fit
 	if ( ! is.null( geneUniverse)) {
+		geneUniverse <- as.GeneUniverse( geneUniverse)
 		keep <- which( genes %in% as.character( geneUniverse))
 		if ( length( keep) < length(geneUniverse)/2) cat( "\nWarnings:  Trimming to given Gene Universe removed too many genes..")
 		if ( length( keep) < N_STAGES*2) {
@@ -2371,7 +2372,7 @@
 
 	# if given a gene universe, to limit the set of genes, apply that now
 	if ( ! is.null( geneUniverse)) {
-		geneUniverse <- shortGeneName( geneUniverse, keep=1)
+		geneUniverse <- as.GeneUniverse( geneUniverse)
 		keep <- which( genes %in% geneUniverse)
 		genes <- genes[ keep]
 		fold <- fold[ keep]

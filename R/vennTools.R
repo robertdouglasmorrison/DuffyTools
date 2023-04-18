@@ -89,7 +89,11 @@
 	smlDF2 <- gatherWantedSubset( df2, gene2Column, value2Column, minValue2, minCount=minCount, maxCount=maxCount)
 	genes1 <- smlDF1[[gene1Column]]
 	genes2 <- smlDF2[[gene2Column]]
-	if ( is.null( geneUniverse)) geneUniverse <- union( df1[[gene1Column]], df2[[gene2Column]])
+	if ( is.null( geneUniverse)) {
+		geneUniverse <- union( df1[[gene1Column]], df2[[gene2Column]])
+	} else {
+		geneUniverse <- as.GeneUniverse( geneUniverse)
+	}
 	N_TotalGenes <- length( geneUniverse)
 
 	# combine and resolve

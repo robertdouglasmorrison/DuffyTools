@@ -179,6 +179,7 @@
 
 	# we may be asked to use just a explicit subset of genes, from a smaller gene universe
 	if ( ! is.null( geneUniverse)) {
+		geneUniverse <- as.GeneUniverse( geneUniverse)
 		keep <- which( shortGeneName(genesUse,keep=1) %in% as.character( geneUniverse))
 		intenUse <- intenUse[ keep]
 		mUse <- mUse[ keep, ]

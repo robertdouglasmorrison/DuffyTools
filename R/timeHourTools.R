@@ -366,6 +366,7 @@
 
 		# allow using a subset of genes
 		if ( ! is.null( geneUniverse)) {
+			geneUniverse <- as.GeneUniverse( geneUniverse)
 			geneCol <- which( colnames(mydf) %in% c("GENE_ID","GeneID","Gene"))[1]
 			if ( is.na( geneCol)) stop( "plotTimeHourCurve: Unable to find gene ID column in transcriptone")
 			dfGenes <- mydf[[ geneCol]]
@@ -415,6 +416,7 @@
 
 	# allow using a subset of genes
 	if ( ! is.null( geneUniverse)) {
+		geneUniverse <- as.GeneUniverse( geneUniverse)
 		mGenes <- rownames(m)
 		keep <- which( mGenes %in% geneUniverse)
 		m <- m[ keep, ]
@@ -568,6 +570,7 @@
 
 	allG <- subset( getCurrentGeneMap(), REAL_G == TRUE)$GENE_ID
 	if ( ! is.null( geneUniverse)) {
+		geneUniverse <- as.GeneUniverse( geneUniverse)
 		allG <- intersect( allG, geneUniverse)
 		cat( "\nusing a Gene Universe of: ", length( allG))
 	} 
