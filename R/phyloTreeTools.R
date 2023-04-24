@@ -1,27 +1,33 @@
 # phyloTreeTools.R -- make phylo tree plots
 
 
-`plotPhyloTree` <- function( seqs, seqNames=names(seqs), dm=NULL,
+`plotPhyloTree` <- function( seqs=NULL, seqNames=names(seqs), dm=NULL,
 			label.offset=1, tree.font=1, col=NULL, rotate.tree=0, tree.type="u",
 			main=NULL, ...) {
 
 	require( Biostrings)
 	require( ape)
 	checkX11()
+	saveMAI <- par( "mai")
+	on.exit( par( "mai"=saveMAI))
 	par( mai=c(0.5,0.5,0.5,0.5))
 
-	ids <- seqNames
-	N <- length(seqs)
-	if ( ! is.null( dm) && is.matrix(dm)) {
+	# one of 'sequences' or 'distance matrix' must be given
+	if ( ! is.null(seqs)) {
+		ids <- seqNames
+		N <- length(seqs)
+	} else if ( ! is.null( dm) && is.matrix(dm)) {
 		ids <- colnames(dm)
 		N <- ncol(dm)
+	} else {
+		cat( "\nError:  one of 'seqs' or 'dm' must be non-NULL")
+		return(NULL)
 	}
 
 	if ( is.null( dm)) {
-		cat( "\nMeasuring inter-sequence distances (N=", length(seqs),")", sep="")
+		cat( "\nMeasuring inter-sequence distances (N=", N, ")", sep="")
 		names(seqs) <- ids
 		dm <- stringDist( seqs)
-		#dm <- as.matrix( dm)
 	} else {
 		# catch if we were given a full symmetric matrix
 		if ( is.matrix(dm) && (nrow(dm) == ncol(dm))) {
