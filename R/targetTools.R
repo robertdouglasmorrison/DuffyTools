@@ -241,6 +241,7 @@
 	addTarget( "Mabsc", "Mabsc", "Mabsc")
 	addTarget( "Mchel", "Mchel", "Mchel")
 	addTarget( "Mavium", "Mavium", "Mavium")
+	addTarget( "Mmar", "Mmar", "Mmar")
 	addTarget( "Bbrevis", "Bbrevis", "Bbrevis")
 
 	addTarget( "Tb927", "Tb927", "Tbr")
