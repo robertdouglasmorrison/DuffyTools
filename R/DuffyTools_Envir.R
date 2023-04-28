@@ -29,8 +29,8 @@ PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pv", "PvP01", "Pb", "Pk", "Pch",
 			"PcoAH", "Pvvv", "Povale", "Pmalar")
 ORIGID_PARASITE_SPECIES <- c( "Pf3D7", "Py17X", "PyYM", "PbANKA")
 ORIGID_PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pb")
-BACTERIA_SPECIES <- c( "MT_H37", "Msmeg_mc2_155", "Styph", "Mchel", "Mabsc", "Mavium", "MT_HN878", "BCG")
-BACTERIA_PREFIXES <- c( "MTb", "Msmeg", "Styph", "Mchel", "Mabsc", "Mavium", "MTbHN878", "BCG")
+BACTERIA_SPECIES <- c( "MT_H37", "Msmeg_mc2_155", "Styph", "Mchel", "Mabsc", "Mavium", "MT_HN878", "BCG", "Mmar")
+BACTERIA_PREFIXES <- c( "MTb", "Msmeg", "Styph", "Mchel", "Mabsc", "Mavium", "MTbHN878", "BCG", "Mmar")
 INSECT_SPECIES <- c( "Agam", "Asteph", "Dmel")
 INSECT_PREFIXES <- c( "Ag", "Asteph", "Dmel")
 
