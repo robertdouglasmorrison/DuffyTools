@@ -21,7 +21,8 @@ kaplanMeier <- function( groups, times, outcomes, eventOutcome="Y", col=2:(lengt
 		plot( survAns, col=col, lwd=lwd, xlab=xlab, ylab=ylab, main=main,
 			ylim=c(0,1.03), lty=lty, ...)
 		legend( 'topright', grpNames, col=col, lwd=lwd, lty=lty, bg='white', cex=legend.cex, bty=legend.bty)
-		legend( 'bottomleft', paste( "P-value =", round( pval, digits=4)), bg='white', cex=max(1,legend.cex))
+		legend( 'bottomleft', paste( "P-value =", round( pval, digits=4)), bg='white', cex=max(1,legend.cex),
+			bty=legend.bty)
 	}
 
 	# perhaps doa FDR permutation test
