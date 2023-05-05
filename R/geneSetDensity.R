@@ -10,7 +10,7 @@
 					geneMapColumn=if(speciesID %in% MAMMAL_SPECIES) "NAME" else "GENE_ID", 
 					cutPvalue=0.05, cutRankShift=NULL, cutFold=0.1, cutFDR=0.05, 
 					makePlots=TRUE, PLOT.FUN=NULL, makeGeneTables=TRUE, 
-					addCellTypes=TRUE, doFDR=TRUE, NgeneSets=200, legend.cex=1) {
+					addCellTypes=TRUE, doFDR=TRUE, NgeneSets=100, legend.cex=1) {
 
 	setCurrentSpecies( speciesID)
 	geneMap <- getCurrentGeneMap()
@@ -109,7 +109,7 @@
 				t(ans$measurements), stringsAsFactors=FALSE)
 		colnames( oneDF)[1] <- descriptor
 		out <- rbind( out, oneDF)
-		if ( i %% 10 == 0) cat( "\r", i, trimGeneSetNameLink( names(geneSets)[i]), "   ", length( geneSets[[i]]))
+		if ( i %% 100 == 0) cat( "\r", i, trimGeneSetNameLink( names(geneSets)[i]), "   ", length( geneSets[[i]]))
 	}
 
 	# now with them all done, adjust for multiple comparisons

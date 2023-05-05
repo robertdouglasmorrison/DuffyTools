@@ -8,8 +8,8 @@
 				geneSets=defaultGeneSets(speciesID), descriptor="CombinedGeneSets", 
 				minGenesPerSet=if (speciesID %in% MAMMAL_SPECIES) 4 else 2, 
 				mode=c("combined", "separate"), cutPvalue=0.05, cutRankShift=NULL, makePlots=TRUE,
-				doFDR=TRUE, trimGenesToGeneMap=TRUE, makeGeneTables=!(speciesID %in% MAMMAL_SPECIES), 
-				cutFold=0.1, cutFDR=0.05, NgeneSets=200, addCellTypes=TRUE,
+				doFDR=TRUE, trimGenesToGeneMap=TRUE, makeGeneTables=FALSE,
+				cutFold=0.1, cutFDR=0.05, NgeneSets=100, addCellTypes=TRUE,
 				PLOT.FUN=NULL, legend.cex=1, verbose=T, ...)
 {
 
