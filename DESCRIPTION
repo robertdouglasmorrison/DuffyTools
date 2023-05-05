@@ -1,8 +1,8 @@
 Package: DuffyTools
 Type: Package
 Title: Duffy Lab Utility Tools
-Version: 1.9.1
-Date: 2021-02-12
+Version: 1.9.2
+Date: 2023-05-05
 Author: Bob Morrison <robert.morrison@nih.gov>
 Maintainer: Bob Morrison <robert.morrison@nih.gov>
 Description: Useful tools and genome annotations for processing Plasmodium and mammalian host genomic data sets

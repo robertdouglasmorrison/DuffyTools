@@ -256,6 +256,8 @@
 
 	#addTarget( "GrammDol", "GrammDol", "GrammDol")
 	addTarget( "Gsurd", "Gsurd", "Gsurd")
+	addTarget( "PbGsurd", "PbANKA,Gsurd", "Pb,Gsurd")
+	addTarget( "PyGsurd", "Py17X,Gsurd", "Py17X,Gsurd")
 
 	addTarget( "Drerio", "Drerio", "Dr")
 
