@@ -1,7 +1,7 @@
 # ROC_Tools.R - generic ROC function
 
 
-duffy.ROC <- function( goodScores, badScores, label="", visualize=TRUE, legend.cex=1) {
+duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRUE, legend.cex=1) {
 
 	# to test ROC, we need the known positives and negatives
 	require( ROC)
@@ -38,8 +38,8 @@ duffy.ROC <- function( goodScores, badScores, label="", visualize=TRUE, legend.c
 	specAns <- spec[best]
 
 	if (visualize) {
-		par( mai=c(1,1,0.8,0.4))
-		plot( mspec, msens, main=paste( "ROC curve:    ", label), xlim=c(0,1.1),
+		#par( mai=c(1,1,0.8,0.4))
+		plot( mspec, msens, main=label, xlim=c(0,1.1),
 			xlab="1 - Specificity", ylab="Sensitivity", type="p", font.axis=2, font.lab=2)
 
 		# try to show some values in a sensible way
@@ -76,7 +76,7 @@ duffy.ROC <- function( goodScores, badScores, label="", visualize=TRUE, legend.c
 		specAnsText <- round( specAns, digits=3)
 
 		legendText <- paste( c( "AUC (Area Under Curve) =", "Optimal Yes/No Cutpoint =", "Sensitivity =", "Specificity ="),
-				c( aucAnsText, cutAnsText, sensAnsText, specAnsText), "    ")
+				c( aucAnsText, cutAnsText, sensAnsText, specAnsText), "  ")
 		legend( "bottomright", legendText, bg='white', cex=legend.cex)
 		dev.flush()
 	}
