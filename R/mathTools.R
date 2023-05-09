@@ -195,7 +195,7 @@ tukey.logmean <- function( x,  c=5,  e=0.0001, na.rm=FALSE) {
 
 
 errorBar <- function( x, mode=c("se", "sd", "mad", "ci", "gm.ci"), average.FUN=mean, plot=TRUE, at=1, whisker=0.2, 
-			horiz=FALSE, error.col=1, error.lty=1) {
+			horiz=FALSE, error.col=1, error.lty=1, error.lwd=1) {
 
 	mn <- average.FUN( x, na.rm=T)
 	mode <- match.arg(mode)
@@ -226,18 +226,18 @@ errorBar <- function( x, mode=c("se", "sd", "mad", "ci", "gm.ci"), average.FUN=m
 	if (plot && horiz) {
 		lo <- xlo <- mn - se1
 		hi <- xhi <- mn + se2
-		lines( y=c( at,at), x=c( xlo, xhi), col=error.col, lty=error.lty)
+		lines( y=c( at,at), x=c( xlo, xhi), col=error.col, lty=error.lty, lwd=error.lwd)
 		if ( whisker > 0) {
-			lines( y=c( at-whisker,at+whisker), x=c( xlo, xlo), col=error.col, lty=error.lty)
-			lines( y=c( at-whisker,at+whisker), x=c( xhi, xhi), col=error.col, lty=error.lty)
+			lines( y=c( at-whisker,at+whisker), x=c( xlo, xlo), col=error.col, lty=error.lty, lwd=error.lwd)
+			lines( y=c( at-whisker,at+whisker), x=c( xhi, xhi), col=error.col, lty=error.lty, lwd=error.lwd)
 		}
 	} else {
 		lo <- ylo <- mn - se1
 		hi <- yhi <- mn + se2
-		lines( c( at,at), c( ylo, yhi), col=error.col, lty=error.lty)
+		lines( c( at,at), c( ylo, yhi), col=error.col, lty=error.lty, lwd=error.lwd)
 		if ( whisker > 0) {
-			lines( c( at-whisker,at+whisker), c( ylo, ylo), col=error.col, lty=error.lty)
-			lines( c( at-whisker,at+whisker), c( yhi, yhi), col=error.col, lty=error.lty)
+			lines( c( at-whisker,at+whisker), c( ylo, ylo), col=error.col, lty=error.lty, lwd=error.lwd)
+			lines( c( at-whisker,at+whisker), c( yhi, yhi), col=error.col, lty=error.lty, lwd=error.lwd)
 		}
 	}
 
