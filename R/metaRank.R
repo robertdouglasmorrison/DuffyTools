@@ -243,7 +243,7 @@ metaRanks <- function( fnames, fids, weightset=rep(1, length(fnames)),
 				randomNow <- apply( simM, MARGIN=1, FUN=rank.average.FUN, na.rm=T)
 				randomAvgRank[ (nnow+1):(nnow+NR)] <- randomNow
 				nnow <- nnow + NR
-				if (verbose) cat( ".")
+				if (verbose && k %% 100 == 0) cat( ".")
 			}
 			# with this pool of 'by-chance average ranks, we can estimate the likelihood of ours
 			randomAvgRank <- sort( randomAvgRank)
