@@ -221,9 +221,10 @@
 	if ( Nshow * 1.25 > nrow(radarMOD)) Nshow <- nrow(radarMOD)
 
 	# use both Pvalue and magnitudes to decide who to draw
+	# but give magnitudes more weight?...
 	magnitudes <- diff( apply( radarMOD, 1, range))
 	bestPs <- apply( radarPvalue, 1, min)
-	ord <- diffExpressRankOrder( magnitudes, bestPs, wt.fold=1, wt.pvalue=1)
+	ord <- diffExpressRankOrder( magnitudes, bestPs, wt.fold=4, wt.pvalue=1)
 
 	# try to not let one single group have all the UP spokes...
 	nUpSpokes <- apply( radarMOD[ ord[1:Nshow], ], MARGIN=2, function(x) sum(x > 0, na.rm=T))
@@ -240,7 +241,7 @@
 		nDownUsed <- 0
 		while (nDownWanted > 0) {
 			if (tryRowNow <= 1) break
-			# don't swap out one taht is already down
+			# don't swap out one that is already down
 			if (radarMOD[ ord[tryRowNow], whoMostUp] < 0) {
 				tryRowNow <- tryRowNow - 1
 				next
