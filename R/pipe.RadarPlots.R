@@ -224,7 +224,7 @@
 	# but give magnitudes more weight?...
 	magnitudes <- diff( apply( radarMOD, 1, range))
 	bestPs <- apply( radarPvalue, 1, min)
-	ord <- diffExpressRankOrder( magnitudes, bestPs, wt.fold=4, wt.pvalue=1)
+	ord <- diffExpressRankOrder( magnitudes, bestPs, wt.fold=2, wt.pvalue=1)
 
 	# try to not let one single group have all the UP spokes...
 	nUpSpokes <- apply( radarMOD[ ord[1:Nshow], ], MARGIN=2, function(x) sum(x > 0, na.rm=T))
