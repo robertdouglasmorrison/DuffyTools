@@ -206,10 +206,20 @@
 		gset <- vector()
 		for ( j in columnsToVisit) {
 			wh <- which( orthoTable[ ,j] == genes[i])
-			if ( length(wh)) gset <- c( gset, unlist(orthoTable[ wh, columnsToVisit]))
+			if ( length(wh)) {
+				newset <- unlist( orthoTable[ wh, columnsToVisit])
+				names(newset) <- rep( colnames(orthoTable)[columnsToVisit], each=length(wh))
+				gset <- c( gset, newset)
+			}
 		}
-		# strip out the gene itself and any blank entries
-		if ( length(gset)) gOut[[i]] <- setdiff( sort( unique( gset)), c( genes[i], noOrtho))
+		# strip out any blank entries, and the gene itself
+		# No.  Now instead keep one copy of each, after seeing the species.
+		drops <- which( gset == noOrtho)
+		if ( length(drops)) gset <- gset[ -drops]
+		gkey <- paste( names(gset), as.character(gset), sep="::")
+		drops <- which( duplicated( gkey))
+		if ( length(drops)) gset <- gset[ -drops]
+		if ( length(gset)) gOut[[i]] <- gset
 	}
 	return( gOut)
 }
