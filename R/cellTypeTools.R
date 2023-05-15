@@ -2346,7 +2346,7 @@
 				geneColumn="GENE_ID", foldColumn="LOG2FOLD", 
 				main="Cell Type Forest Plot", xRange=NULL, xMeanNormalize=TRUE,
 				left.label=NULL, right.label=NULL, sep="\t", 
-				text.cex=0.9, pt.cex=1.25, lwd=3, geneUniverse=NULL) {
+				text.cex=0.9, pt.cex=1.25, lwd=3, geneUniverse=NULL, ...) {
 
 	# can be given a filename or a data frame
 	if ( is.character(file)) {
