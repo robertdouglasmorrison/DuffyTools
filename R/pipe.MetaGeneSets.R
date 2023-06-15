@@ -5,7 +5,7 @@
 `pipe.MetaGeneSets` <- function( sampleIDset, folderName="", speciesID=getCurrentSpecies(), annotationFile="Annotation.txt",
 				optionsFile="Options.txt", results.path=NULL,  groupColumn="Group", colorColumn="Color", 
 				geneSets=defaultGeneSets(speciesID), 
-				NgeneSets=500, verbose=TRUE, label="", nFDRsimulations=0,
+				NgeneSets=100, verbose=TRUE, label="", nFDRsimulations=0,
 				doGeneSets=TRUE, doMissing=TRUE, baselineGroup=NULL, legend.cex=1, ...) {
 
 	if (verbose) {

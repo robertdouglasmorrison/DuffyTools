@@ -40,6 +40,11 @@
 			vv <- tapply( v, geneFac, function(y) if ( length(y) < 2) y[1] else avg.FUN(y))
 			if ( is.integer(v)) vv <- round(vv)
 			out[[j]] <- vv
+			# note the TPM units must sum to 1 million.  Re-assert that explicitly
+			if ( grepl( "TPM", colnames(x)[j])) {
+				vv <- round( vv * 1000000 / sum(vv,na.rm=T), digits=4)
+				out[[j]] <- vv
+			}
 		}
 	}
 
@@ -71,3 +76,4 @@
 
 	return( out)
 }
+

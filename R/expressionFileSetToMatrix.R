@@ -131,7 +131,7 @@
 	if ( grepl( "TPM", toupper(intensityColumn))) {
 		for ( i in 1:NC) {
 			v <- m[ , i]
-			m[ , i] <- v * 1000000 / sum(v,na.rm=T)
+			m[ , i] <- round( v * 1000000 / sum(v,na.rm=T), digits=4)
 		}
 	}
 
