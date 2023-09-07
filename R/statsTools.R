@@ -89,3 +89,34 @@
 	return( outliers)
 }
 
+
+`sd.pop` <- function(x) { sd(x)*sqrt((length(x)-1)/length(x))}
+
+
+`biserial.cor.test` <- function( x, y, use = c("all.obs", "complete.obs"), y.level = 2) {
+
+	# version of point bi-serial correlation
+	if (!is.numeric(x)) stop("'x' must be a numeric variable.\n")
+	y <- as.factor(y)
+	if (length(levs <- levels(y)) != 2) stop("'y' must be a dichotomous variable.\n")
+	if (length(x) != length(y)) stop("'x' and 'y' do not have the same length")
+	use <- match.arg(use)
+	if (use == "complete.obs") {
+		cc.ind <- complete.cases(x, y)
+		x <- x[cc.ind]
+		y <- y[cc.ind]
+	}
+	ind <- (y == levs[y.level])
+	N <- length(y)
+	diff.mu <- mean(x[ind]) - mean(x[!ind])
+	prob <- mean(ind)
+
+	# biserial from 'ltm' package uses the sample SD instead of the Population SD
+	#ans <- diff.mu * sqrt(prob * (1 - prob))/sd.pop(x)
+	ans <- diff.mu * sqrt(prob * (1 - prob))/sd(x)
+
+	t <- (ans*sqrt(N-2)) / sqrt( 1 - ans^2) 
+	pv <- pt( q=t, df=N-2, lower.tail=F) * 2
+	return( list( "estimate"=ans, "p.value"=pv))
+}
+
