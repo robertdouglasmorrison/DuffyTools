@@ -116,7 +116,7 @@
 	ans <- diff.mu * sqrt(prob * (1 - prob))/sd(x)
 
 	t <- (ans*sqrt(N-2)) / sqrt( 1 - ans^2) 
-	pv <- pt( q=t, df=N-2, lower.tail=F) * 2
+	pv <- min( pt( q=t, df=N-2, lower.tail=F) * 2, 1.0)
 	return( list( "estimate"=ans, "p.value"=pv))
 }
 
