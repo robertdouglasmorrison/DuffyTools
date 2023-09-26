@@ -59,8 +59,12 @@ forestPlot <- function( )  {
 		#lines( xlim*2, rep.int(0.5,2), col=1, lwd=1)
 
 		# thin lines between the groups?
-		if (dividerLines) {
+		if ( is.logical(dividerLines) && dividerLines) {
 			for (i in 1:yBig) {
+				lines( xlim*3, rep.int(i-0.5,2), col='grey80', lwd=0.25)
+			}	
+		} else if ( is.numeric(dividerLines) && length(dividerLines)) {
+			for (i in dividerLines) {
 				lines( xlim*3, rep.int(i-0.5,2), col='grey80', lwd=0.25)
 			}	
 		}
