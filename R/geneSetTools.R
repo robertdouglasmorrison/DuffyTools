@@ -499,7 +499,9 @@
 }
 
 
-`geneSetBestMatch` <- function( genes, geneSets=defaultGeneSets(), nBest=5, speciesID=getCurrentSpecies()) {
+`geneSetBestMatch` <- function( genes, geneSets=defaultGeneSets(), nBest=5, 
+				sort.method=c("Jaccard", "Dice", "Pvalue", "Enrichment", "MetaRank"), 
+				speciesID=getCurrentSpecies()) {
 
 	# do set overlap calculation (Jaccard Index and hypergeometric P-value)
 	curID <- getCurrentSpecies()
@@ -521,7 +523,7 @@
 	# set up to visit all the gene sets
 	names2 <- cleanGeneSetModuleNames( names(geneSets), wrap=F)
 	N2 <- length( geneSets)
-	outID2 <- outN1 <- outN2 <- outNover <- outJaccard <- outEnrich <- outExpect <- outPval <- vector()
+	outID2 <- outN1 <- outN2 <- outNover <- outJaccard <- outDiceCoef <- outEnrich <- outExpect <- outPval <- vector()
 	nout <- 0
 
 	# set the universe of all possible gene names
@@ -537,6 +539,7 @@
 		nInter <- length( intersect( genes1, genes2))
 		nUnion <- len1 + len2 - nInter
 		ji <- nInter / nUnion
+		dsc <- (2*nInter) / (len1 + len2)
 
 		ans <- enrichment( nMatch=nInter, nYourSet=len1, nTotal=nAllGenes, nTargetSubset=len2)
 		nExp <- ans$nExpected
@@ -548,17 +551,35 @@
 		outN2[nout] <- len2
 		outNover[nout] <- nInter
 		outJaccard[nout] <- ji
+		outDiceCoef[nout] <- dsc
 		outExpect[nout] <- nExp
 		outPval[nout] <- pv
 		outEnrich[nout] <- ans$Enrichment
 	}
 
-	out <- data.frame( "BestGeneSet"=outID2, "Jaccard"=round( outJaccard, digits=5), 
-			"Pvalue"=formatC( outPval, format="e", digits=3), 
+	out <- data.frame( "BestGeneSet"=outID2, "Jaccard"=round( outJaccard, digits=4), 
+			"DiceCoef"=round( outDiceCoef, digits=4), "Pvalue"=formatC( outPval, format="e", digits=3), 
 			"N_Given"=outN1, "N_InSet"=outN2, "N_Overlap"=outNover, "N_Expect"=round( outExpect,digits=3), 
 			"Enrichment"=round( outEnrich, digits=3), stringsAsFactors=F)
-	#ord <- order( out$Jaccard, decreasing=T)
-	ord <- order( out$Jaccard, -(as.numeric(out$Pvalue)), out$Enrichment, out$N_Overlap, decreasing=T)
+
+	# let the user have more say over sorting
+	sort.method <- match.arg( sort.method)
+	if( sort.method == "Jaccard") {
+		ord <- order( out$Jaccard, -(as.numeric(out$Pvalue)), out$Enrichment, out$N_Overlap, decreasing=T)
+	} else if ( sort.method == "Dice") {
+		ord <- order( out$DiceCoef, -(as.numeric(out$Pvalue)), out$Enrichment, out$N_Overlap, decreasing=T)
+	} else if ( sort.method == "Pvalue") {
+		ord <- order( -(as.numeric(out$Pvalue)), out$Jaccard, out$Enrichment, out$N_Overlap, decreasing=T)
+	} else if ( sort.method == "Enrichment") {
+		ord <- order( out$Enrichment, out$Jaccard, -(as.numeric(out$Pvalue)), out$N_Overlap, decreasing=T)
+	} else {
+		# use all of them to get average ranks
+		rankJ <- rank( -out$Jaccard, ties="min")
+		rankD <- rank( -out$DiceCoef, ties="min")
+		rankP <- rank( as.numeric(out$Pvalue), ties="min")
+		rankAvg <- (rankJ + rankD + rankP) / 3
+		ord <- order( rankAvg, rankJ)
+	}
 	out <- out[ ord, ]
 	keep <- which( out$N_Overlap > 0)
 	if ( length( keep) > nBest) length(keep) <- nBest

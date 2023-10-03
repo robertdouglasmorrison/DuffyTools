@@ -476,6 +476,14 @@ peptideChopper <- function( proteinSet, len=15, overlap=9, remove.duplicates=TRU
 		# extract all those peptides
 		pepSet <- SUBSTR( rep.int( pseq, npeps), start=pepStart, stop=pepEnd)
 
+		# now remove any fragments that were too short
+		tooShort <- WHICH( nchar( pepSet) < len)
+		if ( length( tooShort) > 0) {
+			pepSet <- pepSet[ -tooShort]
+			pepStart <- pepStart[ -tooShort]
+			pepEnd <- pepEnd[ -tooShort]
+		}
+		
 		# eliminate duplicates
 		nBefore <- length( pepSet)
 		if ( remove.duplicates) {
@@ -487,7 +495,7 @@ peptideChopper <- function( proteinSet, len=15, overlap=9, remove.duplicates=TRU
 			}
 		}
 		nAfter <- length( pepSet)
-		if (verbose) cat( "\rGene: ", names(proteinSet)[i], "\tN_Peptides: ", nAfter)
+		if (verbose) cat( "\nGene: ", names(proteinSet)[i], "\tN_Peptides: ", nAfter)
 		if (verbose && remove.duplicates) cat( "\tN_Duplicates_Removed:", nBefore-nAfter)
 		
 		# make a small data frame that has "where info"
@@ -499,11 +507,10 @@ peptideChopper <- function( proteinSet, len=15, overlap=9, remove.duplicates=TRU
 }
 
 
-peptideTable <- function( gSet, len=15, overlap=9, verbose=TRUE) {
+peptideTable <- function( proteinSet, len=15, overlap=9, verbose=TRUE) {
 
-	out <- peptideChopper( gSet, len, overlap, verbose=verbose)
 	# just the list of data frames
-	ans <- out$peptideSets
+	ans <- peptideChopper( proteinSet, len, overlap, verbose=verbose)
 
 	# build a data.frame...
 	nrows <- 0
@@ -526,9 +533,11 @@ peptideTable <- function( gSet, len=15, overlap=9, verbose=TRUE) {
 		allPepNames <- union( allPepNames, pset)
 	}
 	colnames(peps) <- names( ans)
-	write.table( peps, file="peptideTable.tsv", sep="\t", quote=FALSE)
+	write.table( peps, file="peptideTable.tsv", sep="\t", quote=FALSE, row.names=F)
 	cat("\n\nSummary:  Length=", len, "\tOverlap=", overlap)
 	cat("\n\tTotal Peptides=", totalPeps, "\tTotal Unique Peptides=", length(allPepNames),"\n")
+
+	return( peps)
 }
 
 
