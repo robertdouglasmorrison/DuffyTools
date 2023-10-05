@@ -501,7 +501,7 @@
 
 `geneSetBestMatch` <- function( genes, geneSets=defaultGeneSets(), nBest=5, 
 				sort.method=c("Jaccard", "Dice", "Pvalue", "Enrichment", "MetaRank"), 
-				speciesID=getCurrentSpecies()) {
+				speciesID=getCurrentSpecies(), clean.names=TRUE) {
 
 	# do set overlap calculation (Jaccard Index and hypergeometric P-value)
 	curID <- getCurrentSpecies()
@@ -521,13 +521,13 @@
 	len1 <- length( genes1)
 
 	# set up to visit all the gene sets
-	names2 <- cleanGeneSetModuleNames( names(geneSets), wrap=F)
+	names2 <- if (clean.names) cleanGeneSetModuleNames( names(geneSets), wrap=F) else names(geneSets)
 	N2 <- length( geneSets)
-	outID2 <- outN1 <- outN2 <- outNover <- outJaccard <- outDiceCoef <- outEnrich <- outExpect <- outPval <- vector()
+	outID2 <- outN1 <- outN2 <- outNover <- outJaccard <- outDiceCoef <- outEnrich <- outExpect <- outPval <- vector( length=N2)
 	nout <- 0
 
 	# set the universe of all possible gene names
-	all1 <- unique.default( genes1)
+	all1 <- genes1
 	all2 <- unique.default( unlist( geneSets))
 	nAllGenes <- length( union( all1, all2))
 
@@ -536,7 +536,9 @@
 		len2 <- length( genes2)
 		if ( ! len2) next
 
-		nInter <- length( intersect( genes1, genes2))
+		# we can do this faster since we just need the count, and we know 'genes1' has no duplicates
+		# nInter <- length( intersect( genes1, genes2))
+		nInter <- sum( match( genes1, genes2, nomatch=0) > 0)
 		nUnion <- len1 + len2 - nInter
 		ji <- nInter / nUnion
 		dsc <- (2*nInter) / (len1 + len2)
