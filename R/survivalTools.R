@@ -3,8 +3,8 @@
 `kaplanMeier` <- function( groups, times, outcomes, eventOutcome="Y", col=2:(length(unique(groups))+1),
 			makePlot=TRUE, xlab="Time  (weeks)", ylab="Survival", lwd=3, lty=1, legend.cex=1.1,
 			main="Kaplan-Meier: ", nFDR=0, legend.bty="o", 
-			xscale=1, yscale=1, mark.time=FALSE, pch=3, cumhaz=FALSE, 
-			xstagger=0, ystagger=0, ...) {
+			xscale=1, yscale=1, mark.time=FALSE, pch=3, cumhaz=FALSE, ylim=c(0,1.03),
+			xstagger=0, ystagger=0, show.pvalue=TRUE, legend.loc="topright", ...) {
 
 	require( survival)
 
@@ -17,14 +17,14 @@
 	pval <- pchisq( survDiff$chisq, df=1, lower=F)
 
 	# gather details for plotting
-	grpNames <- sort( unique( groups))
+	grpNames <- if (is.factor(groups)) levels(groups) else sort( unique( groups))
 
 	if (makePlot) {
 		plotSurvFit( survAns, mark.time=mark.time, pch=pch, xscale=xscale, yscale=yscale, cumhaz=cumhaz,
-			col=col, lwd=lwd, xlab=xlab, ylab=ylab, main=main, ylim=c(0,1.03), lty=lty, 
+			col=col, lwd=lwd, xlab=xlab, ylab=ylab, main=main, ylim=ylim, lty=lty, 
 			xstagger=xstagger, ystagger=ystagger, ...)
-		legend( 'topright', grpNames, col=col, lwd=lwd, lty=lty, bg='white', cex=legend.cex, bty=legend.bty)
-		legend( 'bottomleft', paste( "P-value =", round( pval, digits=4)), bg='white', cex=max(1,legend.cex),
+		if (nchar(legend.loc)) legend( legend.loc, grpNames, col=col, lwd=lwd, lty=lty, bg='white', cex=legend.cex, bty=legend.bty)
+		if (show.pvalue) legend( 'bottomleft', paste( "P-value =", round( pval, digits=4)), bg='white', cex=max(1,legend.cex),
 			bty=legend.bty)
 	}
 
