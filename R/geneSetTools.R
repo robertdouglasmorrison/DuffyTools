@@ -501,7 +501,7 @@
 
 `geneSetBestMatch` <- function( genes, geneSets=defaultGeneSets(), nBest=5, 
 				sort.method=c("Jaccard", "Dice", "Pvalue", "Enrichment", "MetaRank"), 
-				speciesID=getCurrentSpecies(), clean.names=TRUE) {
+				speciesID=getCurrentSpecies(), clean.names=TRUE, geneUniverse=NULL) {
 
 	# do set overlap calculation (Jaccard Index and hypergeometric P-value)
 	curID <- getCurrentSpecies()
@@ -528,8 +528,8 @@
 
 	# set the universe of all possible gene names
 	all1 <- genes1
-	all2 <- unique.default( unlist( geneSets))
-	nAllGenes <- length( union( all1, all2))
+	if (is.null(geneUniverse)) geneUniverse <- unique.default( unlist( geneSets))
+	nAllGenes <- length( union( all1, geneUniverse))
 
 	for ( j in 1:N2) {
 		genes2 <- geneSets[[j]]
