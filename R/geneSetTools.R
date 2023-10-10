@@ -501,7 +501,7 @@
 
 `geneSetBestMatch` <- function( genes, geneSets=defaultGeneSets(), nBest=5, 
 				sort.method=c("Jaccard", "Dice", "Pvalue", "Enrichment", "MetaRank"), 
-				speciesID=getCurrentSpecies(), clean.names=TRUE, geneUniverse=NULL) {
+				speciesID=getCurrentSpecies(), EASE.correct=FALSE, clean.names=TRUE, geneUniverse=NULL) {
 
 	# do set overlap calculation (Jaccard Index and hypergeometric P-value)
 	curID <- getCurrentSpecies()
@@ -542,8 +542,10 @@
 		nUnion <- len1 + len2 - nInter
 		ji <- nInter / nUnion
 		dsc <- (2*nInter) / (len1 + len2)
-
-		ans <- enrichment( nMatch=nInter, nYourSet=len1, nTotal=nAllGenes, nTargetSubset=len2)
+		# perhaps implement the 'EASE' correction (Genome Biology 2003)
+		nInterForStats <- nInter
+		if (EASE.correct) nInterForStats <- max( nInter - 1, 0)
+		ans <- enrichment( nMatch=nInterForStats, nYourSet=len1, nTotal=nAllGenes, nTargetSubset=len2)
 		nExp <- ans$nExpected
 		pv <- if (nExp >= nInter) ans$P_atMost_N else ans$P_atLeast_N
 
