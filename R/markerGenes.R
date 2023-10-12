@@ -222,7 +222,7 @@
 				myrankPcts <- rep.int( RANK_MIDPT, length(x))
 				myrankPcts[ mywhere > 0] <- generank[ mywhere]
 				myPtiles <- (myrankPcts - RANK_MIDPT) / RANK_MIDPT
-				score <- sum( myPtiles * myscores) * 100 / sum( mywhere > 0)
+				score <- sum( myPtiles * myscores) * 100 / length(mywhere) ## sum( mywhere > 0)
 				return( score)
 			})
 		}
