@@ -188,7 +188,7 @@
 		return( NULL)
 	}
 	markerDF$SCORE <- ifelse( toupper( markerDF$Direction) == "UP", 1, -1)
-	markerDF$SCORE[ where == 0] <- -0.01  # apply a small negative to each missing gene?   was: 0
+	markerDF$SCORE[ where == 0] <- 0
 	markerFac <- factor( markerDF$Group)
 	NGRPS <- nlevels( markerFac)
 
@@ -205,7 +205,7 @@
 				myPtiles <- (myrankPcts - RANK_MIDPT) / RANK_MIDPT
 	
 				# multiply by their sign and scale to number of markers
-				score <- sum( myPtiles * myscores) * 100 / sum( mywhere > 0)
+				score <- sum( myPtiles * myscores) * 100 / length(mywhere) ## sum( mywhere > 0)
 				return( score)
 			})
 
