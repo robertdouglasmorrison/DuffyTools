@@ -2438,7 +2438,8 @@
 # phlyo tree plot for cell type transcriptomes plus other data
 `plotCellTypeDistanceTree` <- function( x=NULL, sampleIDs=NULL, intensityColumn=NULL,
 				main=paste( getCurrentSpecies(), ": ", getCellTypeReference(), sep=""),
-				col=NULL, tree.type="p", label.offset=1, text.cex=1.0, text.font=1, verbose=F, ...) {
+				col=NULL, tree.type="p", label.offset=1, text.cex=1.0, text.font=1, 
+				renormalize=FALSE, verbose=F, ...) {
 
 	# get the current cell type target matrix and coloring
 	tm <- getCellTypeMatrix()
@@ -2468,6 +2469,11 @@
 		m1 <- tm[ whCell, ]
 		whGM <- match( useGenes, gmGenes)
 		m2 <- gm[ whGM, ]
+		# before we join these 2 (potential) subsets together, put them both on the same scale
+		if (renormalize) {
+			for (k in 1:ncol(m1)) m1[,k] <- m1[,k] * 1000000 / sum(abs(m1[,k]))
+			for (k in 1:ncol(m2)) m2[,k] <- m2[,k] * 1000000 / sum(abs(m2[,k]))
+		}
 		tm <- cbind( m1, m2)
 		cellColors <- c( cellColors, col)
 	}
