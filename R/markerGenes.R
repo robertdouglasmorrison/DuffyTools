@@ -168,9 +168,11 @@
 		return(NULL)
 	}
 
-	# make sure most of the markers are seen
+	# make sure enough of the markers are seen
 	markgenes <- markerDF$GENE_ID
 	NMG <- nrow(markerDF)
+	NGG <- nrow(tbl)
+	minGenesToFind <- min( NMG, NGG) * 0.25
 
 	if ( mode == "transcriptome") {
 		noMatchValue <- 0
@@ -178,7 +180,7 @@
 		noMatchValue <- Ngenes + 1
 	}
 	where <- match(markgenes, genes, nomatch=noMatchValue)
-	if ( sum( where != 0) < NMG*0.1) {
+	if ( sum( where != 0) < minGenesToFind) {
 		cat( "\nToo many 'Marker Genes' not found in transcriptome..  Check current species..")
 		cat( "\nN_Genes in data set: ", Ngenes)
 		cat( "\nN_MarkerGenes:       ", NMG)
