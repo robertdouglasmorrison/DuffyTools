@@ -492,7 +492,7 @@
 		# package up a bit of context to send back
 		barAts <- ans
 		names(barAts) <- colnames(pcts)
-		return( list( "bar.centers"=barAts, "band.centers"=bandCtr))
+		return( invisible( list( "bar.centers"=barAts, "band.centers"=bandCtr)))
 	}
 }
 

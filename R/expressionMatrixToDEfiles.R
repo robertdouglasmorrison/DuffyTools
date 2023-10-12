@@ -42,7 +42,7 @@
 	cat( "\nCalculating P-values..")
 	pvM <- matrix( NA, NR, NC)
 	for ( i in 1:NR) {
-		# wathc for values that break T test
+		# watch for values that break T test
 		otherV <- fcM[ i, ]
 		if ( all( abs( otherV) < 0.05)) next
 		for( j in 1:NC) {
