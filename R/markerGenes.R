@@ -188,7 +188,7 @@
 		return( NULL)
 	}
 	markerDF$SCORE <- ifelse( toupper( markerDF$Direction) == "UP", 1, -1)
-	markerDF$SCORE[ where == 0] <- 0
+	markerDF$SCORE[ where == 0] <- -0.01  # apply a small negative to each missing gene?   was: 0
 	markerFac <- factor( markerDF$Group)
 	NGRPS <- nlevels( markerFac)
 
