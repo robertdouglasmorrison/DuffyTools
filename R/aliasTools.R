@@ -7,7 +7,7 @@
 	if ( (!exists( "AliasTable", envir=AliasEnv)) || (AliasEnv[[ "AliasSpecies"]] != curSpecies)) {
 		AliasTable <- NULL
 		toLoad <- paste( getCurrentSpeciesFilePrefix(), "AliasTable", sep=".")
-		data( list=list( toLoad), envir=environment())
+		data( list=toLoad, envir=environment())
 		if ( is.null( AliasTable)) {
 			cat( "\nWarn: Failed to find/load Alias Table:  ", toLoad, "\n")
 			AliasEnv[[ "AliasTable"]] <- NULL

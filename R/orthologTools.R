@@ -10,7 +10,7 @@
 	if ( ! exists( "OrthoTable", envir=OrthoEnv)) {
 		orthoTable <- NULL
 		toLoad <- "OrthologTable"
-		data( list=list( toLoad), envir=environment())
+		data( list=toLoad, envir=environment())
 		if ( is.null( orthoTable)) {
 			cat( "\nFailed to load Ortholog Table:  ", toLoad)
 			OrthoEnv[[ "OrthoTable"]] <- NULL
@@ -98,7 +98,7 @@
 	if ( ! exists( "OrthoTable", envir=OrthoEnv)) {
 		orthoTable <- NULL
 		toLoad <- "OrthologTable"
-		data( list=list( toLoad), envir=environment())
+		data( list=toLoad, envir=environment())
 		if ( is.null( orthoTable)) {
 			cat( "\nFailed to load Ortholog Table:  ", toLoad)
 			OrthoEnv[[ "OrthoTable"]] <- NULL
@@ -184,7 +184,7 @@
 	if ( ! exists( "OrthoTable", envir=OrthoEnv)) {
 		orthoTable <- NULL
 		toLoad <- "OrthologTable"
-		data( list=list( toLoad), envir=environment())
+		data( list=toLoad, envir=environment())
 		if ( is.null( orthoTable)) {
 			cat( "\nFailed to load Ortholog Table:  ", toLoad)
 			OrthoEnv[[ "OrthoTable"]] <- NULL
