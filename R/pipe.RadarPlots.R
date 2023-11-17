@@ -81,10 +81,13 @@
 			# a few geneSets was "()" for several things...
 			wrapParentheses <- ( length( grep( "BTM", gs)) == 0)
 
-			thisRestrictionSet <- NULL
+			thisRestrictionSet <- restrictionSets
 			if ( ! is.null( restrictionSets)) {
 				where <- match( gs, names(restrictionSets), nomatch=0)
-				if ( where > 0) thisRestrictionSet <- restrictionSets[[ where]]
+				if ( where > 0) {
+					thisRestrictionSet <- restrictionSets[[ where]]
+					cat( "\n  Using a restriction set of pathways..")
+				}
 			}
 
 			ans <- pipe.OneRadarPlot( sampleIDset=allSamples, speciesID=speciesID, annotationFile=annotationFile,
@@ -194,6 +197,8 @@
 		if ( ! is.null( pathNames)) {
 			pathNames <- cleanGeneSetModuleNames( pathNames, wrapParentheses=wrapParentheses)
 			keepers <- which( names( allGeneSets) %in% pathNames)
+			#cat( "\nDebug: restrictionSet: ", head( pathNames))
+			#cat( "\nDebug: Keepers: ", head( keepers))
 			if ( length( keepers)) {
 				allGeneSets <- allGeneSets[ keepers]
 				fullPathNames <- fullPathNames[ keepers]
