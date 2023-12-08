@@ -216,8 +216,7 @@
 
 	# do the reduction & grouping.  This call must use mean average, never pass down the method used for the MA step.
 	radarAns <- reduceMatrixToModules( radarMA, geneModules=allGeneSets, sampleTraits=allGroupsList,
-				gene.names=shortGeneName( rownames( radarMA), keep=1), average.FUN=mean,
-				sample.names=colnames(radarMA), baselineTrait=NULL)   # baselineGroup)
+				gene.names=shortGeneName( rownames( radarMA), keep=1), average.FUN=mean)
 	mShow <- radarMOD <- radarAns$matrix
 	pShow <- radarPvalue <- radarAns$p.value
 	piShow <- radarPIvalue <- radarAns$pi.value
@@ -437,8 +436,7 @@
 	if ( ! is.null( geneSet)) {
 		# do the reduction & grouping.  This call must use mean average, never pass down the method used for the MA step.
 		radarAns <- reduceMatrixToModules( radarMA, geneModules=allGeneSets, sampleTraits=allGroupsList,
-						gene.names=shortGeneName(row.names,keep=1), baselineTrait=NULL,   # baselineGroup,
-						average.FUN=mean)
+						gene.names=shortGeneName(row.names,keep=1), average.FUN=mean)
 		mShow <- radarMOD <- radarAns$matrix
 		pShow <- radarPvalue <- radarAns$p.value
 		validModuleNames <- radarAns$moduleNames

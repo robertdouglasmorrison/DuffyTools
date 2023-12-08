@@ -194,7 +194,7 @@
 	# do the reduction & grouping.  This call must use mean average, never pass down the method used for the MA step.
 	bubbleAns <- reduceMatrixToModules( bubbleMA, geneModules=allGeneSets, sampleTraits=allGroupsList,
 				gene.names=shortGeneName( rownames( bubbleMA), keep=1), average.FUN=mean,
-				sample.names=colnames(bubbleMA), baselineTrait=NULL)   #baselineGroup)
+				sample.names=colnames(bubbleMA))
 	mShow <- bubbleMOD <- bubbleAns$matrix
 	pShow <- bubblePvalue <- bubbleAns$p.value
 	validModuleNames <- bubbleAns$moduleNames

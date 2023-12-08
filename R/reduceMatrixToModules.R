@@ -63,7 +63,6 @@ reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rown
 		lapply( 1:NR, function(i) {
 			myI <- Rptrs[[ i]]
 			v <- as.vector( m[ myI, myJ])
-			if ( ! is.null( baselineTrait)) v <- v - shiftV[i]
 			outN[ i, j] <<- n <- sum( ! is.na(v))
 			outV[ i, j] <<- average.FUN( v, na.rm=T)
 			if( n > 1) {
