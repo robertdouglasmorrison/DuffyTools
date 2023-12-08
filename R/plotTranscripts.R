@@ -227,6 +227,7 @@
 `plotFoldChange` <- function( file, geneColumn="GENE_ID", foldColumn="LOG2FOLD", pvalueColumn="PVALUE", cex=1,
 			keepIntergenics=FALSE, label="Plot", plotType=c("Volcano"),
 			pch=21, col=c('blue','red', 'black'), cut.fold=1, cut.pvalue=0.05, shortNames=TRUE,
+			signif.labels=TRUE, signif.label.cex=1, 
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.label.cex=1, 
 			marker.pch=21, marker.pos=NULL, sep="\t", min.intensity=0, intensityColumn="RPKM_1", 
 			left.label=NULL, right.label=NULL, forceXmax=NULL, forceYmax=NULL, ...) {
@@ -285,6 +286,7 @@
 	if ( plotType == "Volcano") {
 		ans <- makeVolcanoPlot( genes, fold, pval, label=label, cex=cex,
 			pch=pch, col=col, cut.fold=cut.fold, cut.pvalue=cut.pvalue,
+			signif.labels=signif.labels, signif.label.cex=signif.label.cex, 
 			marker.genes=marker.genes, marker.col=marker.col, marker.cex=marker.cex, marker.label.cex=marker.label.cex,
 			marker.labels=marker.labels, marker.pch=marker.pch, marker.pos=marker.pos, 
 			left.label=left.label, right.label=right.label, forceXmax=forceXmax, forceYmax=forceYmax, ...)
@@ -448,6 +450,7 @@
 `makeVolcanoPlot` <- function( genes, fold, pval, label="Volcano Plot: ", 
 			pch=21, col=c('blue','red','black'), cut.fold=1, cut.pvalue=0.05,
 			clip.fold=10, clip.pvalue=1e-10, forceXmax=NULL, forceYmax=NULL,
+			signif.labels=TRUE, signif.label.cex=1,
 			marker.genes=NULL, marker.col=1, marker.cex=1, marker.labels=TRUE, marker.label.cex=1,
 			marker.pch=21, marker.pos=NULL, cex=1, left.label=NULL, right.label=NULL, ...) {
 
@@ -482,14 +485,16 @@
 	N <- length( fold)
 	myCol <- rep.int( col[1], N)
 
+	# change the logic a bit, to separate the significance from the marker genes
+	# first color by P-value
+	isSignif <- which( abs(fold) >= cut.fold & pval <= cut.pvalue)
+	myCol[ isSignif] <- col[2]
+
 	if ( ! is.null( marker.genes)) {
 		# given explicit genes, just show those
 		whereMarker <- match( marker.genes, genes, nomatch=0)
 		if ( all( whereMarker == 0)) whereMarker <- pmatch( marker.genes, genes, nomatch=0)
-		myCol[ whereMarker] <- col[2]
-	} else {
-		# color by P-value
-		myCol[ abs(fold) >= cut.fold & pval <= cut.pvalue] <- col[2]
+		myCol[ whereMarker] <- marker.col
 	}
 
 	plot ( fold, y, type="p", main=label, xlab="Log2 Fold Change",
@@ -498,23 +503,17 @@
 
 	# label selected genes, assumes the genes 'up in set1' are in the first half...
 	# add labels when the P-value is great enough
-	if ( ! is.null( marker.genes)) {
-		doLabel <- whereMarker
-		myPos <- ifelse( fold[whereMarker] > 0, 4, 2)
-	} else {
-		doLabel <- which( pval <= cut.pvalue & abs(fold) >= cut.fold)
-		myPos <- ifelse( fold[doLabel] > 0, 4, 2)
-	}
-		
-	if ( is.null( marker.genes) && length( doLabel)) {
-		if ( length(doLabel) > 2) {
+	# now do the significance and the markers as 2 separate passes
+	if (signif.labels && length(isSignif)) {
+		myPos <- ifelse( fold[isSignif] > 0, 4, 2)
+		if ( length(isSignif) > 2) {
 			require( plotrix)
-			myPos <- thigmophobe( fold[doLabel], y[doLabel])
+			myPos <- thigmophobe( fold[isSignif], y[isSignif])
 			# but force these to take right sides
-			myPos[ fold[doLabel] < 0 & myPos == 4] <- 2
-			myPos[ fold[doLabel] > 0 & myPos == 2] <- 4
+			myPos[ fold[isSignif] < 0 & myPos == 4] <- 2
+			myPos[ fold[isSignif] > 0 & myPos == 2] <- 4
 		}
-		text( fold[doLabel], y[doLabel], genes[doLabel], pos=myPos, cex=marker.label.cex)
+		text( fold[isSignif], y[isSignif], genes[isSignif], pos=myPos, cex=signif.label.cex)
 	}
 
 	if ( length( marker.genes) > 0) {
@@ -542,7 +541,8 @@
 
 	# optional labels to remind which group is which
 
-	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in '", left.label, "'", sep=""), cex=1, font=2)
+	#if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in '", left.label, "'", sep=""), cex=1, font=2)
+	if ( !is.null(right.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "DOWN in '", right.label, "'", sep=""), cex=1, font=2)
 	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in '", right.label, "'", sep=""), cex=1, font=2)
 	dev.flush()
 

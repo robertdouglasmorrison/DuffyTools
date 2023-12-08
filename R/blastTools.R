@@ -132,17 +132,27 @@
 
 	# scan the output of Blast for the data columns we need
 	# depending on the version of BLAST, the column mode number is different
-	if ( outfmt %in% c(6,8)) {
-		what <- list( "PROBE_ID"="character", "SEQ_ID"="character", "PCT_MATCH"="numeric",
+	defaultWhat <- list( "PROBE_ID"="character", "SEQ_ID"="character", "PCT_MATCH"="numeric",
 			"LEN_MATCH"="integer", "MIS_MATCH"="integer", "GAP"="integer", 
 			"P_FIRST"="integer", "P_LAST"="integer", "S_BEG"="integer", "S_END"="integer", 
 			"E_VALUE"="numeric", "SCORE"="integer")
+	nOtherTerms <- 0
+	if ( outfmt %in% c(6,8)) {
+		what <- defaultWhat
+	} else if ( grepl( "^6 std", outfmt)) {
+		otherTerms <- toupper( strsplit( sub( "^6 std ", "", outfmt), split=" +")[[1]])
+		nOtherTerms <- length( otherTerms)
+		what <- defaultWhat
+		if (nOtherTerms) for (k in 1:nOtherTerms) {
+			what <- c( what, "character")
+			names(what)[ length(what)] <- otherTerms[k]
+		}
 	} else {
 		warning( paste( "Unsupported Blast Output view format...:  outfmt=", outfmt))
 		return( NULL)
 	}
 
-	blastData <- scan( file=infile, what=what, flush=TRUE, fill=TRUE, quiet=verbose )
+	blastData <- scan( file=infile, sep="\t", what=what, flush=TRUE, fill=TRUE, quiet=verbose )
 	if ( length( blastData[[1]]) < 1) {
 		cat( "\nProblem reading file:  ", basename(infile))
 		cat( "\nNo records found.")
@@ -169,13 +179,22 @@
 	sEnd <- sEndNew
 	evalue <- as.numeric( blastData$E_VALUE)
 	score <- as.numeric( blastData$SCORE)
-	rm( blastData, what)
+	if (nOtherTerms) {
+		otherTextM <- matrix( "", nrow=length(pSet), ncol=nOtherTerms)
+		for ( k in 1:nOtherTerms) otherTextM[ , k] <- as.character( blastData[[12+k]])
+		colnames(otherTextM) <- otherTerms
+	}
+	rm( blastData)
 
 	blastDF <- data.frame( pSet, sSet, pctMatch, lenMatch, misMatch, gap, firstPmatch, lastPmatch, 
-			sBeg, sEnd, evalue, score, strand, stringsAsFactors=FALSE)
-	colnames( blastDF) <- c( "PROBE_ID", "SEQ_ID", "PCT_MATCH", "LEN_MATCH", "MIS_MATCH", "GAP", 
-			"P_FIRST", "P_LAST", "S_BEG", "S_END", "E_VALUE", "SCORE", "STRAND")
+			sBeg, sEnd, evalue, score, stringsAsFactors=FALSE)
+	if ( nOtherTerms) blastDF <- cbind( blastDF, otherTextM, stringsAsFactors=F)
+	colnames( blastDF) <- names(what)
 	rownames(blastDF) <- 1:nrow(blastDF)
+	blastDF$STRAND <- strand
+
+	# if we got certain text string fields, there may be hypertext escape seqs
+	if ("STITLE" %in% colnames(blastDF)) blastDF$STITLE <- convertHypertext( blastDF$STITLE)
 
 	if ( ! is.null(nKeep)) {
 

@@ -437,7 +437,7 @@
 
 	# step 2:  turn that into heatmap data, and show it
 	# convert  expression to M-values
-	cellM2 <- expressionMatrixToMvalue( cellM)
+	cellM2 <- expressionMatrixToMvalue( cellM, verbose=verbose)
 
 	# and pass it to the heatmap tool
 	ans <- heatmap( cellM2, heatColors=heatColors, ...)

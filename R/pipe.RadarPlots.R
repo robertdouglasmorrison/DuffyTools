@@ -8,7 +8,7 @@
 				legend.prefix=NULL, legend.order=NULL, legend.cex=1, Nshow=24, cex=0.80,
 				start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
 				radial.lim=NULL, min.radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, 
-				main=paste( "Comparison:  ",folderName), ...)
+				main=paste( "Comparison:  ",folderName), max.label.length=80, ...)
 {
 
 	require( plotrix)
@@ -24,6 +24,7 @@
 	allSamples <- myAnnT$SampleID
 	if ( ! (groupColumn %in% colnames(myAnnT))) stop( paste( "Given grouping column not in annotation table: ", groupColumn))
 	if ( ! (colorColumn %in% colnames(myAnnT))) stop( paste( "Given coloring column not in annotation table: ", colorColumn))
+	allGroups <- myAnnT[[ groupColumn]]
 
 	# build the path to the DE results we will use, and put our Radar results
 	if ( is.null( results.path)) {
@@ -47,7 +48,10 @@
 		files <- file.path( results.path, "transcript", files)
 		radarM <<- expressionFileSetToMatrix( files, allSamples, intensityColumn=intensityColumn, verbose=T)
 		cat( "\nConverting Expression Abundance to M-values..")
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN)
+		# if we were given a baseline group, assert that at the Mvalue step, not at the ReductionToModules step
+		baselineColumns <- NULL
+		if ( ! is.null(baselineGroup)) baselineColumns <- which( allGroups == baselineGroup)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, baselineColumns=baselineColumns)
 		cat( "  Done.\n")
 	}
 
@@ -60,7 +64,8 @@
 				baselineGroup=baselineGroup, reload=FALSE, Nshow=Nshow, start=start, 
 				radial.labels=radial.labels, radial.margin=radial.margin, radial.lim=radial.lim, min.radial.lim=min.radial.lim,
 				boxed.radial=boxed.radial, label.prop=label.prop, lwd=lwd, main=main, 
-				legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, cex=cex, ...)
+				legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, cex=cex, 
+				max.label.length=max.label.length, ...)
 		geneSetName <- "Radar"
 		plotFile <- file.path( radarPath, geneSetName)
 		printPlot( plotFile, optT=optionsFile)
@@ -97,7 +102,7 @@
 					radial.labels=radial.labels, radial.margin=radial.margin, radial.lim=radial.lim, min.radial.lim=min.radial.lim,
 					boxed.radial=boxed.radial, label.prop=label.prop, lwd=lwd, main=main, 
 					legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, cex=cex, 
-					wrapParentheses=wrapParentheses, ...)
+					max.label.length=max.label.length, wrapParentheses=wrapParentheses, ...)
 			if ( ! nrow( ans)) {
 				out[[k]] <- ans
 				next
@@ -133,7 +138,7 @@
 				reload=FALSE, Nshow=24, 
 				start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
 				radial.lim=NULL, min.radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, main=NULL, 
-				wrapParentheses=TRUE, ...)
+				max.label.length=80, wrapParentheses=TRUE, ...)
 {
 
 	setCurrentSpecies( speciesID)
@@ -162,11 +167,11 @@
 	allSamples <- sampleIDset
 	myAnnT <- subset( annT, SampleID %in% allSamples)
 	allSamples <- myAnnT$SampleID
-
 	if ( ! (groupColumn %in% colnames(myAnnT))) stop( paste( "Given grouping column not in annotation table: ", groupColumn))
-	grpFac <- factor( myAnnT[[ groupColumn]])
-	allGroups <- tapply( myAnnT$SampleID, grpFac, FUN=c, simplify=FALSE)
-	NperGroup <- sapply( allGroups, length)
+	allGroups <- myAnnT[[ groupColumn]]
+	grpFac <- factor( allGroups)
+	allGroupsList <- tapply( myAnnT$SampleID, grpFac, FUN=c, simplify=FALSE)
+	NperGroup <- sapply( allGroupsList, length)
 
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optionsFile, "results.path", verbose=F)
@@ -174,7 +179,7 @@
 
 	# map from the group names to find the colors to use...
 	if ( ! (colorColumn %in% colnames(myAnnT))) stop( paste( "Given coloring column not in annotation table: ", colorColumn))
-	where <- base::match( names(allGroups), myAnnT[[ groupColumn]])
+	where <- base::match( names(allGroupsList), myAnnT[[ groupColumn]])
 	mycolors <- myAnnT[[ colorColumn]][ where]
 
 	# see if we have to read the transcriptomes in...
@@ -184,7 +189,10 @@
 		files <- paste( allSamples, prefix, "Transcript.txt", sep=".")
 		files <- file.path( results.path, "transcript", files)
 		radarM <<- expressionFileSetToMatrix( files, allSamples, verbose=T)
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN)
+		# if we were given a baseline group, assert that at the Mvalue step, not at the ReductionToModules step
+		baselineColumns <- NULL
+		if ( ! is.null(baselineGroup)) baselineColumns <- which( allGroups == baselineGroup)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, baselineColumns=baselineColumns)
 	}
 
 	# try to standarize the names of the gene sets to keep them easy to view
@@ -207,9 +215,9 @@
 	}
 
 	# do the reduction & grouping.  This call must use mean average, never pass down the method used for the MA step.
-	radarAns <- reduceMatrixToModules( radarMA, geneModules=allGeneSets, sampleTraits=allGroups,
+	radarAns <- reduceMatrixToModules( radarMA, geneModules=allGeneSets, sampleTraits=allGroupsList,
 				gene.names=shortGeneName( rownames( radarMA), keep=1), average.FUN=mean,
-				sample.names=colnames(radarMA), baselineTrait=baselineGroup)
+				sample.names=colnames(radarMA), baselineTrait=NULL)   # baselineGroup)
 	mShow <- radarMOD <- radarAns$matrix
 	pShow <- radarPvalue <- radarAns$p.value
 	piShow <- radarPIvalue <- radarAns$pi.value
@@ -286,6 +294,9 @@
 	piShow <- piShow[ ord, ]
 	validModuleNames <- validModuleNames[ ord]
 
+	# let's trim the really long module names
+	labelsToShow <- clipLongString( validModuleNames, max.length=max.label.length, pct.front=0.8)
+
 	# plot it now
 	require( plotrix)
 	# either set the limits from the data..
@@ -306,15 +317,15 @@
 		if ( min.radial.lim[1] < radial.lim[1]) radial.lim[1] <- min.radial.lim[1]
 		if ( min.radial.lim[2] > radial.lim[2]) radial.lim[2] <- min.radial.lim[2]
 	}
-	DuffyTools::radial.plot( t(mShow), labels=validModuleNames, radlab=radial.labels, rp.type="p", line.col=mycolors,
+	DuffyTools::radial.plot( t(mShow), labels=labelsToShow, radlab=radial.labels, rp.type="p", line.col=mycolors,
 			start=start, clockwise=T, mar=radial.margin, radial.lim=radial.lim, label.prop=label.prop,
 			show.grid.labels=3, lwd=lwd, main=mainText, cex=cex, ...)
 
 	# take more control of the legend location
 	usr <- par( "usr")
 	par( 'xpd'=NA)
-	legendText <- names(allGroups)
-	if ( any( NperGroup > 1)) legendText <- paste( names(allGroups), "  (N=",NperGroup, ")", sep="")
+	legendText <- names(allGroupsList)
+	if ( any( NperGroup > 1)) legendText <- paste( names(allGroupsList), "  (N=",NperGroup, ")", sep="")
 	if ( ! is.null(legend.prefix)) legendText <- paste( legend.prefix, legendText, sep=":  ")
 	if ( ! is.null(legend.order)) {
 		legendText <- legendText[ legend.order]
@@ -368,7 +379,7 @@
 				geneSet=defaultGeneSets(), restrictionSets=NULL, baselineGroup=NULL,
 				Nshow=24, start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
 				radial.lim=NULL, min.radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, main=NULL, 
-				legend.cex=1.1, cex=par("cex.axis"), ...)
+				legend.cex=1.1, cex=par("cex.axis"), max.label.length=80, ...)
 {
 
 	prefix <- getCurrentSpeciesFilePrefix()
@@ -388,13 +399,17 @@
 		}
 	}
 
-	allGroups <- tapply( colnames(m), factor(colGroups), c)
-	NperGroup <- sapply( allGroups, length)
-	mycolors <- colors[1:length(allGroups)]
+	allGroups <- colGroups
+	allGroupsList <- tapply( colnames(m), factor(colGroups), c)
+	NperGroup <- sapply( allGroupsList, length)
+	mycolors <- colors[1:length(allGroupsList)]
 
 	if ( foldChangeTransform) {
 		radarM <<- m
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN)
+		# if we were given a baseline group, assert that at the Mvalue step, not at the ReductionToModules step
+		baselineColumns <- NULL
+		if ( ! is.null(baselineGroup)) baselineColumns <- which( allGroups == baselineGroup)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, baselineColumns=baselineColumns)
 	} else {
 		radarMA <<- m
 	}
@@ -421,8 +436,8 @@
 	# do the reduction & grouping
 	if ( ! is.null( geneSet)) {
 		# do the reduction & grouping.  This call must use mean average, never pass down the method used for the MA step.
-		radarAns <- reduceMatrixToModules( radarMA, geneModules=allGeneSets, sampleTraits=allGroups,
-						gene.names=shortGeneName(row.names,keep=1), baselineTrait=baselineGroup,
+		radarAns <- reduceMatrixToModules( radarMA, geneModules=allGeneSets, sampleTraits=allGroupsList,
+						gene.names=shortGeneName(row.names,keep=1), baselineTrait=NULL,   # baselineGroup,
 						average.FUN=mean)
 		mShow <- radarMOD <- radarAns$matrix
 		pShow <- radarPvalue <- radarAns$p.value
@@ -464,12 +479,15 @@
 		}
 		mShow <- mOut <- radarMA
 		fullPathNames <- validModuleNames <- rownames(radarMA)
-		allGroups <- colnames(radarMA)
-		names(allGroups) <- allGroups
-		NperGroup <- rep.int( 1, length(allGroups))
+		allGroupsList <- colnames(radarMA)
+		names(allGroupsList) <- allGroupsList
+		NperGroup <- rep.int( 1, length(allGroupsList))
 		pOut <- matrix( 1, nrow=nrow(mOut), ncol=ncol(mOut))
 		nGenes <- rep.int( NA, nrow(mOut))
 	}
+
+	# let's trim the really long module names
+	labelsToShow <- clipLongString( validModuleNames, max.length=max.label.length, pct.front=0.8)
 
 	# plot it now
 	require( plotrix)
@@ -496,8 +514,8 @@
 	# take more control of the legend location
 	usr <- par( "usr")
 	par( 'xpd'=NA)
-	legendText <- names(allGroups)
-	if ( any( NperGroup > 1)) legendText <- paste( names(allGroups), "  (N=",NperGroup, ")", sep="")
+	legendText <- names(allGroupsList)
+	if ( any( NperGroup > 1)) legendText <- paste( names(allGroupsList), "  (N=",NperGroup, ")", sep="")
 	if ( ! is.null(legend.prefix)) legendText <- paste( legend.prefix, legendText, sep=":  ")
 	if ( ! is.null(legend.order)) {
 		legendText <- legendText[ legend.order]

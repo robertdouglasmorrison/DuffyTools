@@ -1,8 +1,9 @@
 # reducedMatrix.R -- condense down a matrix of "Gene X Sample" to "module X Trait"
+#			as of Dec 2023, removing all 'baseline adjustment' steps. Now handled
+#			in previous steps when turning expression values to Mvalues
 
 reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rownames(m),
-				sample.names=colnames(m), average.FUN=mean, 
-				baselineTrait=NULL, checkGenes=TRUE) {
+				sample.names=colnames(m), average.FUN=mean, checkGenes=TRUE) {
 
 	if ( is.null( names(geneModules))) stop( "'geneModules' must be a named list")
 
@@ -57,26 +58,6 @@ reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rown
 	outNames <- RgroupNames
 	nGenes <- sapply( Rptrs, length)
 
-	# we may have been asked to force a trait to be the baseline, i.e. hardwire to zero
-	if ( ! is.null( baselineTrait)) {
-		baselineColumn <- match( baselineTrait, colnames(outV), nomatch=0)
-		if ( baselineColumn == 0) {
-			cat( "\nError in 'ReduceMatrixToModules()':  baseline trait not a valid choice.")
-			cat( "\nGiven: ", baselineTrait, "  \tChoices: ", colnames(outV))
-			stop()
-		}
-		cat( "\nLinear shift to fix as baseline trait:  ", baselineTrait)
-
-		# visit the data ahead of time to generate the median of the baseline trait for each module
-		myJ <- Cptrs[[ baselineColumn]]
-		shiftV <- vector( length=length( Rptrs))
-		lapply( 1:NR, function(i) {
-			myI <- Rptrs[[ i]]
-			v <- as.vector( m[ myI, myJ])
-			shiftV[ i] <<- average.FUN( v, na.rm=T)
-		})
-	}
-
 	for ( j in 1:NC) {
 		myJ <- Cptrs[[ j]]
 		lapply( 1:NR, function(i) {
@@ -118,9 +99,6 @@ reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rown
 	}
 	if ( nrow( outV) < 2) stop( "Not eough modules have data...")
 
-	# we may have been asked to force a trait to be the baseline, i.e. hardwire to zero
-	# now done ahead of time, to be in effect when we measure P values
-
 	# given all the M values and P-values, make those PI values
 	for ( j in 1:ncol(outV)) {
 		outPI[ , j] <- piValue( outV[,j], outP[,j])
@@ -128,3 +106,4 @@ reduceMatrixToModules <- function( m, geneModules, sampleTraits, gene.names=rown
 
 	return( list( "moduleNames"=outNames, "matrix"=outV, "p.value"=outP, "pi.value"=outPI, "geneCounts"=nGenes))
 }
+

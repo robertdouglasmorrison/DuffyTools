@@ -192,9 +192,6 @@ radial.plot <- function (lengths, radial.pos = NULL, labels = NA, label.pos = NU
 	    }
         }
 
-	# let's trim the really long ones
-	labels <- clipLongString( labels, max.length=75, pct.front=1.0)
-
         if (radlab) {
 	    # when radial labels, not special shifting
             xpos <- cos(label.pos) * maxlength * label.prop
