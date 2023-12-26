@@ -22,6 +22,11 @@
 }
 
 
+`z.score` <- function(x, na.rm=FALSE) {
+	return( (x - mean(x,na.rm=na.rm)) / sd(x,na.rm=na.rm))
+}
+
+
 `sparse.t.test` <- function( x, y=NULL, min.obs=3, ..., min.random.value=NULL) {
 
 	# make extra observed values using sensible constraints

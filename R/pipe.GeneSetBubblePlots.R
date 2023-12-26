@@ -33,7 +33,7 @@
 	tool <- match.arg( tool)
 	dePath <- file.path( results.path, tool, folderName)
 	if ( ! file.exists( dePath)) stop( paste( "DE results folder not found: ", dePath))
-	bubblePath <- file.path( dePath, "GeneSetBubblePlots")
+	bubblePath <- file.path( dePath, "BubblePlots")
 	if ( ! file.exists( bubblePath)) dir.create( bubblePath, recursive=T)
 
 	# we have to read the transcriptomes in... to pre-load the data
