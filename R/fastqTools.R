@@ -767,7 +767,7 @@
 			for ( i in 1:length(starts)) locs[[i]] <- starts[i] : stops[i]
 
 			ans <- multicore.lapply( locs, FUN=myDNAtoAAfunc, peps=uniqSeqs, cnts=uniqCnts, 
-						mc.allow.recursive=FALSE, preschedule=TRUE)
+						preschedule=TRUE)
 		}
 
 		# extract all the little data frame answers
