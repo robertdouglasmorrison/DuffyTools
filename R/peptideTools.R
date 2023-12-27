@@ -394,7 +394,7 @@ UNION <- base::union
 
 
 	bigP2ProAns <- multicore.lapply( 1:nPeptides, bestHit, nBest=nBest, tieBreakMode=tieBreakMode,
-				details=details, preschedule=TRUE, verbose=verbose)
+				details=details, mc.allow.recursive=FALSE, preschedule=TRUE, verbose=verbose)
 
 	return( bigP2ProAns)
 }
