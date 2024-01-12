@@ -387,14 +387,14 @@
 	algorithm <- match.arg( algorithm)
 	# set up for NLS
 	if (algorithm == "nls" && fixedPeaks) {
-		controlList <- nls.control( maxiter=50, minFactor=1/64, tol=0.00001, warnOnly=TRUE, printEval=TRUE)
+		controlList <- nls.control( maxiter=50, minFactor=1/64, tol=0.00001, warnOnly=TRUE, printEval=FALSE)
 		starts <- list( "height"=guess.height, "width"=guess.width, "center"=guess.center)
 		x <- seq
 		y <- as.vector(obsTrace)
 		
-		nlsAns <- nls( y ~ syntheticTraceVector( x, height, width, center), 
+		nlsAns <- try( nls( y ~ syntheticTraceVector( x, height, width, center), 
 					start=starts, control=controlList, algorithm="port", lower=lowerBounds,
-					upper=upperBounds, trace=FALSE)
+					upper=upperBounds, trace=FALSE), silent=TRUE)
 		nlsAns2 <- summary( nlsAns)
 		coefs <- nlsAns2$coefficients
 		ht <- coefs[1,1]
@@ -412,7 +412,7 @@
 		# GenSA wants one vector of parameter weights
 		wts <- c( start.height, start.width, start.center)
 		control.list <- list( "maxit"=max.iter, "threshold.stop"=stopValue, "smooth"=FALSE, "max.call"=max.calls,
-					"max.time"=max.time, "trace.mat"=FALSE)
+					"max.time"=max.time, "trace.mat"=TRUE)
 
 		# make the call		
 		ans <- GenSA( par=wts, lower=lowerBounds, upper=upperBounds, fn=genSA.Chromatogram.residual,
@@ -685,9 +685,9 @@
 	# call the NLS to do the fit
 	SAV_NLS1 <<- nlsAns <- try( nls( y ~ blendChromatograms( x, weights), 
 				start=starts, control=controlList, algorithm="port", lower=lowerBounds,
-				upper=upperBounds))
+				upper=upperBounds), silent=TRUE)
 	if ( class( nlsAns) != "try-error") {
-		SAV_NLS2 <<- nlsAns2 <- try( summary( nlsAns))
+		SAV_NLS2 <<- nlsAns2 <- try( summary( nlsAns), silent=TRUE)
 	}
 
 	# extract the results if successful

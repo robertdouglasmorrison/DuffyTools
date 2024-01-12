@@ -15,7 +15,7 @@
 
 	# given one ABI file, extract the subset that we want
 	ch <- loadChromatogram( f)
-	ch2 <- subsetChromatogram( ch, seq=motif)
+	ch2 <- subsetChromatogram( ch, seq=motif, verbose=verbose)
 	if ( ! is.null( referenceDNA)) {
 		ch2 <- cleanChromatogramDNA( ch2, referenceDNA=referenceDNA, nSkip=1, verbose=verbose)
 	}

@@ -376,6 +376,7 @@
 	if ( is.character(chromoObj) && file.exists( chromoObj[1])) {
 		chromoObj <- loadChromatogram( chromoObj)
 	}
+	if( is.null(chromoObj)) return( NULL)
 	
 	if ( ! is.null( seq)) {
 		return( subsetChromatogramBySequence( chromoObj, seq=seq, min.unit.score=min.unit.score, verbose=verbose))
@@ -391,6 +392,7 @@
 `subsetChromatogramBySequence` <- function( chromoObj, seq, min.unit.score=NULL, subset.type=NULL, verbose=FALSE) {
 
 	# get the data we need 
+	if( is.null(chromoObj)) return( NULL)
 	traceM <- chromoObj$TraceM
 	peakPos <- chromoObj$PeakPosition
 	peakConf <- chromoObj$PeakConfidence
@@ -502,6 +504,7 @@
 `subsetChromatogramByRange` <- function( chromoObj, range, verbose=FALSE) {
 
 	# get the data we need 
+	if( is.null(chromoObj)) return( NULL)
 	traceM <- chromoObj$TraceM
 	peakPos <- chromoObj$PeakPosition
 	peakConf <- chromoObj$PeakConfidence
@@ -545,6 +548,7 @@
 `peakpickChromatogram` <- function( chromoObj) {
 
 	# get the data we need 
+	if( is.null(chromoObj)) return( NULL)
 	traceM <- chromoObj$TraceM
 	peakPos <- chromoObj$PeakPosition
 	peakConf <- chromoObj$PeakConfidence
@@ -660,6 +664,7 @@
 	if ( is.character(chromoObj) && file.exists( chromoObj[1])) {
 		chromoObj <- loadChromatogram( chromoObj)
 	}
+	if( is.null(chromoObj)) return( NULL)
 	
 	# given a chromatogram object, show the whole thing
 	acgtBases <- c('A','C','G','T','N','-')
@@ -792,6 +797,7 @@
 
 	# given a expected protein sequence, set the internal object pointer to 
 	# which AA frame is best match	
+	if( is.null(chromoObj)) return( NULL)
 	require( Biostrings)
 	data( BLOSUM62)
 	mySeqs <- chromoObj$AA_Calls
@@ -872,6 +878,7 @@
 
 	# we find cases where Sanger sequencing is inserting duplicate bases, which throw off reading frame
 	# try to find and correct, using a reference DNA and perhaps AA sequence.
+	if( is.null(chromoObj)) return( NULL)
 	require( Biostrings)
 	DNA_MATRIX <- nucleotideSubstitutionMatrix()
 
@@ -1266,6 +1273,7 @@
 
 	# given one chromatogram and reference sequence,
 	# find the one chromatogram sequence (DNA or AA) that best matches that reference
+	if( is.null(chromoObj)) return( NULL)
 	type <- match.arg( type)
 	require( Biostrings)
 	if ( type == "DNA") {
@@ -1310,6 +1318,7 @@
 
 	# given one chromatogram and one of it's DNA or AA sequences,
 	# return the vector of confidence values for the elements of that seq string
+	if( is.null(chromoObj)) return( NULL)
 	peakConf <- chromoObj$PeakConfidence
 	
 	# the forward DNA is trivial, as that is exact the confidence that is stored
@@ -1347,6 +1356,7 @@
 `cropChromatogramLowSignalTail` <- function( chromoObj, min.signal.percent=20, windowSize=11, verbose=TRUE) {
 
 	# grab the raw data that we start from
+	if( is.null(chromoObj)) return( NULL)
 	traceM <- chromoObj$TraceM
 	peakPos <- chromoObj$PeakPosition
 	peakConf <- chromoObj$PeakConfidence
@@ -1419,6 +1429,7 @@
 `cropChromatogramByConfidence` <- function( chromoObj, min.confidence=60, windowSize=11, verbose=TRUE) {
 
 	# grab the raw data that we start from
+	if( is.null(chromoObj)) return( NULL)
 	traceM <- chromoObj$TraceM
 	peakPos <- chromoObj$PeakPosition
 	peakConf <- chromoObj$PeakConfidence
