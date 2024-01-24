@@ -166,6 +166,7 @@
 	addTarget( "MacMu", "MacMu", "MacMu")
 	addTarget( "MacFas", "MacFas", "MacFas")
 	addTarget( "Anan", "Anan", "Anan")
+	addTarget( "Agris", "Agris", "Agris")
 	addTarget( "MacMuPCO", "PCO,MacMu", "Pco,MacMu")
 	addTarget( "MacMuPcoAH", "PcoAH,MacMu", "PcoAH,MacMu")
 	addTarget( "MacMuPkH", "PkH,MacMu", "PkH,MacMu")
@@ -174,6 +175,7 @@
 	addTarget( "MacFasPkH", "PkH,MacFas", "PkH,MacFas")
 	addTarget( "AnanPcoAH", "PcoAH,Anan", "PcoAH,Anan")
 	addTarget( "AnanPf", "Pf3D7,Anan", "Pf,Anan")
+	addTarget( "AgrisPf", "Pf3D7,Agris", "Pf,Agris")
 
 	addTarget( "PbANKA", "PbANKA", "Pb")
 	addTarget( "PbMmu", "PbANKA,Mmu_grc", "Pb,Mmus")
