@@ -30,7 +30,7 @@
 # try 2::  a more generic version, starting from the code at UsingR, by John Verzani <verzani@math.csi.cuny.edu>
 # 	   original courtesy of boxplot from base
 
-`violinplot` <- function(x, ...) UseMethod("violinplot")
+`violinplot` <- function(x, ...) UseMethod("violinplot", x)
 
 `violinplot.default` <- function(x, orientation=c("vertical","horizontal"), at=NULL, viowid=0.8,
 		  		 boxwid=0.2, names=NULL, pars=NULL, col=NULL, border=par('fg'),
