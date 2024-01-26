@@ -1,7 +1,7 @@
 # ROC_Tools.R - generic ROC function
 
 
-duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRUE, legend.cex=1) {
+duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRUE, legend.cex=1, label.cex=1) {
 
 	# to test ROC, we need the known positives and negatives
 	require( ROC)
@@ -51,9 +51,9 @@ duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRU
 		rotateAngle <- c( 0, -90)
 		posOffset <- c( 4, 1)
 		text( mspec[show[isMore]], msens[show[isMore]], formatC( cuts[show[isMore]], format="f", 
-				digits=ndigShow), pos=posOffset[1], srt=rotateAngle[1], offset=1.0)
+				digits=ndigShow), pos=posOffset[1], srt=rotateAngle[1], offset=1.0, cex=label.cex)
 		text( mspec[show[isLess]], msens[show[isLess]], formatC( cuts[show[isLess]], format="f", 
-				digits=ndigShow), pos=posOffset[2], srt=rotateAngle[2], offset=1.5)
+				digits=ndigShow), pos=posOffset[2], srt=rotateAngle[2], offset=1.5, cex=label.cex)
 
 		# show the curve and the diagonal
 		lines( c(0,1), c(0,1), col=1, lty=3)
