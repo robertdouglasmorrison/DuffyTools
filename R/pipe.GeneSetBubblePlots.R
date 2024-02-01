@@ -6,7 +6,7 @@
 				groupColumn="Group", groupLevels=NULL, average.FUN=median,
 				geneSets=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				label.cex=1, Nshow=24, cex=1, main=paste( "Comparison:  ",folderName),
-				max.label.length=80)
+				max.label.length=80, xBubbleLim=c(0.6,0.9))
 {
 
 	checkX11( bg='white', width=9, height=7)
@@ -61,7 +61,8 @@
 				optionsFile=optionsFile, results.path=results.path, groupColumn=groupColumn, groupLevels=groupLevels, 
 				geneSet=geneSets, restrictionSets=restrictionSets,
 				baselineGroup=baselineGroup, reload=FALSE, Nshow=Nshow, 
-				label.cex=label.cex, cex=cex, main=main, max.label.length=max.label.length)
+				label.cex=label.cex, cex=cex, main=main, max.label.length=max.label.length,
+				xBubbleLim=xBubbleLim)
 		geneSetName <- "Bubble"
 		plotFile <- file.path( bubblePath, geneSetName)
 		printPlot( plotFile, optT=optionsFile)
@@ -90,7 +91,8 @@
 					optionsFile=optionsFile, results.path=results.path, groupColumn=groupColumn, groupLevels=groupLevels, 
 					geneSet=gs, restrictionSets=thisRestrictionSet,
 					baselineGroup=baselineGroup, reload=FALSE, Nshow=Nshow, 
-					label.cex=label.cex, cex=cex, main=main, max.label.length=max.label.length)
+					label.cex=label.cex, cex=cex, main=main, max.label.length=max.label.length, 
+					xBubbleLim=xBubbleLim)
 			if ( ! nrow( ans)) {
 				out[[k]] <- ans
 				next
@@ -118,7 +120,7 @@
 				groupColumn="Group", groupLevels=NULL, average.FUN=median, 
 				geneSet=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				reload=FALSE, Nshow=24, label.cex=1, cex=par("cex.axis"), main=NULL, 
-				max.label.length=80, crop.min.pvalue=1e-30, las=3)
+				max.label.length=80, crop.min.pvalue=1e-30, las=3, xBubbleLim=c(0.6,0.9))
 {
 
 	setCurrentSpecies( speciesID)
@@ -241,13 +243,20 @@
 	}
 
 	# plot it now, as a box of colored dots, with labels on the left
-	plot( 1, 1, type="n", main=mainText, xlab=NA, ylab=NA, xaxt="n", yaxt="n", xlim=c((-nGroups*1.5),nGroups*1.4), 
+	# use the passed in x limits for where the bubbles go
+	xBubbleBoxLeft <- xBubbleLim[1]
+	xBubbleBoxRight <- xBubbleLim[2]
+	xBubbleBoxWidth <- xBubbleBoxRight - xBubbleBoxLeft
+	xBubbleHalfGap <- xBubbleBoxWidth / (nGroups*1.75)
+	xGroupLocs <- seq( xBubbleBoxLeft+xBubbleHalfGap, xBubbleBoxRight-xBubbleHalfGap, length.out=nGroups) 
+	plot( 1, 1, type="n", main=mainText, xlab=NA, ylab=NA, xaxt="n", yaxt="n", xlim=c(0,1),
 			ylim=c(0.4,Nshow+1), yaxs="i", frame.plot=F)
-	rect( 0.4, 0.4, nGroups+0.6, Nshow+0.6, border=1, col='grey99')
-	axis( side=1, at=1:nGroups, label=groupNames, line=F, tick=T, las=las)
-	for ( xx in 1:nGroups) lines( c(xx,xx), c(0.4,Nshow+0.6), col='grey70', lwd=0.5, lty=1)
-	for ( yy in 1:Nshow) lines( c(0.4,nGroups+0.6), c(yy,yy), col='grey70', lwd=0.5, lty=1)
-	text( rep.int(0.3,Nshow), 1:Nshow, clipLongString(validModuleNames,max.length=max.label.length, pct.front=0.8), cex=label.cex, pos=2, col=1)
+	rect( xBubbleBoxLeft, 0.4, xBubbleBoxRight, Nshow+0.6, border=1, col='grey99')
+	axis( side=1, at=xGroupLocs, label=groupNames, line=F, tick=T, las=las)
+	for ( xx in 1:nGroups) lines( rep.int(xGroupLocs[xx],2), c(0.4,Nshow+0.6), col='grey70', lwd=0.5, lty=1)
+	for ( yy in 1:Nshow) lines( c(xBubbleBoxLeft,xBubbleBoxRight), c(yy,yy), col='grey70', lwd=0.5, lty=1)
+	text( rep.int(xBubbleBoxLeft,Nshow), 1:Nshow, clipLongString(validModuleNames,max.length=max.label.length,pct.front=0.8), 
+			cex=label.cex, pos=2, offset=1.0, col=1)
 	
 	# set up to draw the bubbles, using a fixed palette for now
 	nColors <- 51
@@ -275,17 +284,19 @@
 			}
 			myCol <- getPalette(nColors)[myColorPtr]
 			myCEX <-  (-log10(myPval)) / (-log10(minPval)) * 5
-			points( j, i, pch=21, cex=myCEX*cex, col='grey40', lwd=0.5, bg=myCol)
+			points( xGroupLocs[j], i, pch=21, cex=myCEX*cex, col='grey40', lwd=0.5, bg=myCol)
 		}
 	}
 
 	# make the legends
-	foldCorners <- c( (nGroups*1.1)+0.5, Nshow*0.6, (nGroups*1.3)+0.25, Nshow*0.8)
+	legLeft <- xBubbleBoxRight + (1-xBubbleBoxRight)*0.2
+	legRight <- xBubbleBoxRight + (1-xBubbleBoxRight)*0.6
+	foldCorners <- c( legLeft, Nshow*0.6, legRight, Nshow*0.8)
 	foldColors <- getPalette(nColors)
 	yStep <- diff(foldCorners[c(2,4)]) / nColors
 	for (k in 1:nColors) rect( foldCorners[1], foldCorners[2]+(yStep*(k-1)), foldCorners[3], foldCorners[2]+(yStep*k), border=foldColors[k], col=foldColors[k])
 	rect( foldCorners[1], foldCorners[2], foldCorners[3], foldCorners[4], border=1, lwd=1, col=NA)
-	text( mean(foldCorners[c(1,3)])*1.05, foldCorners[4], "Log2 Fold", pos=3, offset=0.65, cex=0.85)
+	text( foldCorners[3], foldCorners[4], "Log2 Fold", pos=3, offset=0.65, cex=0.85)
 	prettyVals <- pretty( c( maxNegMagni, 0, maxPosMagni), 4)
 	magSteps <- ((prettyVals - maxNegMagni) / (maxPosMagni - maxNegMagni))
 	ySteps <- diff(range(foldCorners[c(2,4)])) * magSteps
@@ -294,8 +305,8 @@
 	#for (yy in yTicks) lines( foldCorners[3]+c(0,0.1), rep.int(yy,2), col=1, lwd=1)
 	text( rep.int(foldCorners[3],length(show)), yTicks[show], prettyVals[show], pos=4, offset=0.35, cex=0.85)
 
-	pvalCorners <- c( (nGroups*1.1)+0.5, Nshow*0.2, (nGroups*1.3)+0.25, Nshow*0.4)
-	text( mean(pvalCorners[c(1,3)])*1.05, pvalCorners[4], "-Log10(P)", pos=3, offset=0.25, cex=0.85)
+	pvalCorners <- c( legLeft, Nshow*0.2, legRight, Nshow*0.4)
+	text( pvalCorners[3], pvalCorners[4], "-Log10(P)", pos=3, offset=0.25, cex=0.85)
 	prettyVals <- unique( c( 1, pretty( -log10( c( 0.05, minPval)), 4)))
 	use <- which( prettyVals >= 1 & prettyVals <= -log10(minPval))
 	# have the step size grow as the circles grow
