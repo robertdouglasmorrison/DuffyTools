@@ -72,6 +72,16 @@
 		radarFolder <- grep( "/RadarPlots", subFolders, value=T)[1]
 		hasRadar <- ( ! is.na( radarFolder))
 	}
+	# do Bubble plots if/when we do Radar Plots
+	bubbleFolder <- grep( "/BubblePlots", subFolders, value=T)[1]
+	hasBubble <- ( ! is.na( bubbleFolder))
+	if ( doGeneSets || (!hasBubble && doMissing)) {
+		pipe.GeneSetBubblePlots( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
+				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
+				groupColumn=groupColumn, colorColumn=colorColumn, baselineGroup=baselineGroup,
+				geneSets=geneSets, main=paste( "Comparison:  ",folderName), legend.cex=legend.cex, ...)
+		# don't add to meta results, just make them
+	}
 	# allow old and new naming of this tool...
 	densityFolder <- grep( "/Density", subFolders, value=T)[1]
 	if ( is.na( densityFolder)) densityFolder <- grep( "/CombinedGeneSets", subFolders, value=T)[1]
