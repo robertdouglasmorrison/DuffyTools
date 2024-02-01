@@ -166,7 +166,7 @@ SAM.DiffExpress <- function( fnames, fids, m=NULL,
 
 	out <- data.frame( gnames, gprod, myfold, pval, qval, distActual, avgM, stringsAsFactors=F)
 	colnames(out) <- c( "GENE_ID", "PRODUCT", "LOG2FOLD", "PVALUE", 
-			"Q_VALUE", "DISTANCE", colnames(avgM))
+			"QVALUE", "DISTANCE", colnames(avgM))
 
 	if ( ! is.null( extraColumn)) {
 		avgExtra1 <- apply( mExtra[ , which( cl == 1)], MARGIN=1, FUN=average.FUN)
