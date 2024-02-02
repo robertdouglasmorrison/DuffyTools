@@ -309,8 +309,8 @@
 
 	pvalCorners <- c( legLeft, Nshow*0.18, legRight, Nshow*0.45)
 	text( pvalCorners[3], pvalCorners[4], "-Log10(P) ", pos=3, offset=0.25, cex=0.85)
-	prettyVals <- c(1,5,10,15,20,25,30) #unique( c( 1, pretty( -log10( c( 0.05, minPval)), 7)))
-	use <- 1:7  #which( prettyVals >= 1 & prettyVals <= -log10(minPval))
+	prettyVals <- unique( c( 1, pretty( -log10( c( 0.05, minPval)), 7)))
+	use <- which( prettyVals >= 1 & prettyVals <= -log10(minPval))
 	# have the step size grow as the circles grow
 	pvalStep <- diff( range( pvalCorners[c(2,4)])) / (length(use)*3.5)
 	ynow <- pvalCorners[4]
