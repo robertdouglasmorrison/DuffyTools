@@ -47,9 +47,11 @@
 		bubbleM <<- expressionFileSetToMatrix( files, allSamples, intensityColumn=intensityColumn, verbose=T)
 		cat( "\nConverting Expression Abundance to M-values..")
 		# if we were given a baseline group, assert that at the Mvalue step, not at the ReductionToModules step
+		# also, let's try using the grouping info at the Mvalue step, to get an average that is 'between the groups'
 		baselineColumns <- NULL
 		if ( ! is.null(baselineGroup)) baselineColumns <- which( allGroups == baselineGroup)
-		bubbleMA <<- expressionMatrixToMvalue( bubbleM, average.FUN=average.FUN, baselineColumns=baselineColumns)
+		bubbleMA <<- expressionMatrixToMvalue( bubbleM, average.FUN=average.FUN, groupNames=allGroups, 
+						baselineColumns=baselineColumns)
 		cat( "  Done.\n")
 	}
 
@@ -120,7 +122,7 @@
 				groupColumn="Group", groupLevels=NULL, average.FUN=median, 
 				geneSet=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				reload=FALSE, Nshow=24, label.cex=1, cex=par("cex.axis"), main=NULL, 
-				max.label.length=80, crop.min.pvalue=1e-30, las=3, xBubbleLim=c(0.6,0.9))
+				max.label.length=80, crop.min.pvalue=1e-20, las=3, xBubbleLim=c(0.6,0.9))
 {
 
 	setCurrentSpecies( speciesID)
@@ -268,7 +270,7 @@
 	if ( abs(maxNegMagni) > maxPosMagni) maxPosMagni <- abs(maxNegMagni)
 	if ( maxNegMagni > (-maxPosMagni)) maxNegMagni <- (-maxPosMagni)
 	cropPshow <- pmax( pShow, crop.min.pvalue)
-	minPval <- min( cropPshow, 0.00001, na.rm=T)
+	minPval <- min( cropPshow, 0.0001, na.rm=T)
 	# visit each point on the bubble plot rectange, and draw that significance.
 	for ( j in 1:nGroups) {
 		# inspect the size of the bubbles, to draw them in an order that best shows overlaps
@@ -307,7 +309,7 @@
 
 	pvalCorners <- c( legLeft, Nshow*0.2, legRight, Nshow*0.4)
 	text( pvalCorners[3], pvalCorners[4], "-Log10(P)", pos=3, offset=0.25, cex=0.85)
-	prettyVals <- unique( c( 1, pretty( -log10( c( 0.05, minPval)), 4)))
+	prettyVals <- unique( c( 1, pretty( -log10( c( 0.05, minPval)), 5)))
 	use <- which( prettyVals >= 1 & prettyVals <= -log10(minPval))
 	# have the step size grow as the circles grow
 	pvalStep <- diff( range( pvalCorners[c(2,4)])) / (length(use)*2.5)

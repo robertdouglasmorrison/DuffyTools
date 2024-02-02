@@ -2,7 +2,7 @@
 
 
 `expressionMatrixToMvalue` <- function( x, average.FUN=median, baselineColumns=NULL, 
-					minIntensity=0, small.offset=1, verbose=T) {
+					groupNames=NULL, minIntensity=0, small.offset=1, verbose=T) {
 
 
 	x <- as.matrix(x)
@@ -20,9 +20,31 @@
 
 	# calculate the average expression for each gene row, allowing for use of a subset of columns
 	if ( is.null(baselineColumns)) {
-		rowAvgs <- apply( x, MARGIN=1, FUN=average.FUN, na.rm=T)
+		# new idea: if we are given group membership for all columns, use those to get the 
+		# average of each group first, and then take the average of the groups.
+		# this allows very uneven group counts to better reflect differences between groups
+		# instead of differences between samples
+		if ( is.null(groupNames)) {
+			rowAvgs <- apply( x, MARGIN=1, FUN=average.FUN, na.rm=T)
+		} else {
+			if ( length(groupNames) != ncol(x)) stop( "'groupNames' length must match 'ncol(x)'")
+			grpFac <- factor(groupNames)
+			nGrps <- nlevels(grpFac)
+			nGenes <- nrow(x)
+			grpAvgs <- matrix( 0, nGenes, nGrps)
+			for ( i in 1:nGenes) {
+				grpAvgs[ i, ] <- tapply( x[i,], grpFac, FUN=average.FUN, na.rm=T)
+			}
+			rowAvgs <- apply( grpAvgs, MARGIN=1, FUN=average.FUN, na.rm=T)
+		}
 	} else {
-		useColumns <- intersect( 1:ncol(x), as.integer(baselineColumns))
+		# expecting column numbers, but allow column names
+		if ( is.character(baselineColumns)) {
+			useColumns <- match( baselineColumns, colnames(x))
+			useColumns <- useColumns[ !is.na(useColumns)]
+		} else {
+			useColumns <- intersect( 1:ncol(x), as.integer(baselineColumns))
+		}
 		if ( length(useColumns) < 1) {
 			cat( "\nError: 'baselineColumns' must be integers in the range 1 to ncol(x)")
 			stop( "invalid value for baseline column subsetting")

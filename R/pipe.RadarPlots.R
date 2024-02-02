@@ -51,7 +51,8 @@
 		# if we were given a baseline group, assert that at the Mvalue step, not at the ReductionToModules step
 		baselineColumns <- NULL
 		if ( ! is.null(baselineGroup)) baselineColumns <- which( allGroups == baselineGroup)
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, baselineColumns=baselineColumns)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, groupNames=allGroups, 
+						baselineColumns=baselineColumns)
 		cat( "  Done.\n")
 	}
 
@@ -192,7 +193,8 @@
 		# if we were given a baseline group, assert that at the Mvalue step, not at the ReductionToModules step
 		baselineColumns <- NULL
 		if ( ! is.null(baselineGroup)) baselineColumns <- which( allGroups == baselineGroup)
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, baselineColumns=baselineColumns)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, groupNames=allGroups, 
+						baselineColumns=baselineColumns)
 	}
 
 	# try to standarize the names of the gene sets to keep them easy to view
@@ -408,7 +410,8 @@
 		# if we were given a baseline group, assert that at the Mvalue step, not at the ReductionToModules step
 		baselineColumns <- NULL
 		if ( ! is.null(baselineGroup)) baselineColumns <- which( allGroups == baselineGroup)
-		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, baselineColumns=baselineColumns)
+		radarMA <<- expressionMatrixToMvalue( radarM, average.FUN=average.FUN, groupNames=allGroups, 
+						baselineColumns=baselineColumns)
 	} else {
 		radarMA <<- m
 	}
