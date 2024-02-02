@@ -122,7 +122,7 @@
 				groupColumn="Group", groupLevels=NULL, average.FUN=median, 
 				geneSet=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				reload=FALSE, Nshow=24, label.cex=1, cex=par("cex.axis"), main=NULL, 
-				max.label.length=80, crop.min.pvalue=1e-20, las=3, xBubbleLim=c(0.6,0.9))
+				max.label.length=80, crop.min.pvalue=1e-30, las=3, xBubbleLim=c(0.6,0.9))
 {
 
 	setCurrentSpecies( speciesID)
@@ -307,12 +307,12 @@
 	#for (yy in yTicks) lines( foldCorners[3]+c(0,0.1), rep.int(yy,2), col=1, lwd=1)
 	text( rep.int(foldCorners[3],length(show)), yTicks[show], prettyVals[show], pos=4, offset=0.35, cex=0.85)
 
-	pvalCorners <- c( legLeft, Nshow*0.2, legRight, Nshow*0.4)
-	text( pvalCorners[3], pvalCorners[4], "-Log10(P)", pos=3, offset=0.25, cex=0.85)
-	prettyVals <- unique( c( 1, pretty( -log10( c( 0.05, minPval)), 5)))
-	use <- which( prettyVals >= 1 & prettyVals <= -log10(minPval))
+	pvalCorners <- c( legLeft, Nshow*0.18, legRight, Nshow*0.45)
+	text( pvalCorners[3], pvalCorners[4], "-Log10(P) ", pos=3, offset=0.25, cex=0.85)
+	prettyVals <- c(1,5,10,15,20,25,30) #unique( c( 1, pretty( -log10( c( 0.05, minPval)), 7)))
+	use <- 1:7  #which( prettyVals >= 1 & prettyVals <= -log10(minPval))
 	# have the step size grow as the circles grow
-	pvalStep <- diff( range( pvalCorners[c(2,4)])) / (length(use)*2.5)
+	pvalStep <- diff( range( pvalCorners[c(2,4)])) / (length(use)*3.5)
 	ynow <- pvalCorners[4]
 	for( kk in 1:length(use)) {
 		jj <- use[kk]
