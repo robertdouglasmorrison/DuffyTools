@@ -252,10 +252,10 @@
 	xBubbleHalfGap <- xBubbleBoxWidth / (nGroups*1.75)
 	xGroupLocs <- seq( xBubbleBoxLeft+xBubbleHalfGap, xBubbleBoxRight-xBubbleHalfGap, length.out=nGroups) 
 	plot( 1, 1, type="n", main=mainText, xlab=NA, ylab=NA, xaxt="n", yaxt="n", xlim=c(0,1),
-			ylim=c(0.4,Nshow+1), yaxs="i", frame.plot=F)
-	rect( xBubbleBoxLeft, 0.4, xBubbleBoxRight, Nshow+0.6, border=1, col='grey99')
+			ylim=c(0,Nshow+2), yaxs="i", frame.plot=F)
+	rect( xBubbleBoxLeft, 0, xBubbleBoxRight, Nshow+1, border=1, col='grey99')
 	axis( side=1, at=xGroupLocs, label=groupNames, line=F, tick=T, las=las)
-	for ( xx in 1:nGroups) lines( rep.int(xGroupLocs[xx],2), c(0.4,Nshow+0.6), col='grey70', lwd=0.5, lty=1)
+	for ( xx in 1:nGroups) lines( rep.int(xGroupLocs[xx],2), c(0,Nshow+1), col='grey70', lwd=0.5, lty=1)
 	for ( yy in 1:Nshow) lines( c(xBubbleBoxLeft,xBubbleBoxRight), c(yy,yy), col='grey70', lwd=0.5, lty=1)
 	text( rep.int(xBubbleBoxLeft,Nshow), 1:Nshow, clipLongString(validModuleNames,max.length=max.label.length,pct.front=0.8), 
 			cex=label.cex, pos=2, offset=1.0, col=1)
