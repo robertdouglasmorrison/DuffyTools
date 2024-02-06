@@ -214,9 +214,17 @@
 	if ( Nshow * 1.25 > nrow(bubbleMOD)) Nshow <- nrow(bubbleMOD)
 
 	# use both Pvalue and magnitudes to decide which subset to draw.
-	# but give magnitudes more weight?...
-	magnitudes <- diff( apply( bubbleMOD, 1, range, na.rm=T))
+	# if all the Module signs point in th same direction (especially when we used a baseline group),
+	# down weight those elements
+	magnitudes <- apply( bubbleMOD, 1, function(x) {
+			dx <- diff( range( x, na.rm=T))
+			xSign <- sign(x)
+			if ( all(sign(xSign) == 1,na.rm=T)) dx <- dx/2
+			if ( all(sign(xSign) == -1,na.rm=T)) dx <- dx/2
+			return(dx)
+		})
 	bestPs <- apply( bubblePvalue, 1, min)
+	# but give magnitudes more weight?...
 	ord <- diffExpressRankOrder( magnitudes, bestPs, wt.fold=5, wt.pvalue=1)
 	mShow <- bubbleMOD[ ord[1:Nshow], ]
 	pShow <- bubblePvalue[ ord[1:Nshow], ]
