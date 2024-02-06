@@ -286,7 +286,7 @@
 		for ( i in ord) {
 			myMagni <- mShow[ i, j]
 			myPval <- cropPshow[ i, j]
-			if ( myPval > 0.05) next
+			if ( myPval > 0.95) next
 			if (myMagni > 0) {
 				myColorPtr <- nColors - round( (1-(myMagni/maxPosMagni))*nColors/2)
 			} else {
