@@ -134,6 +134,10 @@ forestPlot <- function( )  {
 		pval <- ans$p.value
 		ci <- round( ans$conf.int, digits=digits)
 		meanAns <- round( est[1], digits=digits)
+		# clean/catch any invalid values
+		est[ is.na(est) | is.nan(est)] <- 0
+		pval[ is.na(pval) | is.nan(pval)] <- 1
+		ci[ is.na(ci) | is.nan(ci)] <- 0
 
 		# make the labels and write them
 		if (annotateText) text( leftLabelLoc, yRow, label, cex=text.cex*cex)
@@ -209,11 +213,23 @@ forestPlot <- function( )  {
 		
 		# do the mean diff calc
 		# changed to put Up in Grp1 on the left
-		ans <- t.test( x2, x1)
-		est <- ans$estimate
-		pval <- ans$p.value
-		ci <- round( ans$conf.int, digits=digits)
+		# try to catch what will kill T.test
+		SAVX1 <<- x1;  SAVX2 <<- x2;
+		if ( length( unique( c(x1,x2))) < 3) {
+			est <- rep.int( mean(c(x1,x2),na.rm=T),2)
+			pval <- 1
+			ci <- range( c(x1,x2), na.rm=T)
+		} else {
+			ans <- t.test( x2, x1)
+			est <- ans$estimate
+			pval <- ans$p.value
+			ci <- round( ans$conf.int, digits=digits)
+		}	
 		meanDiff <- round( est[1] - est[2], digits=digits)
+		# clean/catch any invalid values
+		est[ is.na(est) | is.nan(est)] <- 0
+		pval[ is.na(pval) | is.nan(pval)] <- 1
+		ci[ is.na(ci) | is.nan(ci)] <- 0
 
 		# make the labels and write them
 		if (annotateText) text( leftLabelLoc, yRow, label, cex=text.cex*cex)
