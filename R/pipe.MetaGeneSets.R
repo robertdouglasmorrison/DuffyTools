@@ -6,7 +6,8 @@
 				optionsFile="Options.txt", results.path=NULL,  groupColumn="Group", colorColumn="Color", 
 				geneSets=defaultGeneSets(speciesID), 
 				NgeneSets=100, verbose=TRUE, label="", nFDRsimulations=0,
-				doGeneSets=TRUE, doMissing=TRUE, baselineGroup=NULL, legend.cex=1, ...) {
+				doGeneSets=TRUE, doMissing=TRUE, baselineGroup=NULL, legend.cex=1, 
+				label.cex=0.8, ...) {
 
 	if (verbose) {
 		cat( verboseOutputDivider)
@@ -66,7 +67,8 @@
 		pipe.RadarPlots( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
 				groupColumn=groupColumn, colorColumn=colorColumn, baselineGroup=baselineGroup,
-				geneSets=geneSets, main=paste( "Comparison:  ",folderName), legend.cex=legend.cex, ...)
+				geneSets=geneSets, main=paste( "Comparison:  ",folderName), legend.cex=legend.cex, 
+				label.cex=label.cex, ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
 		radarFolder <- grep( "/RadarPlots", subFolders, value=T)[1]
@@ -78,8 +80,8 @@
 	if ( doGeneSets || (!hasBubble && doMissing)) {
 		pipe.GeneSetBubblePlots( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
-				groupColumn=groupColumn, colorColumn=colorColumn, baselineGroup=baselineGroup,
-				geneSets=geneSets, main=paste( "Comparison:  ",folderName), legend.cex=legend.cex, ...)
+				groupColumn=groupColumn, baselineGroup=baselineGroup,
+				geneSets=geneSets, main=paste( "Comparison:  ",folderName), label.cex=label.cex, ...)
 		# don't add to meta results, just make them
 	}
 	# allow old and new naming of this tool...
