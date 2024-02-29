@@ -5,7 +5,7 @@
 				tool=c( "MetaResults", "DESeq", "EdgeR", "RankProduct", "RoundRobin", "SAM"),
 				groupColumn="Group", colorColumn="Color", average.FUN=median,
 				geneSets=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
-				legend.prefix=NULL, legend.order=NULL, legend.cex=1, Nshow=24, cex=0.80,
+				legend.prefix=NULL, legend.order=NULL, legend.cex=1, Nshow=24, cex=0.80, label.cex=0.80, 
 				start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
 				radial.lim=NULL, min.radial.lim=NULL, boxed.radial=F, label.prop=1, lwd=5, 
 				main=paste( "Comparison:  ",folderName), max.label.length=80, ...)
@@ -65,7 +65,7 @@
 				baselineGroup=baselineGroup, reload=FALSE, Nshow=Nshow, start=start, 
 				radial.labels=radial.labels, radial.margin=radial.margin, radial.lim=radial.lim, min.radial.lim=min.radial.lim,
 				boxed.radial=boxed.radial, label.prop=label.prop, lwd=lwd, main=main, 
-				legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, cex=cex, 
+				legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, cex=cex, label.cex=label.cex,
 				max.label.length=max.label.length, ...)
 		geneSetName <- "Radar"
 		plotFile <- file.path( radarPath, geneSetName)
@@ -102,7 +102,7 @@
 					baselineGroup=baselineGroup, reload=FALSE, Nshow=Nshow, start=start, 
 					radial.labels=radial.labels, radial.margin=radial.margin, radial.lim=radial.lim, min.radial.lim=min.radial.lim,
 					boxed.radial=boxed.radial, label.prop=label.prop, lwd=lwd, main=main, 
-					legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, cex=cex, 
+					legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, cex=cex, label.cex=label.cex,
 					max.label.length=max.label.length, wrapParentheses=wrapParentheses, ...)
 			if ( ! nrow( ans)) {
 				out[[k]] <- ans
@@ -134,7 +134,7 @@
 `pipe.OneRadarPlot` <- function( sampleIDset, speciesID=getCurrentSpecies(), annotationFile="Annotation.txt",
 				optionsFile="Options.txt", results.path=NULL,  
 				groupColumn="Group", colorColumn="Color", average.FUN=median,
-				legend.prefix=NULL, legend.order=NULL, legend.cex=1.0, cex=par("cex.axis"), 
+				legend.prefix=NULL, legend.order=NULL, legend.cex=1.0, cex=par("cex.axis"), label.cex=0.8, 
 				geneSet=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				reload=FALSE, Nshow=24, 
 				start=pi/4, radial.labels=FALSE, radial.margin=c( 2,2,6,2),
@@ -320,7 +320,7 @@
 	}
 	DuffyTools::radial.plot( t(mShow), labels=labelsToShow, radlab=radial.labels, rp.type="p", line.col=mycolors,
 			start=start, clockwise=T, mar=radial.margin, radial.lim=radial.lim, label.prop=label.prop,
-			show.grid.labels=3, lwd=lwd, main=mainText, cex=cex, ...)
+			show.grid.labels=3, lwd=lwd, main=mainText, cex=min(cex,label.cex), ...)
 
 	# take more control of the legend location
 	usr <- par( "usr")
