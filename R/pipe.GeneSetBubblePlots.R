@@ -243,8 +243,8 @@
 	validModuleNames <- validModuleNames[ ord]
 	
 	# when given a baseline group that all other groups were compared against, remove
-	# that group from what we show
-	if ( ! is.null(baselineGroup)) {
+	# that group from what we show, but only when it still leaves at least 2 groups to show
+	if ( ! is.null(baselineGroup) && ncol(mShow) > 2) {
 		dropCol <- which( groupNames == baselineGroup)[1]
 		mShow <- mShow[ , -dropCol]
 		pShow <- pShow[ , -dropCol]
