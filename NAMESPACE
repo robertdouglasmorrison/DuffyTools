@@ -1,2 +1,3 @@
 exportPattern("^[[:alpha:]]+")
 useDynLib( DuffyTools)
+S3method( violinplot, formula)
