@@ -685,7 +685,7 @@
 	# only use the given genes that are in both
 	useGenes <- sort( intersect( cellGenes, givenGenes))
 	whCellM <- match( useGenes, cellGenes)
-	cellDF <- celDF[ whCellM, ]
+	cellDF <- cellDF[ whCellM, ]
 	cellM <- cellM[ whCellM, ]
 	cellGenes[ whCellM]
 	whGiven <- match( useGenes, givenGenes)
