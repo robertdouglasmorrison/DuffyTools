@@ -245,6 +245,8 @@
 				control=controlList, algorithm=algorithm))
 	}
 
+	SAV_FIT_ANS <<- fitAns
+
 	if ( class( fitAns) == "try-error") {
 		cat( "\nFitting of transcriptome failed...")
 		return(NULL)
