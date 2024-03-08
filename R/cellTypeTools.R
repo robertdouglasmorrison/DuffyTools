@@ -661,6 +661,8 @@
 `reshapeCellTypeMatrix` <- function( f, geneColumn="GENE_ID", intensityColumn="RPKM_M", verbose=TRUE) {
 
 	# allow the reference cell type matrix to alter its distribution to match a given transcriptome
+	# NOTE:  because we could reshape to match an arbitrary transcriptome, the genes in the matrix
+	#	may change.  Some may vanish!
 	
 	# read in the given transcriptome, that we will use as the new distribution
 	if ( is.character(f)) {
@@ -680,10 +682,18 @@
 	cellGenes <- shortGeneName( cellDF$GENE_ID, keep=1)
 	
 	# about to use REI (quantile normalization) to do the reshaping
-	# only use the given genes that are in the matrix already
-	use <- match( cellGenes, givenGenes, nomatch=NA)
+	# only use the given genes that are in both
+	useGenes <- sort( intersect( cellGenes, givenGenes))
+	whCellM <- match( useGenes, cellGenes)
+	cellDF <- celDF[ whCellM, ]
+	cellM <- cellM[ whCellM, ]
+	cellGenes[ whCellM]
+	whGiven <- match( useGenes, givenGenes)
+	givenInten <- givenInten[ whGiven]
+	givenGenes <- givenGenes[ whGiven]
+	
 	cat( "\n  Doing Rank Equivalent Intensity normalization..")
-	newInten <- rankEquivIntensity( cellM, targetIntensity=givenInten[use], blendMode="targetOnly")
+	newInten <- rankEquivIntensity( cellM, targetIntensity=givenInten, blendMode="targetOnly")
 	
 	# we cannot let the reshaping turn 'ON' genes that were completely off originally.  Check and prevent
 	newInten[ cellM <= 0] <- 0
