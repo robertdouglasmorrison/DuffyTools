@@ -4,7 +4,8 @@
 			makePlot=TRUE, xlab="Time  (weeks)", ylab="Survival", lwd=3, lty=1, legend.cex=1.1,
 			main="Kaplan-Meier: ", nFDR=0, legend.bty="o", 
 			xscale=1, yscale=1, mark.time=FALSE, pch=3, cumhaz=FALSE, ylim=c(0,1.03),
-			xstagger=0, ystagger=0, show.pvalue=TRUE, legend.loc="topright", ...) {
+			xstagger=0, ystagger=0, show.pvalue=TRUE, legend.loc="topright", 
+			show.group.size=FALSE, ...) {
 
 	require( survival)
 
@@ -23,9 +24,17 @@
 		plotSurvFit( survAns, mark.time=mark.time, pch=pch, xscale=xscale, yscale=yscale, cumhaz=cumhaz,
 			col=col, lwd=lwd, xlab=xlab, ylab=ylab, main=main, ylim=ylim, lty=lty, 
 			xstagger=xstagger, ystagger=ystagger, ...)
-		if (nchar(legend.loc)) legend( legend.loc, grpNames, col=col, lwd=lwd, lty=lty, bg='white', cex=legend.cex, bty=legend.bty)
-		if (show.pvalue) legend( 'bottomleft', paste( "P-value =", round( pval, digits=4)), bg='white', cex=max(1,legend.cex),
-			bty=legend.bty)
+		if (nchar(legend.loc)) {
+			if (show.group.size) {
+				grpCounts <- tapply( groups, factor(groups,levels=grpNames), length)
+				grpNames <- paste( grpNames, " (N=", as.numeric(grpCounts), ")", sep="")
+			}
+			legend( legend.loc, grpNames, col=col, lwd=lwd, lty=lty, bg='white', cex=legend.cex, bty=legend.bty)
+		}
+		if (show.pvalue) {
+			legend( 'bottomleft', paste( "P-value =", round( pval, digits=4)), bg='white', cex=max(1,legend.cex),
+				bty=legend.bty)
+		}
 	}
 
 	# perhaps doa FDR permutation test

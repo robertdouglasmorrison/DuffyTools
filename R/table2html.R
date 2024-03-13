@@ -24,7 +24,7 @@
 		options( digits=5)
 		out <- format( x)
 
-		if ( ! (is.null( linkColumnNames) || is.na( linkColumnNames))) {
+		if ( ! (is.null( linkColumnNames) || any( is.na( linkColumnNames)))) {
 	  		for ( j in 1:length( linkColumnNames)) {
 				gTextName <- x[[ linkColumnNames[j] ]]
 				gTargetName <- x[[ linkTargetColumnNames[j] ]]
@@ -117,7 +117,7 @@
 	options( digits=6)
 	out <- format( x)
 
-	if ( ! (is.null( linkColumnNames) || is.na( linkColumnNames))) {
+	if ( ! (is.null( linkColumnNames) || any( is.na( linkColumnNames)))) {
 	  for ( j in 1:length( linkColumnNames)) {
 		gNames <- x[[ linkColumnNames[j] ]]
 		plotLinks <- makeGenePlotLinks( gNames, path=linkPaths[j], type="excel", extension=linkExtensions[j])
