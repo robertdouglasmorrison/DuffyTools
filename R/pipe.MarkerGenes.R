@@ -3,8 +3,8 @@
 
 `pipe.ScoreMarkerGenes` <- function( sampleIDset, markerDF, optionsFile="Options.txt", results.path=NULL, 
 				folder=NULL, mode=c("absolute", "relative"), 
-				groupOrder=NULL, col=NULL, main="", legend.cex=1, nFDRsimulations=100,
-				forceYmax=NULL) {
+				groupOrder=NULL, col=NULL, main="", legend.cex=1, label.cex=0.75, 
+				nFDRsimulations=100, forceYmax=NULL) {
 	
 	if ( is.null( results.path)) {
 		results.path <- getOptionValue( optionsFile, "results.path", notfound="./results", verbose=F)
@@ -84,7 +84,7 @@
 			ylab=ylabel, cex.lab=1.1, cex.axis=1.1, font.lab=2, font.axis=2)
 	lines( c(-10,bigX*2), c(0,0), lwd=1, lty=1, col=1)
 	if ( nFDRsimulations > 0) {
-		text( as.vector(barAns), as.vector(m), paste( "P=",as.vector(pvm),sep=""), pos=ifelse( as.vector(m) > 0, 3, 1), cex=0.75)
+		text( as.vector(barAns), as.vector(m), paste( "P=",as.vector(pvm),sep=""), pos=ifelse( as.vector(m) > 0, 3, 1), cex=label.cex)
 	}
 	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 
@@ -178,7 +178,7 @@
 
 	legend( "topright", levels(grpFac)[groupOrder], fill=groupColor, bg='white', cex=legend.cex) 
 	legend( "bottomright", c( "Positve Marker", "Negative Marker"), pch=c(24,6), 
-		col="brown", pt.bg="brown", pt.cex=2, bg='white', cex=1.1) 
+		col="brown", pt.bg="brown", pt.cex=2, bg='white', cex=legend.cex) 
 
 	ans <- scoreMarkerGenes( tbl, markerDF, intensityColumn=intensityColumn, nFDRsimulations=nFDRsimulations)
 	ord <- match( ans$Group, levels(grpFac)[groupOrder])
