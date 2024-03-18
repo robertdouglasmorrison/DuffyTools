@@ -4,8 +4,9 @@
 
 
 # see if a file is readable...
+# try better to handle vectors
 `file.readable` <-
-function(f) return( ( file.exists(f) && (file.access( f, mode=4) == 0)))
+function(f) return( ( file.exists(f) & (file.access( f, mode=4) == 0)))
 
 
 # delete a file if it already exists...
@@ -155,21 +156,24 @@ function(files) {
 
 # allow a compressed .GZ or .BZ2 file to be read implicitly, given a filename
 # does a search for openable files, so only works for READING files...
+# try better to allow vectors
 `allowCompressedFileName` <- function( filename) {
 
-	if ( file.readable( filename)) return( filename)
+	fout <- filename
+	for ( i in 1:length(filename)) {
+		if ( file.readable( filename[i])) next
 
-	if ( regexpr( "\\.gz$", filename) < 0) {
-		tryFile <- paste( filename, "gz", sep=".")
-		if ( file.readable( tryFile)) return( tryFile)
+		if ( regexpr( "\\.gz$", filename[i]) < 0) {
+			tryFile <- paste( filename[i], "gz", sep=".")
+			if ( file.readable( tryFile)) fout[i] <- tryFile
+		}
+
+		if ( regexpr( "\\.bz2$", filename[i]) < 0) {
+			tryFile <- paste( filename[i], "bz2", sep=".")
+			if ( file.readable( tryFile)) fout[i] <- tryFile
+		}
 	}
-
-	if ( regexpr( "\\.bz2$", filename) < 0) {
-		tryFile <- paste( filename, "bz2", sep=".")
-		if ( file.readable( tryFile)) return( tryFile)
-	}
-
-	return( filename)
+	return( fout)
 }
 
 
