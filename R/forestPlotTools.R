@@ -214,7 +214,6 @@ forestPlot <- function( )  {
 		# do the mean diff calc
 		# changed to put Up in Grp1 on the left
 		# try to catch what will kill T.test
-		SAVX1 <<- x1;  SAVX2 <<- x2;
 		if ( length( unique( c(x1,x2))) < 3) {
 			est <- rep.int( mean(c(x1,x2),na.rm=T),2)
 			pval <- 1

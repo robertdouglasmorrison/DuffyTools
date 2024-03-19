@@ -683,11 +683,11 @@
 	}
 	
 	# call the NLS to do the fit
-	SAV_NLS1 <<- nlsAns <- try( nls( y ~ blendChromatograms( x, weights), 
+	nlsAns <- try( nls( y ~ blendChromatograms( x, weights), 
 				start=starts, control=controlList, algorithm="port", lower=lowerBounds,
 				upper=upperBounds), silent=TRUE)
 	if ( class( nlsAns) != "try-error") {
-		SAV_NLS2 <<- nlsAns2 <- try( summary( nlsAns), silent=TRUE)
+		nlsAns2 <- try( summary( nlsAns), silent=TRUE)
 	}
 
 	# extract the results if successful
