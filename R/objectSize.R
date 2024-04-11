@@ -1,5 +1,5 @@
 `objectSize` <- function( objects=ls( envir=.GlobalEnv), N=length(objects), 
-				sortOrder=c("none", "name", "size")) {
+				sortOrder=c("size", "name", "none")) {
 
 	sizes <- sapply( objects, FUN=function(x) object.size( getAnywhere(x)))
 
