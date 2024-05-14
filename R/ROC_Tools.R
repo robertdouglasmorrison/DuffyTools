@@ -1,7 +1,8 @@
 # ROC_Tools.R - generic ROC function
 
 
-duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRUE, legend.cex=1, label.cex=1) {
+duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRUE, legend.cex=1, label.cex=1,
+			show.cut.value=FALSE) {
 
 	# to test ROC, we need the known positives and negatives
 	require( ROC)
@@ -59,7 +60,7 @@ duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRU
 		lines( c(0,1), c(0,1), col=1, lty=3)
 		lines( mspec, msens, col=2, lwd=2)
 	
-		points( mspec[best], msens[best], pch=16, cex=2.5, col=4)
+		points( mspec[best], msens[best], pch=13, cex=2.5, col=2, lwd=2)
 		diagPt <- (msens[best]+mspec[best])/2
 		lines( c(diagPt,mspec[best]), c(diagPt,msens[best]), col=2, lty=3)
 
@@ -71,6 +72,11 @@ duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRU
 			formatType <- "e"
 		}
 		cutAnsText <- formatC( cutAns, format=formatType, digits=ndigShow)
+		if (show.cut.value) {
+			myPos <- if (mspec[best] > 0.2) 2 else 3
+			text( mspec[best], msens[best], paste("Cut =",cutAnsText,sep=" "), cex=label.cex*1.2, col=1, 
+				pos=myPos, offset=1.05)
+		}
 		aucAnsText <- round( aucAns, digits=3)
 		sensAnsText <- round( sensAns, digits=3)
 		specAnsText <- round( specAns, digits=3)
