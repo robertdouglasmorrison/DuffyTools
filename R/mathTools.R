@@ -194,7 +194,7 @@ tukey.logmean <- function( x,  c=5,  e=0.0001, na.rm=FALSE) {
 }
 
 
-errorBar <- function( x, mode=c("se", "sd", "mad", "ci", "gm.ci"), average.FUN=mean, plot=TRUE, at=1, whisker=0.2, 
+errorBar <- function( x, mode=c("se", "sd", "mad", "ci", "gm.ci", "iqr"), average.FUN=mean, plot=TRUE, at=1, whisker=0.2, 
 			horiz=FALSE, error.col=1, error.lty=1, error.lwd=1) {
 
 	mn <- average.FUN( x, na.rm=T)
@@ -221,6 +221,11 @@ errorBar <- function( x, mode=c("se", "sd", "mad", "ci", "gm.ci"), average.FUN=m
 		# the confidence interval is absolute, so turn these back to 'relative to mean' values
 		se1 <- mn - ci[1]
 		se2 <- ci[2] - mn
+	}
+	if ( mode == "iqr") {
+		mn <- median( x, na.rm=T)
+		iqr <- diff( quantile(x, c(0.25,0.75), na.rm=T))
+		se1 <- se2 <- iqr / 2
 	}
 
 	if (plot && horiz) {

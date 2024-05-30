@@ -25,10 +25,19 @@
 		if ( all( intensityColumn == "RANK") && (! ("RANK" %in% colnames(tmp)))) {
 			tmp$RANK <- 1:nrow(tmp)
 		}
-		intenC <- base::match( intensityColumn, colnames(tmp), nomatch=0)
-		if ( any( intenC > 0)) intenC <- intenC[ intenC > 0][1]
-		geneC <- base::match( geneColumn, colnames(tmp), nomatch=0)
-		if ( any( geneC > 0)) geneC <- geneC[ geneC > 0][1]
+		# allow integers as well as characters
+		if ( is.character(intensityColumn)) {
+			intenC <- base::match( intensityColumn, colnames(tmp), nomatch=0)
+			if ( any( intenC > 0)) intenC <- intenC[ intenC > 0][1]
+		} else {
+			intenC <- as.integer(intensityColumn)
+		}
+		if ( is.character(geneColumn)) {
+			geneC <- base::match( geneColumn, colnames(tmp), nomatch=0)
+			if ( any( geneC > 0)) geneC <- geneC[ geneC > 0][1]
+		} else{
+			geneC <- as.integer(geneColumn)
+		}
 		if ( any( c(intenC,geneC) == 0)) {
 			cat( "\nSome needed columns not found:   file: ", fnames[i],
 				"\n  Expected: ", geneColumn, intensityColumn,
