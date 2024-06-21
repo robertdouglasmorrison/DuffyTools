@@ -12,7 +12,9 @@
 	addSet <- failSet <- vector()
 
 	# some are regular CRAN packages
-	CRAN_Set <- c( "RCurl", "RUnit", "methods", "plotrix", "gplots", "heatmap.plus", "ape", "GenSA", "RColorBrewer")
+	CRAN_Set <- c( "cluster", "parallel", "RCurl", "RUnit", "methods", "plotrix", "gplots", 
+			"minpack.lm", "survival", "geepack", "ggplot2", "ggeffects", "FSA", 
+			"heatmap.plus", "ape", "GenSA", "RColorBrewer")
 
 	for ( pack in CRAN_Set) {
 		if ( ! ( pack %in% packages)) {

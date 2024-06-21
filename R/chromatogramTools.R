@@ -1353,7 +1353,7 @@
 
 
 
-`cropChromatogramLowSignalTail` <- function( chromoObj, min.signal.percent=20, windowSize=11, verbose=TRUE) {
+`cropChromatogramLowSignalTail` <- function( chromoObj, min.signal.percent=2, windowSize=11, verbose=TRUE) {
 
 	# grab the raw data that we start from
 	if( is.null(chromoObj)) return( NULL)
@@ -1395,10 +1395,11 @@
 	# find the first place from the back that is below the minimum height
 	# but exempt the first 5%
 	badRight <- which( smoothHts < cropHtCutoff)
-	exempt <- 1:round(NP*0.05)
+	exempt <- 1:round(NP*0.1)
+	badRight <- setdiff( badRight, exempt)
 	keepLeft <- 1
 	if ( length( badRight)) {
-		keepRight <- min( setdiff(badRight,exempt), na.rm=T)
+		keepRight <- min( badRight, na.rm=T)
 	} else {
 		keepRight <- NP
 	}
