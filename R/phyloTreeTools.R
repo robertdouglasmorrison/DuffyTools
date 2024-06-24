@@ -6,6 +6,7 @@
 			main=NULL, ...) {
 
 	require( Biostrings)
+	require( pwalign)
 	require( ape)
 	checkX11()
 	saveMAI <- par( "mai")

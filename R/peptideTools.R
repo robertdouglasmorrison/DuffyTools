@@ -25,6 +25,7 @@ UNION <- base::union
 	tieBreakMode <- match.arg( tieBreakMode)
 	if ( tieBreakMode == "reference") {
 		require( Biostrings)
+		require( pwalign)
 		if ( is.null(substitutionMatrix)) {
 			data( BLOSUM62)
 			substitutionMatrix <- BLOSUM62
@@ -257,6 +258,7 @@ UNION <- base::union
 				fasta.short.desc=FALSE, verbose=T) {
 
 	require( Biostrings)
+	require( pwalign)
 	if( is.null( substitutionMatrix)) {
 		data( PAM70MS, envir=environment())
 		substitutionMatrix <- PAM70MS

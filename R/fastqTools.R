@@ -553,6 +553,7 @@
 				mode=c("count","fastq")) {
 
 	require( Biostrings)
+	require( pwalign)
 	mode <- match.arg( mode)
 
 	fileToUse <- allowCompressedFileName( filein)

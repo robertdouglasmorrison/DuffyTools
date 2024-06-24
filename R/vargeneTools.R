@@ -58,6 +58,7 @@
 				rect.halfHeight=1, rect.lwd=1, text.font=2, text.cex=1, text.X.repeat=NULL) {
 
 	require( Biostrings)
+	require( pwalign)
 	data( "var2csaDomainConstructs", envir=environment())
 	data( BLOSUM62)
 
@@ -176,6 +177,7 @@
 				verbose=FALSE) {
 
 	require( Biostrings)
+	require( pwalign)
 	data( "VSA.DomainConstructs", envir=environment())
 	data( BLOSUM62)
 
@@ -457,6 +459,7 @@
 				rect.halfHeight=1, rect.lwd=1, text.font=2, text.cex=1, text.X.repeat=NULL) {
 
 	require( Biostrings)
+	require( pwalign)
 	data( "VSA.CassetteConstructs", envir=environment())
 	data( BLOSUM62)
 

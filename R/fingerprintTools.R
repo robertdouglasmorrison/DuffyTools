@@ -27,6 +27,7 @@
 	type <- match.arg( type)
 
 	require( Biostrings)
+	require( pwalign)
 
 
 	if ( type == "DNA") {

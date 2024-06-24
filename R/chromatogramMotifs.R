@@ -58,6 +58,7 @@
 	if (is.null(motifName) || is.na(motifName) || motifName == "") motifName <- motif
 
 	require( Biostrings)
+	require( pwalign)
 	data( BLOSUM62)
 	aaSeqs <- chromoObj$AA_Calls[1:3]
 	motif <- gsub( "?", "X", motif, fixed=T)

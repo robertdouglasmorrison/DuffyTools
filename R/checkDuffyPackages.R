@@ -36,7 +36,7 @@
 
 
 	# some are Bioconductor...
-	BIOC_Set <- c( "Biostrings", "DESeq", "DESeq2", "edgeR", "siggenes", "ROC", "sangerseqR", "qusage")
+	BIOC_Set <- c( "Biostrings", "pwalign", "DESeq", "DESeq2", "edgeR", "siggenes", "ROC", "sangerseqR", "qusage")
 
 	# as of R3.5, Bioconductor uses a newer method
 	useBiocLite <- ( version$major == "2" || ( version$major == "3" && as.numeric( version$minor) < 5))
