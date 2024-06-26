@@ -6,7 +6,7 @@
 			main=NULL, ...) {
 
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 	require( ape)
 	checkX11()
 	saveMAI <- par( "mai")

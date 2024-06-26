@@ -412,7 +412,7 @@
 
 	# look in both DNA and AA, (since it's 2 different scoring matrices, compensate a bit)
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 	data( BLOSUM62)
 	DNA_MATRIX <- nucleotideSubstitutionMatrix()
 	notDNA <- grepl( "Q|E|I|L|F|P|J|Z|X|\\*", subSeq)
@@ -800,7 +800,7 @@
 	# which AA frame is best match	
 	if( is.null(chromoObj)) return( NULL)
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 	data( BLOSUM62)
 	mySeqs <- chromoObj$AA_Calls
 	scores <- pairwiseAlignment( mySeqs, referenceAAseq, type="local", scoreOnly=T, substitutionMatrix=BLOSUM62)
@@ -882,7 +882,7 @@
 	# try to find and correct, using a reference DNA and perhaps AA sequence.
 	if( is.null(chromoObj)) return( NULL)
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 	DNA_MATRIX <- nucleotideSubstitutionMatrix()
 
 	# first efforts, quite subjective, currently only changing the DNA & AA fields
@@ -1016,7 +1016,7 @@
 
 	# lower level tool to do the cleaning...
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 	DNA_SUBM <- nucleotideSubstitutionMatrix()
 	data( BLOSUM62)
 	AA_SUBM <- BLOSUM62
@@ -1280,7 +1280,7 @@
 	if( is.null(chromoObj)) return( NULL)
 	type <- match.arg( type)
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 	if ( type == "DNA") {
 		subM <- nucleotideSubstitutionMatrix()
 		mySeqs <- chromoObj$DNA_Calls

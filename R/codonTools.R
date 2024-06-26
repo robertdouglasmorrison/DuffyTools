@@ -209,7 +209,7 @@ fastAAreadingFrame <- function( peptideTriple, protein, AAprotein, max.mismatch=
 
 	# can we find the best reading frame, given a 'target' protein?
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 
 	# try a fast way first, see if one exact match
 	hits <- vector( length=3)
@@ -270,7 +270,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 	# can we find the best reading frame, given a 'target' protein?
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 
 	# try a fast way first, see if one exact match
 	hits <- vector( length=3)

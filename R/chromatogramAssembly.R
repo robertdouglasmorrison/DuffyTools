@@ -286,7 +286,7 @@
 	scoreM <- matrix( 0, nrow=length(toDo), ncol=nRef)
 	colnames(scoreM) <- refFA$desc
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 	subM <- nucleotideSubstitutionMatrix()
 	
 	# do the similarity scoring over all pairs, looking at both Fwd and RevComp at the same time
@@ -331,7 +331,7 @@
 
 	# we will do pairwise alignment to place each sequence in the best location
 	require( Biostrings)
-	require( pwalign)
+	if (version$major == "4" && as.numeric( version$minor) >= 4) require( pwalign)
 	subM <- nucleotideSubstitutionMatrix()
 	for ( i in 1:nSeqs) {
 		mySeq <- seqInfo[i]
