@@ -75,7 +75,7 @@ readALN <- function( file, verbose=TRUE) {
 }
 
 
-`writeALN` <- function( x, outfile, line.width=60, 
+`writeALN` <- function( x, outfile, line.width=60, max.id.width=30, 
 			title="CLUSTAL format alignment from DuffyTools object",
 			capitalize=NULL, blankMissingFlanks=FALSE, fastaToo=FALSE) {
 
@@ -90,6 +90,7 @@ readALN <- function( file, verbose=TRUE) {
 	ids <- rownames(align)
 	nIDs <- nrow(align)
 	nCHAR <- ncol(align)
+	observed.id.width <- max( nchar(ids), na.rm=T)
 
 	con <- file( outfile, open="wt")
 	writeLines( title, con=con)
@@ -132,6 +133,9 @@ readALN <- function( file, verbose=TRUE) {
 
 	# step along, writing out a chunk at a time
 	chDone <- 0
+	max.id.width.use <- min( observed.id.width, max.id.width)
+	blankID <- paste( rep.int(" ",max.id.width.use), collapse="")
+	
 	repeat {
 		if ( chDone >= nCHAR) break
 		istart <- chDone + 1
@@ -139,7 +143,7 @@ readALN <- function( file, verbose=TRUE) {
 
 		for ( i in 1:nIDs) {
 			thisFrag <- paste( align[ i, istart:istop], collapse="")
-			thisID <- "               "
+			thisID <- blankID
 			substr( thisID, 1, nchar(ids[i])) <- ids[i]
 			outText <- paste( thisID, thisFrag, sep=" ")
 			writeLines( outText, con=con)
