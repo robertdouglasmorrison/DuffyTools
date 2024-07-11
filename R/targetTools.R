@@ -245,6 +245,9 @@
 	addTarget( "Mavium", "Mavium", "Mavium")
 	addTarget( "Mmar", "Mmar", "Mmar")
 	addTarget( "Bbrevis", "Bbrevis", "Bbrevis")
+	addTarget( "Otsu", "Otsu", "Otsu")
+	addTarget( "HsOtsu", "Hs_grc,Otsu", "Hs,Otsu")
+	addTarget( "MmuOtsu", "Mmu_grc,Otsu", "Mmus,Otsu")
 
 	addTarget( "Tb927", "Tb927", "Tbr")
 	addTarget( "Tb427", "Tb427", "Tbr427")

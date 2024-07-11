@@ -1,5 +1,6 @@
 # jitterDensity.R -- implement a variant of jitter that uses the density distribution 
 #			of a second variable to scale the magnitude of the jittered range.
+#			Intended to recreate Graphpad Prism type dot plots
 
 `jitter.density` <- function( x, y, factor=1, amount=NULL, density.exp=NULL, 
 			n.density=128, cut.density=0, bw.density="nrd0") {
