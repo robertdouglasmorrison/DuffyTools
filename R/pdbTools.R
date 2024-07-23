@@ -46,7 +46,42 @@
 	for ( j in 1:N2) {
 		dm[ ,j] <- xyzDist( pdb1$X, pdb1$Y, pdb1$Z, pdb2$X[j], pdb2$Y[j], pdb2$Z[j])
 	}
-	dm
+	return(dm)
+}
+
+
+`pdbResidueDistance` <- function( pdb1, pdb2, mode=c("average","minimum")) {
+
+	# given two sets of PDB atom records, calculate the inter-residue distance in angstroms
+	# set up the storage
+	resid1 <- paste( pdb1$ResidueName, pdb1$ResidueNumber, sep="")
+	uniqRes1 <- unique( resid1)
+	NR1 <- length( uniqRes1)
+	resid2 <- paste( pdb2$ResidueName, pdb2$ResidueNumber, sep="")
+	uniqRes2 <- unique( resid2)
+	NR2 <- length( uniqRes2)
+	resdm <- matrix( NA, NR1, NR2)
+	rownames(resdm) <- uniqRes1
+	colnames(resdm) <- uniqRes2
+	
+	# get the atom distances
+	atomdm <- pdbAtomicDistance( pdb1, pdb2)
+
+	mode <- match.arg( mode)
+	for ( j in 1:NR2) {
+		myCols <- which( resid2 == uniqRes2[j])
+		for ( i in 1:NR1) {
+			myRows <- which( resid1 == uniqRes1[i])
+			dm <- atomdm[ myRows, myCols]
+			if ( mode == "average") {
+				avg <- mean( as.vector(dm), na.rm=T)
+			} else if ( mode == "minimum") {
+				avg <- min( as.vector(dm), na.rm=T)
+			}
+			resdm[i,j] <- avg
+		}
+	}
+	return( resdm)
 }
 
 
