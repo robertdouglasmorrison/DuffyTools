@@ -135,6 +135,7 @@ readALN <- function( file, verbose=TRUE) {
 	chDone <- 0
 	max.id.width.use <- min( observed.id.width, max.id.width)
 	blankID <- paste( rep.int(" ",max.id.width.use), collapse="")
+	blankConsensus <- blankID
 	
 	repeat {
 		if ( chDone >= nCHAR) break
@@ -149,7 +150,7 @@ readALN <- function( file, verbose=TRUE) {
 			writeLines( outText, con=con)
 		}
 		thisFrag <- paste( consensus[ istart:istop], collapse="")
-		thisID <- "               "
+		thisID <- blankConsensus
 		outText <- paste( thisID, thisFrag, sep=" ")
 		writeLines( outText, con=con)
 		writeLines( "", con=con)
