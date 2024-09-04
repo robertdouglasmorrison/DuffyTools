@@ -721,7 +721,7 @@
 		}
 
 		# make the call
-		ans <- GenSA( par=wts, lower=lowerBounds, upper=upperBounds, fn=genSA.Chromatogram.Blend.residual,
+		SAV_GenSA <<- ans <- GenSA( par=wts, lower=lowerBounds, upper=upperBounds, fn=genSA.Chromatogram.Blend.residual,
 					control=control.list, obs=obsTrace, traceMset=x)
 
 		# extract and apply the optimal parameters
@@ -732,7 +732,7 @@
 		pvals <- rep.int( 1, NS)
 		# try to estimate these by comparing the set of estimate values
 		for ( k in 1:NS) {
-			thisSet <- rep.int( blendEsts[k],5) + c( -0.02,-0.01,0,0.01,0.02)
+			thisSet <- rep.int( blendEsts[k],11) + c( -0.05,-0.04,-0.03,-0.02,-0.01,0,0.01,0.02,0.03,0.04,0.05)
 			otherSet <- blendEsts[-k]
 			pvals[k] <- t.test( thisSet, otherSet, altern="greater")$p.value
 		}
@@ -746,7 +746,7 @@
 		totResid <- sum( abs( nlsAns2$residuals))
 		if (verbose) cat( "\nFit Method: NLS")
 	}
-	pvalText <- ifelse( pvals < 0.001, formatC( pvals, format="e", digits=2), as.character( round(pvals, digits=3)))
+	pvalText <- ifelse( pvals < 0.00001, formatC( pvals, format="e", digits=2), as.character( round(pvals, digits=5)))
 	
 	# turn these estimates into percentages
 	pcts <- round( blendEsts * 100 / sum( blendEsts), digits=3)
@@ -801,12 +801,12 @@
 		# lastly, always show the final residual.   And re-calculate exactly what % is left over
 		residChromo$TraceM <- residM
 		resInten <- sum( residM)
-		resPct <- round( resInten * 100 / obsInten, digits=2)
-		modelPct <- 100 - resPct
+		resPct <- resInten * 100 / obsInten
+		modelPct <- round( 100 - resPct, digits=1)
 		out$Model.Fit.Percentage <- modelPct
 		plotChromatogram( residChromo, forceYmax=maxObsHeight, cex=cex, cex.main=1.5, 
 				label=paste( "Model Residual   (model explains ", modelPct, "% of raw intensity)", sep=""))	
-		dev.flush()
+		dev.flush(); Sys.sleep( 0.25)
 		par( mfrow=c(1,1))
 		par( mai=c(1,1,0.8,0.4))
 	}
