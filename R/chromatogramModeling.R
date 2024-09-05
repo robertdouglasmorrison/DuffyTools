@@ -449,8 +449,8 @@
 
 `modelBlendChromatogram` <- function( obsChromo, seqs, synthetic.width="fit", gap.mode=c("drop", "N"),
 				trim.chromatogram=TRUE, trim.seqs=FALSE, force.jitter.seqs=FALSE, noise.seqs=TRUE, 
-				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05, lwd=2, 
-				max.show.plot=4, label="", referenceAAseq=NULL, verbose=FALSE) {
+				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05, max.width=3.5, lwd=2, 
+				max.show.plot=4, show.residuals=1, label="", referenceAAseq=NULL, verbose=FALSE) {
 
 	# given an observed chromatogram, fit 2 or more sequences to it and return the contribution of
 	# how much of each sequence was needed to best fit the observed chromatogram.
@@ -466,6 +466,7 @@
 	if ( label == "" && "Filename" %in% names(obsChromo)) {
 		label <- sub( ".ab1$", "", basename( obsChromo$Filename))
 	}
+	if (verbose) cat( "\n\nBegin Model Blend for: ", label)
 	
 	# there is a bunch of setup steps, to assure the sequences and chromatogram can be directly compared
 	# we may be able to relax this requirement going forward...
@@ -499,8 +500,17 @@
 	noGapSeqs <- gsub( "-", "", seqs, fixed=T)
 	
 	# 2.  We need to find the best matching sequence to know which to use to crop the chromatogram,
-	#	and for knowing the Forward/RevComp orientation question
-	#	  Find the best, even if we don't crop the chromatogram...
+	# But before we ask this question, we need to perhaps RevComp the observed chromatogram to match the reference sequences.
+	# use the first given reference sequence as a proxy for true forward strand.
+	editDist <- adist( seqs[1], obsChromo$DNA_Calls)
+	if ( which.min(editDist) == 2) {
+		obsChromo <- revCompChromatogram( obsChromo)
+		if (verbose) cat( "\nRevComp of Chromatogram is needed..")
+	} else {
+		if (verbose) cat( "\nForward orientation is better..")
+	}
+
+	# 2.5  Find the best reference, even if we don't crop the chromatogram...
 	scores <- numeric(NS)
 	stdChromo <- standardizeChromatogram( obsChromo, constant.height=TRUE)
 	if ( is.null(stdChromo)) return(NULL)
@@ -515,27 +525,17 @@
 	best <- which.max( scores)
 	bestSeq <- seqs[ best]
 	names(scores) <- names(seqs)
-	#if (verbose) {
-	#	cat( "\nDebug Crop Observed:")
-	#	cat( "\nBest Ref: ", names(seqs)[best], scores[best], "|", bestSeq)
-	#}
+	if (verbose) {
+		cat( "\nBest Ref: ", names(seqs)[best], scores[best], "|", bestSeq)
+	}
 	tmpChromo <- stdChromo
 	if (trim.chromatogram && length(stdChromo$PeakPosition) > nchar(bestSeq)) {
 		tmpChromo <- subsetChromatogramBySequence( stdChromo, seq=bestSeq, subset.type=NULL)
 	}
 	if ( is.null(tmpChromo)) return(NULL)
 	
-	# 3. We need to know if we are doing Fwd or RevComp to get the sequences facing the right way
-	editDist <- adist( bestSeq, tmpChromo$DNA_Calls)
-	if ( which.min( editDist) == 2) {
-		for (i in 1:NS) seqs[i] <- myReverseComplement( seqs[i])
-		bestSeq <- seqs[ best]
-		if (verbose) cat( "\nRevComp was better..")
-	} else {
-		if (verbose) cat( "\nForward was better..")
-	}
-	
-	# with strand known, we now need to move any gap bases to the end, to correctly represent what
+
+	# 3.  with strand known, we now need to move any gap bases to the end, to correctly represent what
 	# that sequence's chromatogram would actually look like
 	doGaps <- grep( "-", seqs, fixed=T)
 	if ( length( doGaps)) {
@@ -550,36 +550,64 @@
 	}
 	
 	# with the best starting sequence chosen, and Fwd/Rev known, and gaps moved to the ends, 
-	# now we can extract that portion from the observed chromatogram.   Or perhaps trim the 
-	# sequences to match the observed chromatogram
+	# now we can extract that portion from the observed chromatogram.   Or perhaps trim and/or shift the 
+	# referenece sequences to match the observed chromatogram.  do the regardless of length issues
 	observedChromo <- stdChromo
 	lenObs <- length( observedChromo$PeakPosition)
 	lenRef <- nchar( bestSeq)
-	#if (verbose) cat( "\nDEBUG LEN 1:  (obs, ref): ", lenObs, lenRef)
-	if ( trim.seqs && lenRef > lenObs) {
+	if ( trim.seqs) {
 		# if we need/want to trim the reference sequences, do that now, and do it the same way to all
 		# and force them all to be exactly the right length
 		for ( k in 1:NS) {
-			pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], seqs[k], type="global-local", scoreOnly=F)
-			#from <- start( subject(pa))
-			#to <- width( subject(pa)) + from - 1
+			pa <- pairwiseAlignment( observedChromo$DNA_Calls[1], seqs[k], type="local", scoreOnly=F)
+			pattStart <- start( pattern(pa))
+			subjStart <- start( subject(pa))
+			pattStop <- width(pattern(pa)) + pattStart - 1
+			subjStop <- width(subject(pa)) + subjStart - 1
 			# slight change that gaps were involved, don't let them break resizing
-			seqs[k] <- gsub( "-", "", as.character( subject(pa)), fixed=T)
-			while ( nchar(seqs[k]) < lenObs) seqs[k] <- paste( seqs[k], "N", sep="")
-			#if ( to < (from+lenObs-1)) to <- from + lenObs - 1
-			#if (verbose) cat( "\nDebug trim seqs: (size,from,to, now): ", lenRef, from, to, to-from+1)
-			#seqs <- substr( seqs, from, to)
+			nGaps <- sum( gregexpr( "-", as.character( subject(pa)))[[1]] > 0)
+			leftPadding <- (pattStart - subjStart)
+			if ( leftPadding > 0 ) seqs[k] <- paste( paste(rep.int("N",leftPadding),collapse=""), seqs[k], sep="")
+			rightPadding <- (pattStop - subjStop) - leftPadding
+			if ( rightPadding > 0 ) seqs[k] <- paste( seqs[k], paste(rep.int("N",rightPadding),collapse=""), sep="")
+			if (verbose) cat( "\nRef Trim/pad debug: ", k, names(seqs)[k], "  Pattern:", pattStart, pattStop, 
+						"  Subject:", subjStart, subjStop, "  Padding (L/R):", leftPadding, rightPadding)
 		}
+		# note that once all reference sequences are 'N'-padded as needed, if ALL have some N's at the same end, we can
+		# remove those, and will thus crop that region(s) from the observed chromatogram at the next step
+		seqs <- gsub( "-", "N", seqs, fixed=T)
+		nNsAtStart <- nNsAtStop <- vector()
+		countStartNs <- function(x) { N <- length(x); for ( i in 1:N) if ( x[i] != "N") break; return(i-1)}
+		countStopNs <- function(x) { N <- length(x); for ( i in 1:length(x)) if ( x[N-i+1] != "N") break; return(i-1)}
+		for ( k in 1:NS) {
+			chV <- strsplit( seqs[k], split="")[[1]]
+			nNsAtStart[k] <- countStartNs( chV)
+			nNsAtStop[k] <- countStopNs( chV)
+		}
+		leastStartNs <- min( nNsAtStart)
+		#if ( leastStartNs > 0) {
+		#	if (verbose) cat( "\nCropping N's from starts: ", leastStartNs)
+		#	seqs <- substring( seqs, leastStartNs+1)
+		#}
+		leastStopNs <- min( nNsAtStop)
+		if ( leastStopNs > 0) {
+			if (verbose) cat( "\nCropping N's from stops: ", leastStopNs)
+			seqs <- substr( seqs, 1, nchar(seqs)-leastStopNs+1)
+		}
+		# reference sequences are ready
 		bestSeq <- seqs[ best]
 		lenRef <- nchar( bestSeq)
-		if (verbose) cat( "\nDebug trim ref seqs: (now): ", lenRef)
+		if (verbose) {
+			cat( "\nDebug trim/pad ref seqs: (now): ", lenRef, "\n")
+			print( seqs)
+		}
 	}
 	#if (verbose) cat( "\nDEBUG LEN 2:  (obs, ref): ", lenObs, lenRef)
 	if (trim.chromatogram && lenObs > lenRef) {
 		observedChromo <- subsetChromatogramBySequence( observedChromo, seq=bestSeq)	
 		# verify we didn't trim to nothing?
 		lenNow <- length( observedChromo$PeakPosition)
-		if (verbose) cat( "\nDebug trim Obs: new size of observed chromo (was,now,refSeq): ", lenObs, lenNow, nchar(bestSeq))
+		if (verbose) cat( "\nDebug trim Obs: size of observed chromo (was,now,refSeq): ", lenObs, lenNow, nchar(bestSeq))
 		lenObs <- lenNow
 	}
 	#if (verbose) cat( "\nDEBUG LEN 3:  (obs, ref): ", lenObs, lenRef)
@@ -593,7 +621,6 @@
 		cat( "\nInitial Observed: ", nchar(stdChromo$DNA_Calls[1]), "|", stdChromo$DNA_Calls[1])
 		cat( "\nCropped Observed: ", nchar(tmpChromo$DNA_Calls[1]), "|", tmpChromo$DNA_Calls[1])
 		cat( "\nBest Reference:   ", nchar(bestSeq), "|", bestSeq)
-		cat( "\nAll Seqs: ", length(seqs), "\n", paste( seqs, collapse="\t"), sep="")
 	}
 
 	# after all the prep, make sure we still have something to fit
@@ -612,6 +639,10 @@
 		fitAns <- modelFitChromatogram( observedChromo, seq=shortBestSeq, doStandardize=F, 
 						doSubset=T, algorithm="GenSA")
 		synthetic.width <- as.numeric( fitAns$FitPeakWidth)
+		# try increasing the width by a bit, to better model the shoulders of the peaks
+		synthetic.width <- synthetic.width * 1.25
+		# put a hard upper limit on the synthetic width
+		if ( synthetic.width > max.width) synthetic.width <- max.width
 		if (verbose) cat( "    Optimal Peak Width =", synthetic.width)
 	}
 	
@@ -745,6 +776,8 @@
 		pvals <- coefs[,4]
 		totResid <- sum( abs( nlsAns2$residuals))
 		if (verbose) cat( "\nFit Method: NLS")
+		# for the NLS p-value, lets do a correction for the number of base calls in the sequence
+		pvals <- pmin( pvals * length(observedPeaks), 1)
 	}
 	pvalText <- ifelse( pvals < 0.00001, formatC( pvals, format="e", digits=2), as.character( round(pvals, digits=5)))
 	
@@ -753,8 +786,8 @@
 	out1 <- data.frame( "Construct"=names(seqs), "DNA_Length"=nchar(seqs), "Percentage"=pcts, "P.value"=pvals, stringsAsFactors=F)
 	
 	# order them, and the blend estimates too
-	seqOrd <- order( out1$Percentage, -(out1$P.value), decreasing=T)
-	#seqOrd <- order(  decreasing=F)
+	#seqOrd <- order( out1$Percentage, -(out1$P.value), decreasing=T)
+	seqOrd <- order( out1$P.value, -out1$Percentage, decreasing=F)
 	out1 <- out1[ seqOrd, ]
 	blendEsts <- blendEsts[ seqOrd]
 	rownames(out1) <- 1:nrow(out1)
@@ -778,12 +811,14 @@
 		if ( NtoDraw > max.show.plot) NtoDraw <- max.show.plot
 		cex <- 1 - (0.05*NtoDraw)
 		savMAI <- par( "mai")
-		par( mfrow=c(NtoDraw+2, 1))
+		# we will show the observed, plus residual
+		par( mfrow=c(NtoDraw+show.residuals+1, 1))
 		par( mai=c(0.5,0.9,0.3,0.4))
 		plotChromatogram( observedChromo, forceYmax=maxObsHeight, label=paste( "Observed Data:  ", label), cex=cex, cex.main=1.5, 
-				main.prefix="", lwd=lwd)
+				main.prefix="", lwd=lwd, frame.plot=F, mar=c(5,5,2,2))
 		nShown <- 0
 		for ( j in seqOrd) {
+			labelPart1 <- if (nShown == 0) "Best " else "Additional "
 			myEst <- rawEsts[j]
 			myChromo <- synthChromos[[j]]
 			myM <- myChromo$TraceM * myEst
@@ -794,10 +829,20 @@
 				myYheight <- maxObsHeight * sqrt(myEst)
 				if ( ! is.null( referenceAAseq)) myChromo <- setChromatogramBestAAframe( myChromo, referenceAAseq)
 				plotChromatogram( myChromo, forceYmax=myYheight, cex=cex, cex.main=1.5, lwd=lwd, 
-						label=paste( "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), 
-						"%    P.value = ", pvalText[j], sep=""), main.prefix="")
+						label=paste( labelPart1, "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), 
+						"%    P.value = ", pvalText[j], sep=""), main.prefix="", frame.plot=F, mar=c(5,5,1,2))
 				dev.flush()
 				nShown <- nShown + 1
+			}
+			# perhaps show the first residual, after showing the top/best model element
+			if ( show.residuals > nShown && nShown < NtoDraw) {
+				residChromo$TraceM <- residM
+				resInten <- sum( residM)
+				resPct <- resInten * 100 / obsInten
+				modelPct <- round( 100 - resPct, digits=1)
+				plotChromatogram( residChromo, forceYmax=maxObsHeight, cex=cex, cex.main=1.5, lwd=lwd, 
+						label=paste( "Partial Residual   (model explains ", modelPct, "% of raw intensity)", sep=""),
+						main.prefix="", frame.plot=F, mar=c(5,5,1,2))
 			}
 			if ( nShown >= max.show.plot) break
 		}
@@ -808,8 +853,8 @@
 		modelPct <- round( 100 - resPct, digits=1)
 		out$Model.Fit.Percentage <- modelPct
 		plotChromatogram( residChromo, forceYmax=maxObsHeight, cex=cex, cex.main=1.5, lwd=lwd, 
-				label=paste( "Model Residual   (model explains ", modelPct, "% of raw intensity)", sep=""),
-				main.prefix="")	
+				label=paste( "Final Residual   (final model explains ", modelPct, "% of raw intensity)", sep=""),
+				main.prefix="", frame.plot=F, mar=c(5,5,1,2))
 		dev.flush(); Sys.sleep( 0.25)
 		par( mfrow=c(1,1))
 		par( mai=c(1,1,0.8,0.4))
