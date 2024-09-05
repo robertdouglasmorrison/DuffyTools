@@ -238,7 +238,7 @@ readALN <- function( file, verbose=TRUE) {
 			xaxs="i", xaxt="n", ylab=NA, yaxs="i", yaxt="n", ...)
 	if ( is.null( number.from)) {
 		axis( side=1, ...)
-		axis( side=3, ...)
+		axis( side=3, mgp=c(3,0.5,0), ...)
 	} else {
 		# when given a explicit starting number, we need to do a bunch of math to keep that numbering system consistent
 		number.from <- as.integer( number.from)
@@ -254,7 +254,7 @@ readALN <- function( file, verbose=TRUE) {
 		}
 		# make the axis that shows the given numbering with all it's  gaps
 		axis( side=1, at=xAts, label=as.character(shown.ats), ...)
-		axis( side=3, at=xAts, label=as.character(shown.ats), ...)
+		axis( side=3, at=xAts, label=as.character(shown.ats), mgp=c(3,0.5,0), ...)
 	}
 
 	# allow a few types of plot images
@@ -272,7 +272,7 @@ readALN <- function( file, verbose=TRUE) {
 	}
 
 	cexScaleX <- 20 / niso
-	cexScaleY <- 100 / nch
+	cexScaleY <- 120 / nch
 	cex <- min( cexScaleX, cexScaleY)
 
 	# draw the alignment letters
@@ -284,10 +284,13 @@ readALN <- function( file, verbose=TRUE) {
 		if ( boxes) { 
 			use <- which( where > 0)
 			fill <- codonMap$Color[where]
+			# try to lighten them a bit
+			fill <- adjustColor( fill, adjust=0.15)
 			rect( x[use]-0.5, y[use]-0.5, x[use]+0.5, y[use]+0.5, col=fill, border=fill)
 		}
 		if ( showLetters == "all") {
-			text( x, y, ch, col=letterColor, font=2, cex=cex*cex.letter)
+			# allow a small offset to better center the text font
+			text( x-0.05, y, ch, col=letterColor, font=2, cex=cex*cex.letter)
 		} else if (showLetters == "alternate") {
 			chToShow <- rep.int( ".", nch)
 			if ( i == ref.row) chToShow <- ch

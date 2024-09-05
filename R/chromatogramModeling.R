@@ -449,7 +449,7 @@
 
 `modelBlendChromatogram` <- function( obsChromo, seqs, synthetic.width="fit", gap.mode=c("drop", "N"),
 				trim.chromatogram=TRUE, trim.seqs=FALSE, force.jitter.seqs=FALSE, noise.seqs=TRUE, 
-				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05,
+				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05, lwd=2, 
 				max.show.plot=4, label="", referenceAAseq=NULL, verbose=FALSE) {
 
 	# given an observed chromatogram, fit 2 or more sequences to it and return the contribution of
@@ -768,7 +768,9 @@
 
 	# do we want to draw what we did?
 	if (plot.chromatograms) {
-		# create the residual by subtracting all non-zero components
+		# try to have the observed show the best/correct AA reading frame
+		observedChromo <- setChromatogramBestAAframe( observedChromo, referenceAAseq)
+		# create the residual by subtracting all non-zero components from the observed
 		residChromo <- observedChromo
 		residM <- residChromo$TraceM
 		toDraw <- which( pcts >= min.pct.plot | pvals < max.pval.plot)
@@ -778,7 +780,8 @@
 		savMAI <- par( "mai")
 		par( mfrow=c(NtoDraw+2, 1))
 		par( mai=c(0.5,0.9,0.3,0.4))
-		plotChromatogram( observedChromo, forceYmax=maxObsHeight, label=paste( "Observed Data:  ", label), cex=cex, cex.main=1.5)
+		plotChromatogram( observedChromo, forceYmax=maxObsHeight, label=paste( "Observed Data:  ", label), cex=cex, cex.main=1.5, 
+				main.prefix="", lwd=lwd)
 		nShown <- 0
 		for ( j in seqOrd) {
 			myEst <- rawEsts[j]
@@ -790,9 +793,9 @@
 			if( j %in% toDraw) {
 				myYheight <- maxObsHeight * sqrt(myEst)
 				if ( ! is.null( referenceAAseq)) myChromo <- setChromatogramBestAAframe( myChromo, referenceAAseq)
-				plotChromatogram( myChromo, forceYmax=myYheight, cex=cex, cex.main=1.5,
+				plotChromatogram( myChromo, forceYmax=myYheight, cex=cex, cex.main=1.5, lwd=lwd, 
 						label=paste( "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), 
-						"%    P.value = ", pvalText[j], sep=""))
+						"%    P.value = ", pvalText[j], sep=""), main.prefix="")
 				dev.flush()
 				nShown <- nShown + 1
 			}
@@ -804,8 +807,9 @@
 		resPct <- resInten * 100 / obsInten
 		modelPct <- round( 100 - resPct, digits=1)
 		out$Model.Fit.Percentage <- modelPct
-		plotChromatogram( residChromo, forceYmax=maxObsHeight, cex=cex, cex.main=1.5, 
-				label=paste( "Model Residual   (model explains ", modelPct, "% of raw intensity)", sep=""))	
+		plotChromatogram( residChromo, forceYmax=maxObsHeight, cex=cex, cex.main=1.5, lwd=lwd, 
+				label=paste( "Model Residual   (model explains ", modelPct, "% of raw intensity)", sep=""),
+				main.prefix="")	
 		dev.flush(); Sys.sleep( 0.25)
 		par( mfrow=c(1,1))
 		par( mai=c(1,1,0.8,0.4))
