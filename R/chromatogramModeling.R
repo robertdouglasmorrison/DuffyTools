@@ -448,7 +448,7 @@
 
 
 `modelBlendChromatogram` <- function( obsChromo, seqs, synthetic.width="fit", gap.mode=c("drop", "N"),
-				trim.chromatogram=TRUE, trim.seqs=FALSE, force.jitter.seqs=FALSE, noise.seqs=TRUE, 
+				trim.chromatogram=TRUE, trim.seqs=FALSE, force.jitter.seqs=FALSE, noise.seqs=TRUE, echo.seqs=T, 
 				plot.chromatograms=T, min.pct.plot=5, max.pval.plot=0.05, max.width=3.5, lwd=2, 
 				max.show.plot=4, show.residuals=1, label="", referenceAAseq=NULL, verbose=FALSE) {
 
@@ -646,6 +646,24 @@
 		if (verbose) cat( "    Optimal Peak Width =", synthetic.width)
 	}
 	
+	# perhaps add in echo sequences, where the references get shifted by one base,
+	# to capture a common type of chromatogram noise
+	if (echo.seqs) {
+		extraSeqs <- extraNames <- vector()
+		nExtra <- 0
+		for ( i in 1:NS) {
+			nExtra <- nExtra + 1
+			extraSeqs[nExtra] <- paste( "N", substr( seqs[i], 1, nchar(seqs[i])-1), sep="")
+			extraNames[nExtra] <- paste( "PostEcho", names(seqs)[i], sep="_")
+			nExtra <- nExtra + 1
+			extraSeqs[nExtra] <- paste( substr( seqs[i], 2, nchar(seqs[i])), "N", sep="")
+			extraNames[nExtra] <- paste( "PreEcho", names(seqs)[i], sep="_")
+		}
+		names(extraSeqs) <- extraNames
+		seqs <- c( seqs, extraSeqs)
+		NS <- NS + nExtra
+	}
+	
 	# finally ready to create synthetic chromatograms for each sequence to be modeled
 	synthChromoTraceMs <- synthChromos <- vector( mode="list")
 	synthSizeError <- FALSE
@@ -777,7 +795,7 @@
 		totResid <- sum( abs( nlsAns2$residuals))
 		if (verbose) cat( "\nFit Method: NLS")
 		# for the NLS p-value, lets do a correction for the number of base calls in the sequence
-		pvals <- pmin( pvals * length(observedPeaks), 1)
+		#pvals <- pmin( pvals * length(observedPeaks), 1)
 	}
 	pvalText <- ifelse( pvals < 0.00001, formatC( pvals, format="e", digits=2), as.character( round(pvals, digits=5)))
 	
@@ -806,8 +824,7 @@
 		# create the residual by subtracting all non-zero components from the observed
 		residChromo <- observedChromo
 		residM <- residChromo$TraceM
-		toDraw <- which( pcts >= min.pct.plot | pvals < max.pval.plot)
-		NtoDraw <- length(toDraw)
+		NtoDraw <- sum( pcts >= min.pct.plot & pvals < max.pval.plot)
 		if ( NtoDraw > max.show.plot) NtoDraw <- max.show.plot
 		cex <- 1 - (0.05*NtoDraw)
 		savMAI <- par( "mai")
@@ -825,15 +842,14 @@
 			myChromo$TraceM <- myM
 			residM <- residM - myM
 			residM[ residM < 0] <- 0
-			if( j %in% toDraw) {
-				myYheight <- maxObsHeight * sqrt(myEst)
-				if ( ! is.null( referenceAAseq)) myChromo <- setChromatogramBestAAframe( myChromo, referenceAAseq)
-				plotChromatogram( myChromo, forceYmax=myYheight, cex=cex, cex.main=1.5, lwd=lwd, 
-						label=paste( labelPart1, "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), 
-						"%    P.value = ", pvalText[j], sep=""), main.prefix="", frame.plot=F, mar=c(5,5,1,2))
-				dev.flush()
-				nShown <- nShown + 1
-			}
+			if( pcts[j] < min.pct.plot || pvals[j] > max.pval.plot) next
+			myYheight <- maxObsHeight * sqrt(myEst)
+			if ( ! is.null( referenceAAseq)) myChromo <- setChromatogramBestAAframe( myChromo, referenceAAseq)
+			plotChromatogram( myChromo, forceYmax=myYheight, cex=cex, cex.main=1.5, lwd=lwd, 
+					label=paste( labelPart1, "Model Element:  ", names(seqs)[j], " = ", round(pcts[j],digits=1), 
+					"%    P.value = ", pvalText[j], sep=""), main.prefix="", frame.plot=F, mar=c(5,5,1,2))
+			dev.flush()
+			nShown <- nShown + 1
 			# perhaps show the first residual, after showing the top/best model element
 			if ( show.residuals > nShown && nShown < NtoDraw) {
 				residChromo$TraceM <- residM
