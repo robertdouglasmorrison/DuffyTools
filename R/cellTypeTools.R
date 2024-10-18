@@ -2408,6 +2408,8 @@
 		topN <- getCellTypeTopGenes( as.integer( cell.top.N))
 		topNgenes <- topN$GENE_ID
 		topNcelltype <- topN$CellType
+		# some cell type resources have gene count suffixes
+		topNcelltype <- sub( " \\(.+", "", topNcelltype)
 		keepGenes <- intersect( genes, topNgenes)
 		where <- match( keepGenes, genes)
 		genes <- genes[ where]
