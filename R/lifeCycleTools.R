@@ -30,7 +30,7 @@
 	if ( dataset == "RNAseq") {
 		data( LifeCycleData_RNAseq, package="DuffyTools", envir=environment())
 
-		# use explicit colnames lookup
+		# use explicit colnames lookup, updated Oct/2024
 		sgspzPtrs <- match( c("sgSPZ.3D7","sgSPZ.NF54", "Spz1","Spz2","Spz3","Spz4", 
 					"SGspz1","SGspz2","SGspz3","SPZ.SG"), colnames(lifeCycleData))
 		lsPtrs <- match( c("Day4.GFP.r1.TR3","Day4.GFP.r2","Day5.GFP.r1","Day5.GFP.r2","Day5.GFP.r4", 
