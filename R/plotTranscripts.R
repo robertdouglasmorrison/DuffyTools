@@ -541,8 +541,8 @@
 
 	# optional labels to remind which group is which
 
-	#if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in '", left.label, "'", sep=""), cex=1, font=2)
-	if ( !is.null(right.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "DOWN in '", right.label, "'", sep=""), cex=1, font=2)
+	if ( !is.null(left.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "UP in '", left.label, "'", sep=""), cex=1, font=2)
+	if ( is.null(left.label) && !is.null(right.label)) text( myRangeX[1]*.75, myRangeY[2]*0.025, paste( "DOWN in '", right.label, "'", sep=""), cex=1, font=2)
 	if ( !is.null(right.label)) text( myRangeX[2]*.75, myRangeY[2]*0.025, paste( "UP in '", right.label, "'", sep=""), cex=1, font=2)
 	dev.flush()
 
