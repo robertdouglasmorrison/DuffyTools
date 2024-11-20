@@ -152,7 +152,8 @@
 		return( NULL)
 	}
 
-	blastData <- scan( file=infile, sep="\t", what=what, flush=TRUE, fill=TRUE, quiet=verbose )
+	# single quote is very common in Blast descriptors, make sure that is not seen as a quote character by R
+	blastData <- scan( file=infile, sep="\t", what=what, flush=TRUE, fill=TRUE, quote='"', quiet=verbose )
 	if ( length( blastData[[1]]) < 1) {
 		cat( "\nProblem reading file:  ", basename(infile))
 		cat( "\nNo records found.")
