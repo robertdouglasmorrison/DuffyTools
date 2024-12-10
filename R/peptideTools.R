@@ -486,7 +486,16 @@ peptideChopper <- function( proteinSet, len=15, overlap=9, remove.duplicates=TRU
 			pepEnd <- pepEnd[ -tooShort]
 		}
 		
-		# eliminate duplicates
+		# there is a tiny chance of getting 2 idential peptide start/stops, from the 'non-perfect ending peptide
+		pepKey <- paste( pepStart, pepEnd, sep="::")
+		dups <- which( duplicated( pepKey))
+		if ( length(dups)) {
+			pepSet <- pepSet[ -dups]
+			pepStart <- pepStart[ -dups]
+			pepEnd <- pepEnd[ -dups]
+		}
+
+		# eliminate duplicates if asked to
 		nBefore <- length( pepSet)
 		if ( remove.duplicates) {
 			duplicates <- WHICH( duplicated( pepSet))
