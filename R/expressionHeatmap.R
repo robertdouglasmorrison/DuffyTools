@@ -112,8 +112,7 @@
 	if ( is.character( palette) && length( palette) == 1 && nchar(palette) > 1) {
 		palette <- brewer.pal( n.palette.colors, palette)
 		if (rev.palette) palette <- rev( palette)
-	} 
-	if ( is.null(palette) || is.na( palette) || nchar(palette) < 2) {
+	} else if ( is.null(palette) || is.na( palette) || nchar(palette) < 2) {
 		palette <- heatMapColors( n.palette.colors, "red-white-blue", plotRamp=F, rampExponent = 0.75)
 	}
 	heatmapcolors <- palette
