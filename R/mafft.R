@@ -1,6 +1,6 @@
 # mafft.R -- wrapper for doing MSA by MAFFT
 
-`mafft` <- function( fastaFile, outFile="mafft.aln", mafftProgram="~/bin/mafft",
+`mafft` <- function( fastaFile, outFile="mafft.aln", mafftProgram=Sys.which("mafft"),
 			mode=c("global", "local", "genaffine"), anysymbol=FALSE,
 			iterations=1000, outfmt=c("clustal", "fasta"), 
 			guidetree=FALSE, mafftArgs="", verbose=FALSE) {
@@ -59,7 +59,7 @@
 }
 
 
-`fastMafft` <- function( fastaFile, outFile="mafft.aln", mafftProgram="~/bin/mafft",
+`fastMafft` <- function( fastaFile, outFile="mafft.aln", mafftProgram=Sys.which("mafft"),
 			mode=c("global", "local", "genaffine"), anysymbol=FALSE,
 			iterations=1000, outfmt=c("clustal", "fasta"), 
 			guidetree=FALSE, mafftArgs="", verbose=FALSE) {
