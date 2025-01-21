@@ -188,6 +188,7 @@
 
 	addTarget( "Ocun", "Ocun", "Ocun")
 	addTarget( "Rnor", "Rnor", "Rnor")
+	addTarget( "Cjac", "Cjac", "Cjac")
 
 	addTarget( "PfHsMmu", "Pf3D7,Hs_grc,Mmu_grc", "Pf,Hs,Mmus")
 
@@ -234,6 +235,7 @@
 	addTarget( "MTbMmu", "MT_H37,Mmu_grc", "MTb,Mmus")
 	addTarget( "MTbHN878Mmu", "MT_HN878,Mmu_grc", "MTbHN878,Mmus")
 	addTarget( "MTbOcun", "MT_H37,Ocun", "MTb,Ocun")
+	addTarget( "MTbCjac", "MT_H37,Cjac", "MTb,Cjac")
 
 	addTarget( "Styph", "Styph_sl1344", "Styph")
 	addTarget( "StyphHs", "Styph_sl1344,Hs_grc", "Styph,Hs")
