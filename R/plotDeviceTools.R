@@ -17,6 +17,9 @@
 	if ( is.null(width)) width <- getOptionValue( optT, arg="plot.width", notfound="12", verbose=F)
 	if ( is.null(height)) height <- getOptionValue( optT, arg="plot.height", notfound="8", verbose=F)
 
+	# allow using the cairo_pdf device when available
+	if ( is.character(device) && (device == "pdf") && capabilities("cairo")) device <- "cairo_pdf"
+
 	# turn device name into a function refereence
 	dev.FUN <- if ( is.character(device)) get( device) else device
 	dev.name <- if ( is.function(device)) as.character( substitute( device)) else device
@@ -27,7 +30,8 @@
 	if ( ! is.numeric( height)) stop( paste( "Given 'plot.height' is not numeric: ", height))
 
 	# Force the filename suffix to match the device type
-	suffixPattern <- paste( "\\.", device, "$", sep="")
+	dev.name <- sub( "cairo_", "", dev.name)
+	suffixPattern <- paste( "\\.", dev.name, "$", sep="")
 	if ( ! grepl( suffixPattern, filename)) {
 		if ( dev.name == "png") filename <- sub( "\\.pdf$", ".png", filename)
 		if ( dev.name == "pdf") filename <- sub( "\\.png$", ".pdf", filename)
