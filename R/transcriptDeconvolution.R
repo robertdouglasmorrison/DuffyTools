@@ -137,7 +137,7 @@
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL, geneUniverse=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA","steepDescent"),
 					startFractions=NULL, plot=TRUE, plot.path=".", plot.col=NULL, 
-					label="", verbose=TRUE) {
+					label="", dropRiboClearGenes=TRUE, verbose=TRUE) {
 
 	if ( length(files) != length(fids)) {
 		cat( "\nLength mismatch:  'files' and 'fids' must be same length")
@@ -182,7 +182,7 @@
 					minIntensity=minIntensity, 
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
-					geneUniverse=geneUniverse,
+					geneUniverse=geneUniverse, dropRiboClearGenes=dropRiboClearGenes, 
 					algorithm=algorithm, startFractions=myStarts, verbose=verbose)
 			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "RMS.Dev=", round(fitAns$RMS.Deviation,digits=3))
 			return( fitAns)
@@ -226,7 +226,7 @@
 					useLog=FALSE, minIntensity=0, 
 					arrayFloorIntensity=NULL, dropLowVarianceGenes=NULL, geneUniverse=NULL,
 					algorithm=c("port","default","plinear","LM","GenSA","steepDescent"),
-					plot=TRUE, plot.path=".", plot.col=NULL, label="", verbose=TRUE) {
+					plot=TRUE, plot.path=".", plot.col=NULL, label="", dropRiboClearGenes=TRUE, verbose=TRUE) {
 
 	NS <- ncol(m)
 	ND <- ncol(targetM)
@@ -251,7 +251,7 @@
 					minIntensity=minIntensity, 
 					arrayFloorIntensity=arrayFloorIntensity, 
 					dropLowVarianceGenes=dropLowVarianceGenes, 
-					geneUniverse=geneUniverse,
+					geneUniverse=geneUniverse, dropRiboClearGenes=dropRiboClearGenes, 
 					algorithm=algorithm, verbose=verbose)
 			if ( ! is.null(fitAns)) cat( "  ", i, fids[i], "RMS.Dev=", round(fitAns$RMS.Deviation,digits=3))
 			return( fitAns)

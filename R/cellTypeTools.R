@@ -1071,7 +1071,7 @@
 
 
 `plotCellTypeProfiles` <- function( m, col=NULL, yMax=NULL, label="", 
-				legend.cex=0.8, max.labels=20, mask.low.pct=NULL, mask.low.diff=NULL) {
+				legend.cex=0.8, max.labels=20, mask.low.pct=NULL, mask.low.diff=NULL, ...) {
 
 	N <- nrow(m)
 	NC <- ncol(m)
@@ -1324,7 +1324,7 @@
 					sep="\t", max.iterations=100, rate=1, tolerance=0.01,
 					makePlots=c("all","final","none"), plot.path=".",
 					algorithm=c("steepDescent", "nls", "GenSA"), 
-					geneUniverse=NULL, verbose=TRUE, ...) {
+					geneUniverse=NULL, dropRiboClearGenes=TRUE, verbose=TRUE, ...) {
 
 	CellTypeSetup()
 
@@ -1349,7 +1349,7 @@
 	algorithm <- match.arg( algorithm)
 	ans <-  fitCellTypeProfile( gset, inten, sid=sid, col=col, max.iterations=max.iterations, rate=rate, 
 				tolerance=tolerance, makePlots=makePlots, plot.path=plot.path, algorithm=algorithm, 
-				geneUniverse=geneUniverse, verbose=verbose, ...)
+				geneUniverse=geneUniverse, dropRiboClearGenes=dropRiboClearGenes, verbose=verbose, ...)
 	if (makePlots != "none") {
 		# new plot printing wrapper lets us not append the device type suffix
 		plotFile <- paste( sid, getCurrentSpeciesFilePrefix(), getCellTypeReference(), "FitProportions", algorithm, sep=".")
@@ -1366,7 +1366,7 @@
 						max.iterations=100, rate=1, tolerance=0.01, 
 						makePlots=c("all","final","none"), plot.path=".",
 						algorithm=c("steepDescent", "nls", "GenSA"), 
-						geneUniverse=NULL, verbose=TRUE, ...) {
+						geneUniverse=NULL, dropRiboClearGenes=TRUE, verbose=TRUE, ...) {
 								
 	CellTypeSetup()
 
@@ -1400,7 +1400,7 @@
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, 
 					plot.path=plot.path, algorithm=algorithm, 
-					geneUniverse=geneUniverse, verbose=verbose, ...)
+					geneUniverse=geneUniverse, dropRiboClearGenes=dropRiboClearGenes, verbose=verbose, ...)
 		m[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
@@ -1420,7 +1420,7 @@
 `fitCellTypeProfileFromMatrix` <- function( m, fcolors=1:ncol(m),  max.iterations=100, rate=1, tolerance=0.01, 
 						makePlots=c("all","final","none"), plot.path=".", 
 						algorithm=c("steepDescent", "nls", "GenSA"), 
-						geneUniverse=NULL, verbose=TRUE, ...) {
+						geneUniverse=NULL, dropRiboClearGenes=TRUE, verbose=TRUE, ...) {
 
 	CellTypeSetup()
 
@@ -1447,7 +1447,7 @@
 					max.iterations=max.iterations, rate=rate, 
 					tolerance=tolerance, makePlots=makePlots, 
 					plot.path=plot.path, algorithm=algorithm, 
-					geneUniverse=geneUniverse, verbose=verbose, ...)
+					geneUniverse=geneUniverse, dropRiboClearGenes=dropRiboClearGenes, verbose=verbose, ...)
 		mOut[ i, ] <- ans$CellProportions
 		rmsd[i] <- ans$RMSD
 		if (makePlots != "none") {
@@ -1469,7 +1469,7 @@
 					max.iterations=100, rate=1, tolerance=0.01, fit.starts=NULL,
 					makePlots=c("all","final","none"), plot.path=".", sleep=0.01, 
 					algorithm=c("steepDescent", "nls", "GenSA"), 
-					geneUniverse=NULL, verbose=TRUE, ...) {
+					geneUniverse=NULL, dropRiboClearGenes=TRUE, verbose=TRUE, ...) {
 
 	# grab the Cell Type data we will need:  the gene intensity in all cell types
 	CellTypeSetup()
@@ -1498,6 +1498,19 @@
 	}
 	NG <- length( genes)
 
+	# prevent any genes that are typically ribo-cleared to not have any vote/say in fitting.
+	# since their expression intensity in the input data is artificially low due to clearing
+	if (dropRiboClearGenes) {
+		rrnaMap <- getCurrentRrnaMap()
+		rrnaGenes <- rrnaMap$GENE_ID
+		rrnaGenes <- c( rrnaGenes, shortGeneName( rrnaGenes, keep=1))
+		drops <- which( genes %in% rrnaGenes)
+		if ( length(drops)) {
+			genes <- genes[ -drops]
+			inten <- inten[ -drops]
+			NG <- length( genes)
+		}
+	}
 	# make the stage profile of the given data
 	obsAns <- calcCellTypeProfile( genes, inten)
 	obsProfile <- obsAns$Profile

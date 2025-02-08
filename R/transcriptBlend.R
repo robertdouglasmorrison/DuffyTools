@@ -86,7 +86,7 @@
 # the NLS fit function:  find the optimal blend
 `fit.transcriptBlend` <- function( x, m, geneColumn="GENE_ID", intensityColumn="RPKM_M", useLog=FALSE, 
 				minIntensity=0, arrayFloorIntensity=NULL, 
-				dropLowVarianceGenes=NULL, geneUniverse=NULL,
+				dropLowVarianceGenes=NULL, geneUniverse=NULL, dropRiboClearGenes=TRUE, 
 				algorithm=c("port", "default", "plinear", "LM", "GenSA", "steepDescent"), 
 				startFractions=NULL, verbose=TRUE) {
 
@@ -186,7 +186,21 @@
 		genesUse <- genesUse[ keep]
 	}
 
-	# ready to do the fit
+
+	# generally do not use genes that were ribo cleared, as they will seem artificially low expression due to clearing
+	if ( dropRiboClearGenes) {
+		rrnaMap <- getCurrentRrnaMap()
+		rrnaGenes <- rrnaMap$GENE_ID
+		rrnaGenes <- c( rrnaGenes, shortGeneName( rrnaGenes, keep=1))
+		drops <- which( shortGeneName(genesUse,keep=1) %in% rrnaGenes)
+		if ( length(drops)) {
+			intenUse <- intenUse[ -drops]
+			mUse <- mUse[ -drops, ]
+			genesUse <- genesUse[ -drops]
+		}
+	}
+	
+	# finally ready to do the fit
 	if (verbose) {
 		cat( "\nFitting", length(genesUse), "genes as a blend of", NC, "transcriptomes:\n")
 		cat( colnames(mUse), "\n")
