@@ -508,6 +508,7 @@
 	NR <- nrow(pcts)
 
 	if ( length(groups) != NC) stop( "Length of 'groups' must match columns of 'pcts'")
+	if ( length(levels) < 2) stop( "Must have at least 2 groups to compare")
 	grpFac <- factor( groups, levels=levels)
 	grpPtrs <- tapply( 1:NC, grpFac, FUN=NULL)
 	NG <- nlevels( grpFac)
