@@ -24,6 +24,15 @@
 	}
 	where <- base::match( targetID, allTargets$TargetID, nomatch=0)
 	if ( where == 0) {
+		# before we complain and die, see if a MapSet exists locally
+		targetMapFile <- paste( targetID, "MapSet.rda", sep=".")
+		if ( file.exists(targetMapFile)) {
+			addTarget( targetID)
+			allTargets <- TargetEnv[[ "AllTargets"]]
+			where <- base::match( targetID, allTargets$TargetID, nomatch=0)
+		}
+	}
+	if ( where == 0) {
 		stop( paste( "setCurrentTarget:  Error:  targetID not found.  Given: ", 
 				targetID, "Current choices:  ", 
 				paste( allTargets$TargetID, collapse=" | ")))
