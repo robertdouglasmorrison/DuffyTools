@@ -1,7 +1,7 @@
 # blastTools.R -- wrapper functions for the most command BLAST calls
 
 
-`callBlast` <- function( fastafile, outfile="blastOut.txt", program="blastn", db="nt", 
+`callBlast` <- function( fastafile, outfile="blastOut.txt", program="blastn", db="core_nt", 
 			path=Sys.getenv("BLASTINDEX_PATH"), task="", 
 			wordsize=8, evalue=1, threads=4, outfmt=6, 
 			filter="no", maxhits=5, blastArgs="", verbose=T) {
@@ -58,7 +58,7 @@
 }
 
 
-`callBlastn` <- function( fastafile, outfile="blastOut.txt", program="blastn", db="NT/nt",
+`callBlastn` <- function( fastafile, outfile="blastOut.txt", program="blastn", db="Core_NT/core_nt",
 			path=Sys.getenv( "BLASTINDEX_PATH"), task="", wordsize=8, evalue=1,
 			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="", verbose=T) {
 
@@ -80,7 +80,7 @@
 }
 
 
-`callTBlastn` <- function( fastafile, outfile="blastOut.txt", program="tblastn", db="NT/nt",
+`callTBlastn` <- function( fastafile, outfile="blastOut.txt", program="tblastn", db="Core_NT/core_nt",
 			path=Sys.getenv( "BLASTINDEX_PATH"), task="", wordsize=3, evalue=1,
 			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="", verbose=T) {
 
