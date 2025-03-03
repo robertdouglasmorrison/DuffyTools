@@ -47,7 +47,7 @@
 }
 
 
-`callBlastp` <- function( fastafile, outfile="blastOut.txt", program="blastp", db="NR/nr",
+`callBlastp` <- function( fastafile, outfile="blastOut.txt", program="blastp", db="Landmark_NR/landmark",
 			path=Sys.getenv( "BLASTINDEX_PATH"), task="", wordsize=3, evalue=1,
 			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="", verbose=T) {
 
@@ -69,7 +69,7 @@
 }
 
 
-`callBlastx` <- function( fastafile, outfile="blastOut.txt", program="blastx", db="NR/nr",
+`callBlastx` <- function( fastafile, outfile="blastOut.txt", program="blastx", db="Landmark_NR/landmark",
 			path=Sys.getenv( "BLASTINDEX_PATH"), task="", wordsize=3, evalue=1,
 			threads=4, outfmt=6, filter="no", maxhits=5, blastArgs="", verbose=T) {
 
