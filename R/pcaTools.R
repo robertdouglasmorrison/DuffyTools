@@ -22,7 +22,8 @@
 
 `matrix.PCAplot` <- function( m, main="", col=rainbow( ncol(m), end=0.8), d1=1, d2=2, d3=3,
 				pt.cex=2, pch=21, label.cex=0.9, na.mode=c("drop","zero"), 
-				plotOrder=1:ncol(m), xZoom=NULL, yZoom=NULL, ...) {
+				plotOrder=1:ncol(m), xZoom=NULL, yZoom=NULL, 
+				nRowsInfo=floor(nrow(m)/10), ...) {
 
 	# drop any NA rows
 	hasNA <- apply( m, 1, function(x) any( is.na( x)))
@@ -78,15 +79,14 @@
 	# try using just the first K PC
 	k <- if ( ncol(xReturned) > 4) 4 else ncol(xReturned)
 	rDev <- apply( xReturned[ ,1:k], 1, function(x) sum( abs(x)))
-	rPctDev <- round( rDev * 100 / sum( rDev), digits=3)
+	# we have no idea about the magnitudes of the deviations, so be more agnostic
+	rPctDev <- rDev * 100 / sum( rDev)
 	nams <- names( rDev)
 	if ( is.null(nams)) nams <- as.character( 1:length(rDev))
 	ord <- order( rPctDev, decreasing=T)
 	rPctDev <- rPctDev[ ord]
 	nams <- nams[ ord]
-	keep <- which( rPctDev > 0.10)
-	if ( length(keep) < 5) keep <- 1:min( 5, length(nams))
-	if ( length(keep) > 50) keep <- keep[ 1:50]
+	keep <- 1:nRowsInfo
 	
 	out2 <- data.frame( "ROW_ID"=nams[keep], "PCT_DEV"=rPctDev[keep], stringsAsFactors=F)
 	if (nrow(out2)) rownames(out2) <- 1:nrow(out2)
