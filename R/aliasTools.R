@@ -101,6 +101,8 @@
 	# one more thing to try:  many aliases have various special characters, that can break the full equality test
 	# try to turn the aliases in the table into just the alphanumeric core.
 	notYet <- setdiff( which( genesOut == genes), noChange)
+	# don't let this rare test ever see empty gene names
+	notYet <- setdiff( notYet, which( genes == ""))
 	if ( length( notYet)) {
 		# the grep substitution on the full alias table may be super slow, can we only do those with a chance...
 		firstLetters <- unique( substr( genes[notYet], 1, 1))
