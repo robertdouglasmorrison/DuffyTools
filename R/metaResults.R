@@ -3,7 +3,7 @@
  
 metaResults <- function( targetGroup, results.path="results", speciesID=getCurrentSpecies(), 
 			geneColumn="GENE_ID", subfolderName="Group", 
-			tools=c("RoundRobin", "RankProduct", "SAM", "EdgeR", "DESeq"), altGeneMapLabel=NULL,
+			tools=c("RoundRobin", "RankProduct", "SAM", "EdgeR", "DESeq", "LimmaVoom"), altGeneMapLabel=NULL,
 			rank.average.FUN=sqrtmean, value.average.FUN=mean, keepIntergenics=FALSE,
 			topFolders=NULL, other.DE.files=NULL, missingGenes=c("drop", "fill", "na"), nFDRsimulations=0,
 			direction=c("UP", "DOWN"), otherGroup=paste("Not",targetGroup,sep=".")) {
@@ -31,6 +31,7 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 		if( tool == "SAM") suffix <- "SAM" 
 		if( tool == "EdgeR") suffix <- "EdgeR" 
 		if( tool == "DESeq") suffix <- "DESeq" 
+		if( tool == "LimmaVoom") suffix <- "LV" 
 		if ( is.null(topFolders)) {
 			mypath <- file.path( results.path, tool)
 		} else {
@@ -177,6 +178,7 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 	colnames(m) <- sub( "RankProduct", "Rank Prod", colnames(m))
 	colnames(m) <- sub( "EdgeR", "Edge R", colnames(m))
 	colnames(m) <- sub( "DESeq", "DE Seq", colnames(m))
+	colnames(m) <- sub( "LimmaVoom", "Limma Voom", colnames(m))
 	if ( "E_VALUE" %in% colnames(m)) {
 		m$E_VALUE <- formatC( m$E_VALUE, format="f", digits=4)
 		m$FP_RATE <- formatC( m$FP_RATE, format="f", digits=4)
@@ -196,7 +198,7 @@ metaResults <- function( targetGroup, results.path="results", speciesID=getCurre
 }
 
 
-`plotMetaResults` <- function( file, columnNames=c( "RoundRobin", "RankProduct", "SAM", "EdgeR", "DESeq"), 
+`plotMetaResults` <- function( file, columnNames=c( "RoundRobin", "RankProduct", "SAM", "EdgeR", "DESeq", "LimmaVoom"), 
 				columnColors=rainbow( length(columnNames), end=0.72),
 				label="") {
 
