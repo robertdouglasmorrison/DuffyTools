@@ -6,7 +6,7 @@
 LimmaVoom.DiffExpress <- function( fnames, fids, m=NULL, groupSet, targetGroup=sort(groupSet)[1], geneColumn="GENE_ID", 
 			intensityColumn="READS_M", keepIntergenics=FALSE, missingGenes="fill", extraColumn=NULL,
 			average.FUN=sqrtmean, minimumRPKM=1, wt.folds=1, wt.pvalues=1, 
-			adjust.lowReadCounts=FALSE, ...) {
+			adjust.lowReadCounts=TRUE, ...) {
 
 	# turn the set of transcript files into one matrix
 	if ( is.null(m)) {
