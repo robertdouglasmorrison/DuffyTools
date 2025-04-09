@@ -142,7 +142,6 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 		# first put the result into our wanted UP to DOWN order
 		ord <- diffExpressRankOrder( ans$NES, ans$padj)
 		ans <- ans[ ord, ]
-		
 		# now extract and clean up the wanted results
 		pval <- ans$pval
 		padj <- ans$padj
@@ -193,17 +192,6 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 					" &nbsp; vs &nbsp; ", otherGrpString, sep="")
 		table2html( html1, htmlfile, title=addSpeciesToHtmlTitle(htmltitle), linkColumnNames=NULL)
 	}
-	html2 <- subset( out, LOG2FOLD <= -0.1 & PVALUE <= 0.05)[ , 1:nKeep]
-	if ( makeDownHTML && nrow(html2)) {
-		html2 <- html2[ rev( 1:nrow(html2)), ]
-		rownames(html2) <- 1:nrow(html2)
-		htmlfile <- sub( "csv$", "html", outfile)
-		htmlfile <- sub( "UP", "DOWN", htmlfile)
-		htmltitle <- paste( "GSEA:  '", descriptor, "'  Pathways DOWN in: &nbsp; ", group1, 
-					" &nbsp; vs &nbsp; ", otherGrpString, sep="")
-		table2html( html2, htmlfile, title=addSpeciesToHtmlTitle(htmltitle), linkColumnNames=NULL)
-	}
-
 	# we can also make an enrichment table of cell types
 	if (addCellTypes) {
 		out1 <- subset( out, LOG2FOLD >= 0.1 & PVALUE <= 0.05)
@@ -214,8 +202,74 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 			f <- file.path( path, f)
 			write.table( enrich, f, sep=",", quote=T, row.names=F)
 		}
+	}
+	
+	# for GSEA of down genes, run it all again
+	if ( makeDownHTML ) {
+	
+		if (doGSEA) {
+		
+		# ok, call GSEA again
+		SAVGSEA <<- ans <- suppressWarnings( fgsea( pathways=geneSets, stats=stats, minSize=minSize, maxSize=maxSize, 
+					eps=eps, nPermSimple=nPermSimple, scoreType="neg", ...))
+
+		# first put the result into our wanted UP to DOWN order
+		ord <- diffExpressRankOrder( -ans$NES, ans$padj)
+		ans <- ans[ ord, ]
+		# now extract and clean up the wanted results
+		pval <- ans$pval
+		padj <- ans$padj
+		nes <- round( ans$NES, digits=4)
+		pathSize <- as.numeric( ans$size)
+		pathName <- ans$pathway
+		gNames <- ans$leadingEdge
+		pathGenes <- sapply( gNames, function(x) paste( sort( unique( x)), collapse=";"))
+		# create the pathway fold change from the input data
+		pathFold <- sapply( gNames, function(x) {
+							wh <- match(x,names(stats))
+							myFC <- as.numeric( stats[wh])
+							return( mean( myFC, na.rm=T))
+					})
+		pathFold <- round( pathFold, digits=3)
+	
+		# we gave GSEA the short names, put the longer full names back
+		where <- match( pathName, shortNames)
+		pathName <- longNames[ where]
+		if ( addCellTypes) {
+			cellType <- geneSetCellType( pathName, max.type=4)
+			nKeep <- 6
+			out <- data.frame( "PATHWAY"=pathName, "CellType"=cellType, "LOG2FOLD"=pathFold, 
+					"PVALUE"=pval, "PADJUST"=padj, "N_GENES"=pathSize, 
+					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
+		} else {
+			nKeep <- 5
+			out <- data.frame( "PATHWAY"=pathName, "LOG2FOLD"=pathFold, 
+					"PVALUE"=pval, "PADJUST"=padj, "N_GENES"=pathSize, 
+					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
+		}
+		rownames(out) <- 1:nrow(out)
+		outfile <- file.path( path, paste( group1, prefix, "DOWN.GSEA", "csv", sep="."))
+		write.table( out, outfile, sep=",", quote=T, row.names=F)
+	} else {
+		cat( "\nUsing previously calculated GSEA results..")
+		outfile <- file.path( path, paste( group1, prefix, "DOWN.GSEA", "csv", sep="."))
+		out <- read.csv( outfile, as.is=T)
+		nKeep <- if (addCellTypes) 6 else 5
+	}
+
+	otherGrpString <- paste( setdiff( sort( unique( labels)), group1), collapse=" + ")
+	otherGrpString <- paste( "{", otherGrpString, "}", sep="")
+	html2 <- subset( out, LOG2FOLD <= -0.1 & PVALUE <= 0.05)[ , 1:nKeep]
+	if ( nrow(html2)) {
+		htmlfile <- sub( "csv$", "html", outfile)
+		htmltitle <- paste( "GSEA:  '", descriptor, "'  Pathways DOWN in: &nbsp; ", group1, 
+					" &nbsp; vs &nbsp; ", otherGrpString, sep="")
+		table2html( html2, htmlfile, title=addSpeciesToHtmlTitle(htmltitle), linkColumnNames=NULL)
+	}
+	# we can also make an enrichment table of cell types
+	if (addCellTypes) {
 		out2 <- subset( out, LOG2FOLD <= -0.1 & PVALUE <= 0.05)
-		if ( makeDownHTML && nrow(out2)) {
+		if ( nrow(out2)) {
 			enrich <- cellTypeEnrichment( out2$CellType, mode="geneSets", upOnly=F, minEnrich=1, 
 							maxPvalue=1, correct=T, verbose=F)
 			f <- paste( group1, prefix, "DOWN.GSEA.CellTypeEnrichment.csv", sep=".")
@@ -223,6 +277,8 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 			write.table( enrich, f, sep=",", quote=T, row.names=F)
 		}
 	}
+	}  # end if MakeDOWN...
+	
 	return(out)
 }
 
