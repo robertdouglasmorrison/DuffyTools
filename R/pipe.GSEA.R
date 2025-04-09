@@ -127,6 +127,15 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 		stats <- as.numeric( deDF$LOG2FOLD)
 		names(stats) <- shortGeneName( deDF$GENE_ID, keep=1)
 		
+		# it seems GSEA can break for a few reasons:
+		# 1) duplicate gene names: only reasonable fix is to drop duplicates, so first 
+		# instance is retained
+		drops <- which( duplicated( names(stats)))
+		if ( length(drops)) stats <- stats[ -drops]
+		# 2) duplicate numeric values:  only reasonable fix is to introduce random jitter to break ties
+		while ( any( duplicated( stats))) stats <- jitter( stats)
+
+		# ok, call GSEA
 		SAVGSEA <<- ans <- suppressWarnings( fgsea( pathways=geneSets, stats=stats, minSize=minSize, maxSize=maxSize, 
 					eps=eps, nPermSimple=nPermSimple, scoreType="pos", ...))
 
