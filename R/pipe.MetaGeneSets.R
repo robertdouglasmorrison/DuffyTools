@@ -110,16 +110,16 @@
 		enrichFolder <- grep( "/Enrichment", subFolders, value=T)[1]
 		hasEnrich <- ( ! is.na( enrichFolder))
 	}
-	qusageFolder <- grep( "/QuSage", subFolders, value=T)[1]
-	hasQuSage <- ( ! is.na( qusageFolder))
-	if ( doGeneSets || (!hasQuSage && doMissing)) {
-		pipe.QuSage( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
+	gseaFolder <- grep( "/GSEA", subFolders, value=T)[1]
+	hasGSEA <- ( ! is.na( gseaFolder))
+	if ( doGeneSets || (!hasGSEA && doMissing)) {
+		pipe.GSEA( sampleIDset, folderName=folderName, speciesID=getCurrentSpecies(), 
 				annotationFile=annotationFile, optionsFile=optionsFile, results.path=results.path,  
 				geneSets=geneSets, groupColumn=groupColumn, ...)
 		allFiles <- dir( metaPath, include.dir=T, full.name=T)
 		subFolders <- allFiles[ file.info(allFiles)$isdir]
-		qusageFolder <- grep( "/QuSage", subFolders, value=T)[1]
-		hasQuSage <- ( ! is.na( qusageFolder))
+		gseaFolder <- grep( "/GSEA", subFolders, value=T)[1]
+		hasGSEA <- ( ! is.na( gseaFolder))
 	}
 
 	flatSamples <- sort( unique( unlist( sampleIDset)))
@@ -160,11 +160,11 @@
 				names(dfList)[nDF] <- "Density GS"
 			}
 		}
-		if ( hasQuSage) {
-			# QuSage results are always UP only
-			f <- file.path( qusageFolder, paste( grp, prefix, "UP", "QuSage.CombinedGeneSets.csv", sep="."))
+		if ( hasGSEA) {
+			# GSEA results are for both directions
+			f <- file.path( gseaFolder, paste( grp, prefix, direction, "GSEA.csv", sep="."))
 			if ( ! file.exists(f)) {
-				cat( "\nQuSage results not found:\n", f)
+				cat( "\nGSEA results not found:\n", f)
 			} else {
 				tmp <- read.csv(f, as.is=T)
 				sml <- tmp[ ,c("PATHWAY","LOG2FOLD","PVALUE", "N_GENES")]
@@ -173,17 +173,9 @@
 				bigGeneCount <- c( bigGeneCount, sml$N_GENES)
 				sml$PathName <- cleanGeneSetName( cleanGeneSetModuleNames( sml$PathName, wrapParen=F))
 				bigShortName <- c( bigShortName, sml$PathName)
-				# since it has UP only, invert the signs for DOWN
-				if ( direction == "DOWN") {
-					 sml$LOG2FOLD <- -(sml$LOG2FOLD)
-					# the sign change causes us to rerank
-					ord <- diffExpressRankOrder( sml$LOG2FOLD, sml$PVALUE, wt.fold=1, wt.pvalue=2)
-					sml <- sml[ ord, ]
-					if (nrow(sml)) rownames(sml) <- 1:nrow(sml)
-				}
 				nDF <- nDF + 1
 				dfList[[nDF]] <- sml
-				names(dfList)[nDF] <- "QuSage GS"
+				names(dfList)[nDF] <- "GSEA GS"
 			}
 		}
 		if ( hasRadar) {

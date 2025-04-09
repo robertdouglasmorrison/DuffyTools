@@ -11,16 +11,15 @@
 
 	# look at the current cell type reference name
 	reference <- getCellTypeReference()
-	if ( ! is.null( reference)) {
+	if ( ! is.null( reference) && ! is.na(reference)) {
 		out2 <- paste( reference, c( "AllGeneSets", "TopGeneSets"), sep=".")
 		out <- c( out, out2)
 	}
-
 	return( out)
 }
 
 
-`gatherGeneSets` <- function( geneSets, descriptor="CombinedGeneSets", mode=c("combined", "separate")) {
+`gatherGeneSets` <- function( geneSets=defaultGeneSets(), descriptor="CombinedGeneSets", mode=c("combined", "separate")) {
 
 	mode <- match.arg( mode)
 
