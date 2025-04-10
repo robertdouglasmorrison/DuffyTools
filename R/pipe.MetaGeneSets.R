@@ -332,7 +332,7 @@
 	out <- ansLongPathNames
 
 	# add others if we can
-	outDensity <- outGenes <- outRadar <- rep.int( "", N)
+	outDensity <- outGenes <- outRadar <- outBubble <- rep.int( "", N)
 	if ( ! is.null( densityAns)) {
 
 		# grab the fields from the Density data
@@ -378,7 +378,8 @@
 
 	if ( ! is.null( radarAns)) {
 
-		# grab the fields from the Radar data
+		# grab the fields from the Radar data.  Note that both Radar & Bubble have the same 
+		# math behind them, so make hyperlinks to both if Radar saw it
 		myNames <- radarAns$PathName
 		whoRadar <- match( ansShortPathNames, myNames, nomatch=0)
 
@@ -387,11 +388,17 @@
 		fRadar <- paste( "Radar.", gsID, dev.ext, sep="")
 		fRadar <- file.path( "../RadarPlots", fRadar)
 		outRadar[ whoRadar > 0] <- fRadar[whoRadar]
+		fBubble <- paste( "Bubble.", gsID, dev.ext, sep="")
+		fBubble <- file.path( "../BubblePlots", fBubble)
+		outBubble[ whoRadar > 0] <- fBubble[whoRadar]
 
-		# radars only show the top K, so try to not add links that would not be seen
+		# radars only show the top K, so try to not add links that would not be seen (typically 24 per plot)
 		if ( ! is.null( radarRanks)) {
-			drops <- which( radarRanks > 24)
-			if (length(drops)) outRadar[ drops] <- ""
+			drops <- which( radarRanks > (24*2))
+			if (length(drops)) {
+				outRadar[ drops] <- ""
+				outBubble[ drops] <- ""
+			}
 		}
 	}
 
@@ -406,6 +413,12 @@
 	if ( length(use)) {
 		url <- outRadar[use]
 		newText <- as.link( url, "(radar)")
+		out[use] <- paste( out[use], newText, sep=" &nbsp; ")
+	}
+	use <- which( outBubble != "")
+	if ( length(use)) {
+		url <- outBubble[use]
+		newText <- as.link( url, "(bubble)")
 		out[use] <- paste( out[use], newText, sep=" &nbsp; ")
 	}
 	use <- which( outGenes != "")
