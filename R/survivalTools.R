@@ -4,8 +4,8 @@
 			makePlot=TRUE, xlab="Time  (weeks)", ylab="Survival", lwd=3, lty=1, legend.cex=1.1,
 			main="Kaplan-Meier: ", nFDR=0, legend.bty="o", 
 			xscale=1, yscale=1, mark.time=FALSE, pch=3, cumhaz=FALSE, ylim=c(0,1.03),
-			xstagger=0, ystagger=0, show.pvalue=TRUE, legend.loc="topright", 
-			show.group.size=FALSE, ...) {
+			xstagger=0, ystagger=0, show.pvalue=TRUE, legend.loc="topright", pval.loc="bottomleft", 
+			fdr.loc="bottom.right", show.group.size=FALSE, ...) {
 
 	require( survival)
 
@@ -14,8 +14,10 @@
 	survAns <- survfit( surv ~ groups)
 	survDiff <- survdiff( surv ~ groups)
 
-	# calc the P-value
-	pval <- pchisq( survDiff$chisq, df=1, lower=F)
+	# calc the P-value.  Error:  the DF is not always 1, it depends on the number of groups.
+	# Instead, just take P from the survDiff result.
+	# pval <- pchisq( survDiff$chisq, df=1, lower=F)
+	pval <- survDiff$pvalue
 
 	# gather details for plotting
 	grpNames <- if (is.factor(groups)) levels(groups) else sort( unique( groups))
@@ -32,8 +34,8 @@
 			legend( legend.loc, grpNames, col=col, lwd=lwd, lty=lty, bg='white', cex=legend.cex, bty=legend.bty)
 		}
 		if (show.pvalue) {
-			legend( 'bottomleft', paste( "P-value =", round( pval, digits=4)), bg='white', cex=max(1,legend.cex),
-				bty=legend.bty)
+			if ( ! is.na(pval.loc)) legend( pval.loc, paste( "P-value =", round( pval, digits=4)), bg='white', 
+					cex=max(1,legend.cex), bty=legend.bty)
 		}
 	}
 
@@ -44,14 +46,17 @@
 		for ( i in 1:nFDR) {
 			fdr.groups <- groups[ sample(N)]
 			survDiff2 <- survdiff( surv ~ fdr.groups)
-			pFDR[i] <- pchisq( survDiff2$chisq, df=1, lower=F)
+			# pFDR[i] <- pchisq( survDiff2$chisq, df=1, lower=F)
+			pFDR[i] <- survDiff2$pvalue
 		}
-		myFDR <- sum( pFDR <= pval) / nFDR
-		legend( 'bottomright', paste( "FDR (Trials=",nFDR,") = ", round( myFDR, digits=4), sep=""), 
-			bg='white', cex=legend.cex)
+		myFDR <- sum( pFDR < pval) / nFDR
+		if ( ! is.na(fdr.loc)) legend( fdr.loc, paste( "FDR (Trials=",nFDR,") = ", round( myFDR, digits=4), sep=""), 
+			bg='white', cex=legend.cex, bty=legend.bty)
+	} else {
+		myFDR <- NA
 	}
 
-	out <- list( "surv.diff"=survDiff, "p.value"=pval)
+	out <- list( "surv.diff"=survDiff, "p.value"=pval, "fdr"=myFDR)
 	return( invisible( out))
 }
 
