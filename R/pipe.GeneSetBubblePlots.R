@@ -278,7 +278,6 @@
 	if ( abs(maxNegMagni) > maxPosMagni) maxPosMagni <- abs(maxNegMagni)
 	if ( maxNegMagni > (-maxPosMagni)) maxNegMagni <- (-maxPosMagni)
 	cropPshow <- pmax( pShow, crop.min.pvalue)
-	minPval <- min( cropPshow, 0.0001, na.rm=T)
 	# visit each point on the bubble plot rectange, and draw that significance.
 	for ( j in 1:nGroups) {
 		# inspect the size of the bubbles, to draw them in an order that best shows overlaps
@@ -293,7 +292,8 @@
 				myColorPtr <- round( (1-(myMagni/maxNegMagni))*nColors/2) + 1
 			}
 			myCol <- getPalette(nColors)[myColorPtr]
-			myCEX <-  (-log10(myPval)) / (-log10(minPval)) * 5
+			# improve how we scale by P.  Need to make terrible P-values look bigger, and grow size slower
+			myCEX <-  sqrt( -log10(myPval))
 			points( xGroupLocs[j], i, pch=21, cex=myCEX*cex, col='grey40', lwd=0.5, bg=myCol)
 		}
 	}
@@ -317,17 +317,16 @@
 
 	pvalCorners <- c( legLeft, Nshow*0.18, legRight, Nshow*0.45)
 	text( pvalCorners[3], pvalCorners[4], "-Log10(P) ", pos=3, offset=0.25, cex=0.85)
-	prettyVals <- unique( c( 1, pretty( -log10( c( 0.05, minPval)), 7)))
-	use <- which( prettyVals >= 1 & prettyVals <= -log10(minPval))
+	pValShow <- c( 0.5, 0.1, 0.01, 1e-5, 1e-10, 1e-20)
+	pLabShow <- c( 0.3, 1, 2, 5, 10, 20)
 	# have the step size grow as the circles grow
-	pvalStep <- diff( range( pvalCorners[c(2,4)])) / (length(use)*3.5)
+	pvalStep <- diff( range( pvalCorners[c(2,4)])) / (length(pValShow)*3.5)
 	ynow <- pvalCorners[4]
-	for( kk in 1:length(use)) {
-		jj <- use[kk]
-		myCEX <-  ( prettyVals[jj] / (-log10(minPval))) * 5
+	for( kk in 1:length(pValShow)) {
+		myCEX <-  sqrt( -log10( pValShow[kk]))
 		ynow <- ynow - (pvalStep * kk)
 		points( mean(pvalCorners[c(1,3)]), ynow, cex=myCEX*cex, pch=1, col=1, lwd=1)
-		text( pvalCorners[3], ynow, prettyVals[jj], col=1, pos=4, offset=0.35, cex=0.85)
+		text( pvalCorners[3], ynow, pLabShow[kk], col=1, pos=4, offset=0.35, cex=0.85)
 	}
 	
 	dev.flush()

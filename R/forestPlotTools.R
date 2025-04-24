@@ -7,10 +7,11 @@ forestPlot <- function( )  {
 	xDataLim <- yMax <- text.cex <- 0
 	textTable <- matrix( "", 1,5)
 	annotateText <- TRUE
+	LongLabels <- FALSE
 
 
 	setup <- function( xRange, yBig, main="Forest Plot", noDifference=0, symmetricX=TRUE, text.cex=0.75,
-				annotateText=TRUE, meanDiffMode=TRUE, sub=NULL, dividerLines=FALSE) {
+				annotateText=TRUE, meanDiffMode=TRUE, sub=NULL, dividerLines=FALSE, long.labels=FALSE) {
 	
 		# given the numeric range of values to be drawn, set up our bounds}
 		myXlim <- range( xRange)
@@ -20,6 +21,7 @@ forestPlot <- function( )  {
 		}
 		# because R stretches the plot limits a bit, do that here too for clipping later
 		xDataLim <<- myXlim * 1.025
+		LongLabels <<- long.labels
 
 		# place all the items we will draw relative to this
 		if (meanDiffMode) {
@@ -39,6 +41,15 @@ forestPlot <- function( )  {
 			text3Loc <<- myXlim[2] + xWidth*0.33
 			pvalLoc <<- myXlim[2] + xWidth*0.8
 			xlim <- c( leftLabelLoc-xWidth*0.1, pvalLoc+xWidth*0.05)
+			if (long.labels) {
+				xWidth <- diff( myXlim) * 0.95
+				leftLabelLoc <<- myXlim[1] - xWidth * 0.9
+				text1Loc <<- myXlim[1] - xWidth*0.3
+				text2Loc <<- myXlim[1] - xWidth*0.1
+				text3Loc <<- myXlim[2] + xWidth*0.4
+				pvalLoc <<- myXlim[2] + xWidth*0.7
+				xlim <- c( leftLabelLoc-xWidth*0.2, pvalLoc+xWidth*0.05)
+			}
 			tableNames <- c( "Label", "N_Mean_SD", "Unused", "CI", "P_Value")
 		}
 		yMax <<- yBig
@@ -75,7 +86,7 @@ forestPlot <- function( )  {
 
 	meanDiff.header <- function( label1="Group 1", label2="Group 1", cex=1, prefix="Higher in",
 					offset=1.2) {
-
+		if (LongLabels) cex <- cex * 0.8
 		if (annotateText) text( text1Loc, yMax+offset, paste(label1,"N, Mean (SD)", sep="\n"), cex=text.cex*cex)
 		textTable[ yMax, 2] <<- paste(label1,"N, Mean (SD)", sep="\n")
 		if (annotateText) text( text2Loc, yMax+offset, paste(label2,"N, Mean (SD)", sep="\n"), cex=text.cex*cex)
@@ -95,12 +106,13 @@ forestPlot <- function( )  {
 	mean.header <- function( label1="Group 1", label2="Group 2", cex=1, prefix="Higher in",
 					offset=1.2, groupName="Cell Type") {
 
+		if (LongLabels) cex <- cex * 0.8
 		text( leftLabelLoc, yMax+offset, groupName, cex=text.cex*cex)
 		if (annotateText) text( text1Loc, yMax+offset, "N, Mean (SD)", cex=text.cex*cex)
 		textTable[ yMax, 2] <<- "N, Mean (SD)"
 		if (annotateText) text( text3Loc, yMax+offset, "(95% CI)", cex=text.cex*cex)
 		textTable[ yMax, 4] <<- "(95% CI)"
-		if (annotateText) text( pvalLoc, yMax+offset, "P-value", cex=text.cex)
+		if (annotateText) text( pvalLoc, yMax+offset, "P-value", cex=text.cex*cex)
 		textTable[ yMax, 5] <<- "P-value"
 
 		# put UP in Grp 1 on the right side
@@ -115,6 +127,8 @@ forestPlot <- function( )  {
 		if ( yRow < 1 || yRow > yMax) {
 			stop( "Error:  Invalid 'yRow' -- outside bounds of forest plot.")
 		}
+
+		if (LongLabels) cex <- cex * 0.9
 
 		# if x1 is NULL, then just write the label as a heading
 		if ( is.null(x1)) {

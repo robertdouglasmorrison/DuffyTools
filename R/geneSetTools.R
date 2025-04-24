@@ -807,3 +807,107 @@
 	return( out)
 }
 
+
+
+# forest plot for cell types
+`plotGeneSetForest` <- function( file, geneSets=defaultGeneSets(), col=NULL, max.show=30, max.label.len=40,
+				geneColumn="GENE_ID", foldColumn="LOG2FOLD", min.genes.per.set=5,
+				main="Gene Sets Forest Plot", xRange=NULL, xMeanNormalize=TRUE,
+				left.label=NULL, right.label=NULL, sep="\t", 
+				text.cex=0.9, pt.cex=1.25, lwd=3, geneUniverse=NULL, ...) {
+
+	# can be given a DE filename or a data frame
+	if ( is.character(file)) {
+		tmp <- read.delim( file, as.is=T, sep=sep)
+		cat( "\nRead file: ", file, "\nN_Genes: ", nrow(tmp))
+	} else if (is.data.frame(file)) {
+		tmp <- file
+	} else {
+		stop( "Argument 'file' must be a character string or a data frame of DE results.")
+	}
+	if ( !( all( c( geneColumn, foldColumn) %in% colnames(tmp)))) {
+		cat( "\nMissing columns:  looked for: ", geneColumn, foldColumn, 
+			"\n  \tFound: ", colnames(tmp))
+		return()
+	}
+
+	# extract the DE result parts we want
+	genes <- shortGeneName( as.character( tmp[[ geneColumn]]), keep=1)
+	fold <- as.numeric( tmp[[ foldColumn]])
+	if ( is.null( xRange)) xRange <- quantile( fold, probs=c(0.025,0.975), na.rm=T)
+	meanFold <- 0
+	if (xMeanNormalize) meanFold <- mean( fold, na.rm=T)
+
+	# if given a gene universe, to limit the set of genes, apply that now
+	if ( ! is.null( geneUniverse)) {
+		geneUniverse <- as.GeneUniverse( geneUniverse)
+		keep <- which( genes %in% geneUniverse)
+		genes <- genes[ keep]
+		fold <- fold[ keep]
+		tmp <- tmp[ keep, ]
+	}
+
+	# get the gene sets, and their colors
+	if ( ! is.list( geneSets)) {
+		tmp <- gatherGeneSets( geneSets)
+		geneSets <- tmp$geneSets[[1]]
+	}
+	N <- length( geneSets)
+	allGSnames <- names( geneSets)
+	# clean the names some
+	allGSnames <- cleanGeneSetName( cleanGeneSetModuleNames( allGSnames, wrapParen=F))
+	# shorten the gene set names, perhaps a lot
+	allGSnames <- clipLongString( allGSnames, max.length=max.label.len, pct.front=1)
+
+	# for this forest plot use (for now), always keep all genes in each set.  But remove any with too few genes
+	nGperSet <- sapply( geneSets, FUN=length)
+	drops <- which( nGperSet < min.genes.per.set)
+	if ( length(drops)) {
+		geneSets <- geneSets[ -drops]
+		allGSnames <- allGSnames[ -drops]
+		N <- length( geneSets)
+	}
+	
+	# in most cases we need to prescan which genesets are most DE, to only the best N
+	if (max.show < N) {
+		cat( "\n Down-selecting to top", max.show, "GeneSets..")
+		avgDE <- sapply( geneSets, function(x) {
+				wh <- match( x, genes)
+				myFold <- fold[wh]
+				return( mean( myFold, na.rm=T))
+		})
+		ord <- order( abs(avgDE), decreasing=T)
+		keep <- ord[ 1:max.show]
+		# return them to their original ordering
+		keep <- sort( keep)
+		geneSets <- geneSets[ keep]
+		allGSnames <- allGSnames[ keep]
+		N <- length(geneSets)
+	}
+	# now set the colors
+	allGScolors <- if (is.null(col)) rainbow( N, end=0.76) else rep(col, length.out=N)
+	
+	# set up to use a Forest Plot closure
+	fp <- forestPlot()
+	fp$setup( xRange=xRange, yBig=N, main=main, text.cex=text.cex, long.labels=TRUE, 
+			meanDiffMode=FALSE, sub="      Log2 Fold Change", dividerLines=T)
+	fp$mean.header( label1=right.label, label2=left.label, cex=text.cex*1.15, prefix="Upregulated in",
+			offset=1.3, groupName="Gene Set")
+			
+	# now step thru gene set type and evaluate the distribution
+	for ( i in 1:N) {
+		thisGS <- allGSnames[i]
+		gPtrs <- match( geneSets[[i]], genes)
+		gPtrs <- gPtrs[ ! is.na( gPtrs)]
+		if ( length(gPtrs) < 3) next
+		fp$mean.line( x1=(fold[gPtrs]-meanFold), yRow=i, label=thisGS, col=allGScolors[i], 
+				lwd=lwd, cex=text.cex*0.9, pt.cex=pt.cex)
+	}
+	
+	# done
+	dev.flush()
+	out <- fp$result.text()
+	return( invisible( as.data.frame(out)))
+}
+
+
