@@ -814,7 +814,7 @@
 				geneColumn="GENE_ID", foldColumn="LOG2FOLD", min.genes.per.set=5,
 				main="Gene Sets Forest Plot", xRange=NULL, xMeanNormalize=TRUE,
 				left.label=NULL, right.label=NULL, sep="\t", 
-				text.cex=0.9, pt.cex=1.25, lwd=3, geneUniverse=NULL, ...) {
+				text.cex=0.9, pt.cex=1.25, lwd=3, geneUniverse=NULL) {
 
 	# can be given a DE filename or a data frame
 	if ( is.character(file)) {
@@ -857,7 +857,7 @@
 	# clean the names some
 	allGSnames <- cleanGeneSetName( cleanGeneSetModuleNames( allGSnames, wrapParen=F))
 	# shorten the gene set names, perhaps a lot
-	allGSnames <- clipLongString( allGSnames, max.length=max.label.len, pct.front=1)
+	allGSshortnames <- clipLongString( allGSnames, max.length=max.label.len, pct.front=1)
 
 	# for this forest plot use (for now), always keep all genes in each set.  But remove any with too few genes
 	nGperSet <- sapply( geneSets, FUN=length)
@@ -865,12 +865,13 @@
 	if ( length(drops)) {
 		geneSets <- geneSets[ -drops]
 		allGSnames <- allGSnames[ -drops]
+		allGSshortnames <- allGSshortnames[ -drops]
 		N <- length( geneSets)
 	}
 	
 	# in most cases we need to prescan which genesets are most DE, to only the best N
 	if (max.show < N) {
-		cat( "\n Down-selecting to top", max.show, "GeneSets..")
+		cat( "\n  Given", N, "GeneSets.  Down-selecting to top", max.show, "most DE ones..")
 		avgDE <- sapply( geneSets, function(x) {
 				wh <- match( x, genes)
 				myFold <- fold[wh]
@@ -882,6 +883,7 @@
 		keep <- sort( keep)
 		geneSets <- geneSets[ keep]
 		allGSnames <- allGSnames[ keep]
+		allGSshortnames <- allGSshortnames[ keep]
 		N <- length(geneSets)
 	}
 	# now set the colors
@@ -896,17 +898,21 @@
 			
 	# now step thru gene set type and evaluate the distribution
 	for ( i in 1:N) {
-		thisGS <- allGSnames[i]
-		gPtrs <- match( geneSets[[i]], genes)
+		# draw them in reverse order, so it looks alphabetical in image
+		ii <- N - i + 1
+		thisGS <- allGSshortnames[ii]
+		gPtrs <- match( geneSets[[ii]], genes)
 		gPtrs <- gPtrs[ ! is.na( gPtrs)]
 		if ( length(gPtrs) < 3) next
-		fp$mean.line( x1=(fold[gPtrs]-meanFold), yRow=i, label=thisGS, col=allGScolors[i], 
+		fp$mean.line( x1=(fold[gPtrs]-meanFold), yRow=i, label=thisGS, col=allGScolors[ii], 
 				lwd=lwd, cex=text.cex*0.9, pt.cex=pt.cex)
 	}
 	
 	# done
 	dev.flush()
 	out <- fp$result.text()
+	# put the longer names back in
+	out[ , 1] <- allGSnames
 	return( invisible( as.data.frame(out)))
 }
 

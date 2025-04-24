@@ -86,7 +86,7 @@ forestPlot <- function( )  {
 
 	meanDiff.header <- function( label1="Group 1", label2="Group 1", cex=1, prefix="Higher in",
 					offset=1.2) {
-		if (LongLabels) cex <- cex * 0.8
+		if (LongLabels) cex <- cex * 0.9
 		if (annotateText) text( text1Loc, yMax+offset, paste(label1,"N, Mean (SD)", sep="\n"), cex=text.cex*cex)
 		textTable[ yMax, 2] <<- paste(label1,"N, Mean (SD)", sep="\n")
 		if (annotateText) text( text2Loc, yMax+offset, paste(label2,"N, Mean (SD)", sep="\n"), cex=text.cex*cex)
@@ -106,7 +106,7 @@ forestPlot <- function( )  {
 	mean.header <- function( label1="Group 1", label2="Group 2", cex=1, prefix="Higher in",
 					offset=1.2, groupName="Cell Type") {
 
-		if (LongLabels) cex <- cex * 0.8
+		if (LongLabels) cex <- cex * 0.9
 		text( leftLabelLoc, yMax+offset, groupName, cex=text.cex*cex)
 		if (annotateText) text( text1Loc, yMax+offset, "N, Mean (SD)", cex=text.cex*cex)
 		textTable[ yMax, 2] <<- "N, Mean (SD)"
@@ -210,6 +210,8 @@ forestPlot <- function( )  {
 		if ( yRow < 1 || yRow > yMax) {
 			stop( "Error:  Invalid 'yRow' -- outside bounds of forest plot.")
 		}
+
+		if (LongLabels) cex <- cex * 0.9
 
 		# if x1 is NULL, then just write the label as a heading
 		if ( is.null(x1)) {
