@@ -122,7 +122,7 @@
 				groupColumn="Group", groupLevels=NULL, average.FUN=median, 
 				geneSet=defaultGeneSets(speciesID), restrictionSets=NULL, baselineGroup=NULL,
 				reload=FALSE, Nshow=24, label.cex=1, cex=par("cex.axis"), main=NULL, 
-				max.label.length=80, crop.min.pvalue=1e-30, las=3, xBubbleLim=c(0.6,0.9))
+				max.label.length=80, crop.min.pvalue=1e-20, las=3, xBubbleLim=c(0.6,0.9))
 {
 
 	setCurrentSpecies( speciesID)
