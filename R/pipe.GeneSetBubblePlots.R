@@ -293,7 +293,7 @@
 			}
 			myCol <- getPalette(nColors)[myColorPtr]
 			# improve how we scale by P.  Need to make terrible P-values look bigger, and grow size slower
-			myCEX <-  sqrt( -log10(myPval))
+			myCEX <-  sqrt( -log10(myPval)) * 1.1
 			points( xGroupLocs[j], i, pch=21, cex=myCEX*cex, col='grey40', lwd=0.5, bg=myCol)
 		}
 	}
@@ -315,15 +315,15 @@
 	#for (yy in yTicks) lines( foldCorners[3]+c(0,0.1), rep.int(yy,2), col=1, lwd=1)
 	text( rep.int(foldCorners[3],length(show)), yTicks[show], prettyVals[show], pos=4, offset=0.35, cex=0.85)
 
-	pvalCorners <- c( legLeft, Nshow*0.18, legRight, Nshow*0.45)
-	text( pvalCorners[3], pvalCorners[4], "-Log10(P) ", pos=3, offset=0.25, cex=0.85)
-	pValShow <- c( 0.5, 0.1, 0.01, 1e-5, 1e-10, 1e-20)
-	pLabShow <- c( 0.3, 1, 2, 5, 10, 20)
+	pvalCorners <- c( legLeft, Nshow*0.22, legRight, Nshow*0.45)
+	text( pvalCorners[3], pvalCorners[4], "-Log10(P) ", pos=3, offset=0.55, cex=0.85)
+	pValShow <- c( 0.3162278, 0.1, 0.01, 1e-5, 1e-10, 1e-20)
+	pLabShow <- c( 0.5, 1, 2, 5, 10, 20)
 	# have the step size grow as the circles grow
-	pvalStep <- diff( range( pvalCorners[c(2,4)])) / (length(pValShow)*3.5)
+	pvalStep <- diff( range( pvalCorners[c(2,4)])) / (length(pValShow)*3.7)
 	ynow <- pvalCorners[4]
 	for( kk in 1:length(pValShow)) {
-		myCEX <-  sqrt( -log10( pValShow[kk]))
+		myCEX <-  sqrt( -log10( pValShow[kk])) * 1.1
 		ynow <- ynow - (pvalStep * kk)
 		points( mean(pvalCorners[c(1,3)]), ynow, cex=myCEX*cex, pch=1, col=1, lwd=1)
 		text( pvalCorners[3], ynow, pLabShow[kk], col=1, pos=4, offset=0.35, cex=0.85)
