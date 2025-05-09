@@ -559,9 +559,18 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 	if (is.null(genemap)) {
 		genemap <- subset.data.frame( getCurrentGeneMap(), SEQ_ID == seqID)
-		if ( ! is.null(geneID)) genemap <- subset( genemap, GENE_ID == geneID)
+		if ( ! nrow( genemap)) {
+			warning( paste( "No SeqID in current species matches: ", seqID))
+			return(out)
+		}
 	}
-	if ( nrow( genemap) < 1) return( out)
+	if ( ! is.null(geneID)) {
+		genemap <- subset( genemap, GENE_ID == geneID)
+		if ( ! nrow( genemap)) {
+			warning( paste( "No GeneID in chromosome", seqID, "matches: ", geneID))
+			return(out)
+		}
+	}
 
 	# if we have a whole chromosome, find the one gene
 	if ( is.null( geneID)) {
