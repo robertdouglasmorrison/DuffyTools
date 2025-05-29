@@ -199,7 +199,8 @@ readALN <- function( file, verbose=TRUE) {
 
 
 `plotALN` <- function( aln, type=c("fill","dots"), cex.letter=1, cex.label=1, y.label.length=NULL, 
-			codonMap=getCodonMap(), ref.row=1, number.from=NULL, range=NULL, ...) {
+			codonMap=getCodonMap(), ref.row=1, number.from=NULL, range=NULL, 
+			number.shown.offset=NULL, ...) {
 
 	# we may be given the top level ALN object or just the aligment matrix
 	# or even just the filename
@@ -253,6 +254,8 @@ readALN <- function( file, verbose=TRUE) {
 			prevGaps <- nGapNow
 		}
 		# make the axis that shows the given numbering with all it's  gaps
+		# allow the caller to adjust the shown numbering, to put it all on a full protein location etc.
+		if ( ! is.null( number.shown.offset)) shown.ats <- shown.ats + number.shown.offset
 		axis( side=1, at=xAts, label=as.character(shown.ats), ...)
 		axis( side=3, at=xAts, label=as.character(shown.ats), mgp=c(3,0.5,0), ...)
 	}
@@ -400,5 +403,47 @@ readALN <- function( file, verbose=TRUE) {
 	out <- data.frame( "Location"=colnames(aln), "Consensus.Call"=consensCh, "Pct.Conserved"=consensPct, 
 			"Diversity.Calls"=diversePcts, stringsAsFactors=F)
 	return( out)
+}
+
+
+`ALN2DistanceMatrix` <- function( aln, gapAdjust=FALSE) {
+
+	# convert a sequence alignment into a Distance Matrix (i.e. how dissimilar)
+	# by counting up the number of disagreements
+	if ( length(aln) == 1 && is.character(aln) && file.exists(aln)) {
+		aln <- readALN( aln, verbose=F)
+	}
+	if ( "alignment" %in% names(aln)) {
+		aln <- aln$alignment
+	} else {
+		cat( "\nError: expected an ALN 'alignment' element.")
+		return(NULL)
+	}
+
+	# rownames are the sequence discriptors
+	nams <- rownames(aln)
+	N <- nrow(aln)
+	dm <- matrix( 0, nrow=N, ncol=N)
+	rownames(dm) <- colnames(dm) <- nams
+	
+	# with all MSA work finished, just count up differences
+	for ( i in 1:(N-1)) {
+		ch1 <- aln[ i, ]
+		if ( gapAdjust) isGap1 <- which( ch1 == "-")
+		for ( j in (i+1):N) {
+			ch2 <- aln[ j, ]
+			ndif <- sum( ch1 != ch2)
+			if (gapAdjust) {
+				isGap2 <- which( ch2 == "-")
+				# locations where one (but not both) were gaps, get only half the penalty
+				only1 <- setdiff( isGap1, isGap2)
+				only2 <- setdiff( isGap2, isGap1)
+				nAdj <- (length(only1) + length(only2))/2
+				ndif <- ndif - nAdj
+			}
+			dm[i,j] <- dm[j,i] <- ndif
+		}
+	}
+	return(dm)
 }
 
