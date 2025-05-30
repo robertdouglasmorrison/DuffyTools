@@ -288,7 +288,7 @@ readALN <- function( file, verbose=TRUE) {
 			use <- which( where > 0)
 			fill <- codonMap$Color[where]
 			# try to lighten them a bit
-			fill <- adjustColor( fill, adjust=0.15)
+			fill <- adjustColor( fill, adjust=0.35)
 			rect( x[use]-0.5, y[use]-0.5, x[use]+0.5, y[use]+0.5, col=fill, border=fill)
 		}
 		if ( showLetters == "all") {
