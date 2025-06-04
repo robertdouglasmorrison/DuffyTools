@@ -447,3 +447,54 @@ readALN <- function( file, verbose=TRUE) {
 	return(dm)
 }
 
+
+`plotALN.as.BitScore` <- function( aln, cex.letter=5, codonMap=getCodonMap(), ref.row=1, number.from=1, range=NULL, ...) {
+
+	# we may be given the top level ALN object or just the aligment matrix
+	# or even just the filename
+	if ( length(aln) == 1 && is.character(aln) && file.exists(aln)) {
+		aln <- readALN( aln, verbose=F)
+	}
+	if ( "alignment" %in% names(aln)) {
+		aln <- aln$alignment
+	}
+
+	# OK, we have one matrix of characters from a MSA
+	# allow subsetting on a range of locations
+	# if we were given an explicit numbering start, then the range is in those units
+	aln <- toupper(aln)
+	nch <- ncol(aln)
+	niso <- nrow(aln)
+	column.names <- (1:nch) - 1 + number.from
+	referenceRowChars <- aln[ ref.row, ]
+	refGaps <- which( referenceRowChars == "-")
+	
+	# set up to show one set of AA positions, and try to set the Y axis to show 100% as full size
+
+	plot( 1,1, type="n", xlim=c(number.from,number.from+nch-1), ylim=c(0,100), 
+			xlab="Amino Acid Location (NF54)", ylab=NA, yaxt="n", frame.plot=F, ...)
+	# axis( side=2, at=seq( 0, fullCharHt, length.out=5), lab=as.character( seq(0,100,by=25)))
+
+	# draw the alignment letters, with size proportional to abundance
+	fullCharHt <-  strheight( "Q", units="user", cex=cex.letter, font=2)
+	cex.scaleFac <- cex.letter / 100
+	for( i in 1:nch) {
+		x <- as.numeric( column.names[i])
+		chV <- aln[ , i]
+		chTbl <- table( chV)
+		chPct <- as.numeric( chTbl) * 100 / niso
+		# now visit each seen AA, and draw it proportional to it's abundance
+		ynow <- 0
+		for (k in 1:length(chTbl)) {
+			myCh <- names( chTbl)[k]
+			whMap <- match( myCh, codonMap$AA)
+			myCol <- codonMap$Color[ whMap]
+			myPct <- chPct[k]
+			myCEX <- cex.scaleFac * myPct
+			text( x, ynow, myCh, col=myCol, font=2, cex=myCEX, adj=c(0.5,0))
+			netCharHt <-  strheight( myCh, units="user", cex=myCEX, font=2)
+			ynow <- ynow + netCharHt
+		}
+	}
+	dev.flush()
+}
