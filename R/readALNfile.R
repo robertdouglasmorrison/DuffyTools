@@ -200,7 +200,7 @@ readALN <- function( file, verbose=TRUE) {
 
 `plotALN` <- function( aln, type=c("fill","dots"), cex.letter=1, cex.label=1, y.label.length=NULL, 
 			codonMap=getCodonMap(), ref.row=1, number.from=NULL, range=NULL, 
-			number.shown.offset=NULL, ...) {
+			number.shown.offset=NULL, bottom.axis=TRUE, top.axis=TRUE, xLabel="Amino Acid Location", ...) {
 
 	# we may be given the top level ALN object or just the aligment matrix
 	# or even just the filename
@@ -235,11 +235,11 @@ readALN <- function( file, verbose=TRUE) {
 	aln <- toupper(aln)
 	nch <- ncol(aln)
 	niso <- nrow(aln)
-	plot( 1,1, type="n", xlim=c(0,nch+1), ylim=c(0,niso+1), xlab="Amino Acid Location", 
+	plot( 1,1, type="n", xlim=c(0,nch+1), ylim=c(0,niso+1), xlab=xLabel,
 			xaxs="i", xaxt="n", ylab=NA, yaxs="i", yaxt="n", ...)
 	if ( is.null( number.from)) {
-		axis( side=1, ...)
-		axis( side=3, mgp=c(3,0.5,0), ...)
+		if (bottom.axis) axis( side=1, ...)
+		if (top.axis) axis( side=3, mgp=c(3,0.5,0), ...)
 	} else {
 		# when given a explicit starting number, we need to do a bunch of math to keep that numbering system consistent
 		number.from <- as.integer( number.from)
@@ -256,8 +256,8 @@ readALN <- function( file, verbose=TRUE) {
 		# make the axis that shows the given numbering with all it's  gaps
 		# allow the caller to adjust the shown numbering, to put it all on a full protein location etc.
 		if ( ! is.null( number.shown.offset)) shown.ats <- shown.ats + number.shown.offset
-		axis( side=1, at=xAts, label=as.character(shown.ats), ...)
-		axis( side=3, at=xAts, label=as.character(shown.ats), mgp=c(3,0.5,0), ...)
+		if (bottom.axis) axis( side=1, at=xAts, label=as.character(shown.ats), ...)
+		if (top.axis) axis( side=3, at=xAts, label=as.character(shown.ats), mgp=c(3,0.5,0), ...)
 	}
 
 	# allow a few types of plot images
@@ -448,7 +448,9 @@ readALN <- function( file, verbose=TRUE) {
 }
 
 
-`plotALN.as.BitScore` <- function( aln, cex.letter=5, codonMap=getCodonMap(), ref.row=1, number.from=1, range=NULL, ...) {
+`plotALN.BitScore` <- function( aln, heightM=NULL, codonMap=getCodonMap(), ref.row=1, number.from=1, 
+								max.X=NULL, max.Y=NULL, letter.col=NULL, min.height=0.01, 
+								xLabel="Amino Acid Location (NF54)", ...) {
 
 	# we may be given the top level ALN object or just the aligment matrix
 	# or even just the filename
@@ -460,41 +462,89 @@ readALN <- function( file, verbose=TRUE) {
 	}
 
 	# OK, we have one matrix of characters from a MSA
-	# allow subsetting on a range of locations
-	# if we were given an explicit numbering start, then the range is in those units
-	aln <- toupper(aln)
-	nch <- ncol(aln)
-	niso <- nrow(aln)
-	column.names <- (1:nch) - 1 + number.from
+	
+	# turn this into frequency matrix, Infomation Content, and letter heights
+	icAns <- ALNtoInformationContent( aln)
+	heightM <- icAns$height
+	
+	# show numbering based on the reference sequence
 	referenceRowChars <- aln[ ref.row, ]
 	refGaps <- which( referenceRowChars == "-")
 	
-	# set up to show one set of AA positions, and try to set the Y axis to show 100% as full size
+	# set up to plot letters scaled by info content, using a polygon database of a system font
+	# data frame is called "fontPolygons", with columns: x, y, letter, order
+	data( "Helvetica.Rgular.Font.Polygons")
+	nch <- ncol(aln)
+	bigX <- number.from + nch - 1
+	if ( ! is.null( max.X)) bigX <- max( bigX, max.X)
+	yBig <- max( heightM)
+	if ( ! is.null( max.Y)) yBig <- max.Y
 
-	plot( 1,1, type="n", xlim=c(number.from,number.from+nch-1), ylim=c(0,100), 
-			xlab="Amino Acid Location (NF54)", ylab=NA, yaxt="n", frame.plot=F, ...)
-	# axis( side=2, at=seq( 0, fullCharHt, length.out=5), lab=as.character( seq(0,100,by=25)))
+	plot( 1,1, type="n", xlim=c(number.from, bigX), ylim=c(0,yBig), 
+			xlab=xLabel, ylab="Bit Score", frame.plot=F, ...)
 
 	# draw the alignment letters, with size proportional to abundance
-	fullCharHt <-  strheight( "Q", units="user", cex=cex.letter, font=2)
-	cex.scaleFac <- cex.letter / 100
 	for( i in 1:nch) {
-		x <- as.numeric( column.names[i])
-		chV <- aln[ , i]
-		chTbl <- table( chV)
-		chPct <- as.numeric( chTbl) * 100 / niso
+		x <- i + number.from - 1
+		# only draw the letters with non-zero height
+		myHts <- heightM[ , i]
+		show <- which( myHts > 0)
+		# show them with the best at the top
+		show <- show[ order( myHts[show])]
 		# now visit each seen AA, and draw it proportional to it's abundance
 		ynow <- 0
-		for (k in 1:length(chTbl)) {
-			myCh <- names( chTbl)[k]
-			whMap <- match( myCh, codonMap$AA)
-			myCol <- codonMap$Color[ whMap]
-			myPct <- chPct[k]
-			myCEX <- cex.scaleFac * myPct
-			text( x, ynow, myCh, col=myCol, font=2, cex=myCEX, adj=c(0.5,0))
-			netCharHt <-  strheight( myCh, units="user", cex=myCEX, font=2)
-			ynow <- ynow + netCharHt
+		for (k in show) {
+			myCh <- rownames( heigthM)[k]
+			myHt <- myHts[k]
+			# don't draw if too small to see
+			if ( myHt < min.height) next
+			myCol <- codonMap$Color[ match( myCh, codonMap$AA)]
+			if ( ! is.null( letter.col)) myCol <- letter.col[ match( myCh, names(letter.col))]
+			# get the polygon data for this letter
+			smlFont <- subset( fontPolygons, letter == myCh)
+			# the font is alway 0 to 1 in X and Y.  Shift to center X on the point, 
+			# shrink X a bit to avoid touching, and scale the Y by Info Content
+			xx <- (smlFont$x * 0.98) + x - 0.49
+			yy <- smlFont$y * myHt
+			polygon( xx, yy, col=myCol, border=myCol)
+			ynow <- ynow + max(yy) + 0.005
 		}
 	}
 	dev.flush()
+}
+
+
+`plotALN.BitScore.Wrapped` <- function( aln, n.AA.per.line=100, cex.letter=round(n.AA.per.line/20), 
+									codonMap=getCodonMap(), ref.row=1, number.from=1, font=1, ...) {
+
+	# version for longer ALN sequences, where we do N.AA per panel
+	# we may be given the top level ALN object or just the aligment matrix
+	# or even just the filename
+	if ( length(aln) == 1 && is.character(aln) && file.exists(aln)) {
+		aln <- readALN( aln, verbose=F)
+	}
+	if ( "alignment" %in% names(aln)) {
+		aln <- aln$alignment
+	}
+	nch <- ncol(aln)
+	nPanels <- ceiling( nch / n.AA.per.line) + 1
+	par( mfrow=c( nPanels, 1))
+	
+	nDone <- 0
+	while (nDone < nch) {
+		nFrom <- nDone + 1
+		nTo <- nDone + n.AA.per.line
+		if ( nTo > nch) {
+			max.X <- nTo + number.from - 1
+			nTo <- nch
+		} else {
+			max.X <- NULL
+		}
+		smlALN <- aln[ , nFrom:nTo]
+		nowNumberFrom <- number.from + nDone
+		# do this chunk
+		plotALN.BitScore( smlALN, cex.letter=cex.letter, number.from=nowNumberFrom, max.X=max.X, font=font, ...)
+		# increment
+		nDone <- nDone + n.AA.per.line
+	}
 }
