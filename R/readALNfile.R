@@ -474,7 +474,7 @@ readALN <- function( file, verbose=TRUE) {
 	
 	# set up to plot letters scaled by info content, using a polygon database of a system font
 	# data frame is called "fontPolygons", with columns: x, y, letter, order
-	data( "Helvetica.Rgular.Font.Polygons")
+	data( "Helvetica.Regular.Font.Polygons")
 	nch <- ncol(aln)
 	bigX <- number.from + nch - 1
 	if ( ! is.null( max.X)) bigX <- max( bigX, max.X)
