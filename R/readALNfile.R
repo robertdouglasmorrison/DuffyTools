@@ -481,8 +481,12 @@ readALN <- function( file, verbose=TRUE) {
 	yBig <- max( heightM)
 	if ( ! is.null( max.Y)) yBig <- max.Y
 
+	# place the labels and main text more precisely
 	plot( 1,1, type="n", xlim=c(number.from, bigX), ylim=c(0,yBig), 
-			xlab=xLabel, ylab="Bit Score", frame.plot=F, main=main, xaxt="n", ...)
+			xlab=NA, ylab="Bit Score", frame.plot=F, main=NA, xaxt="n", ...)
+	if ( ! is.na( main)) title( main=main, line=1.25)
+	title( xlab=xLabel, line=2.05)
+	
 	# for the axis numbers, try to account for gaps, and try to make the range fill the actual sequence
 	prettyXpts <- intersect( pretty(refNumbering), refNumbering)
 	nAxisPts <- length(prettyXpts)
@@ -532,9 +536,10 @@ readALN <- function( file, verbose=TRUE) {
 }
 
 
-`plotALN.BitScore.Panels` <- function( aln, n.per.line=100, codonMap=getCodonMap(), ref.row=1, number.from=1, 
+`plotALN.BitScore.Panels` <- function( aln, n.per.panel=100, codonMap=getCodonMap(), ref.row=1, number.from=1, 
 								max.X=NULL, max.Y=NULL, letter.col=NULL, min.bit.score=0.01, main="Sequence Logo", 
-								xLabel="Amino Acid Location (NF54)", gap.x=0.08, gap.y=0.05, mai=NULL, ...) {
+								xLabel="Amino Acid Location (NF54)", gap.x=0.12, gap.y=0.1, 
+								mai=c( 0.42,1,0.42,0.2), ...) {
 
 	# version for longer ALN sequences, where we do N letters per panel
 	# we may be given the top level ALN object or just the aligment matrix
@@ -553,24 +558,33 @@ readALN <- function( file, verbose=TRUE) {
 	colnames(aln) <- refNumbering
 	
 	# see how many panels we need
-	nPanels <- ceiling( nch / n.per.line)
+	nPanels <- ceiling( nch / n.per.panel)
+	if (nPanels > (par("fin")[2]/1.25)) cat( "\nWarning: may need too many panels for current plot window height..")
+	savMF <- par( "mfrow")
+	on.exit( par( mfrow=savMF), add=TRUE)
 	par( mfrow=c( nPanels, 1))
-	if ( ! is.null(mai)) par( mai=mai)
-	if (nPanels > 5) cat( "\nWarning: may be too many panels to plot..")
+	if ( ! is.null(mai)) {
+		savMAI <- par( "mai")
+		on.exit( par( mai=savMAI), add=TRUE)
+		par( mai=mai)
+	}
 	
 	# calculate the Information Content on the full sequence
 	icAns <- ALNtoInformationContent( aln)
 	colnames(icAns$proportion) <- refNumbering
 	heightM <- icAns$height
 	bigY <- max( heightM)
+	if ( ! is.null( max.Y)) bigY <- max( bigY, max.Y)
 	
 	nDone <- 0
+	nowNumberFrom <- number.from
+	lastRow <- FALSE
 	while (nDone < nch) {
 		# get the bounds of the next panel to show
 		nFrom <- nDone + 1
-		nTo <- nDone + n.per.line
+		nTo <- nDone + n.per.panel
 		if ( nTo > nch) {
-			max.X <- nTo + number.from - 1
+			lastRow <- TRUE
 			nTo <- nch
 		} else {
 			max.X <- NULL
@@ -578,7 +592,8 @@ readALN <- function( file, verbose=TRUE) {
 		smlALN <- aln[ , nFrom:nTo, drop=F]
 		smlHT <- heightM[ , nFrom:nTo, drop=F]
 		nowNumberFrom <- as.numeric( colnames(smlALN)[1])
-		
+		if ( lastRow) max.X <- nowNumberFrom + n.per.panel - 1
+
 		# do this chunk, only show the title on the top one
 		mainText <- if (nDone < 1) main else NA
 		plotALN.BitScore( smlALN, heightM=smlHT, codonMap=codonMap, number.from=nowNumberFrom, main=mainText,
@@ -586,6 +601,6 @@ readALN <- function( file, verbose=TRUE) {
 						gap.x=gap.x, gap.y=gap.y, ...)
 						
 		# increment
-		nDone <- nDone + n.per.line
+		nDone <- nDone + n.per.panel
 	}
 }
