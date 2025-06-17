@@ -166,20 +166,20 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 							myFC <- as.numeric( stats[wh])
 							return( mean( myFC, na.rm=T))
 					})
-		pathFold <- round( pathFold, digits=3)
+		pathFold <- round( pathFold, digits=4)
 	
 		# we gave GSEA the short names, put the longer full names back
 		where <- match( pathName, shortNames)
 		pathName <- longNames[ where]
 		if ( addCellTypes) {
 			cellType <- geneSetCellType( pathName, max.type=4)
-			nKeep <- 6
-			out <- data.frame( "PATHWAY"=pathName, "CellType"=cellType, "LOG2FOLD"=pathFold, 
+			nKeep <- 7
+			out <- data.frame( "PATHWAY"=pathName, "CellType"=cellType, "NES"=nes, "LOG2FOLD"=pathFold, 
 					"PVALUE"=pval, "PADJUST"=padj, "N_GENES"=pathSize, 
 					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
 		} else {
-			nKeep <- 5
-			out <- data.frame( "PATHWAY"=pathName, "LOG2FOLD"=pathFold, 
+			nKeep <- 6
+			out <- data.frame( "PATHWAY"=pathName, "NES"=nes, "LOG2FOLD"=pathFold, 
 					"PVALUE"=pval, "PADJUST"=padj, "N_GENES"=pathSize, 
 					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
 		}
@@ -190,7 +190,7 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 		cat( "\nUsing previously calculated GSEA results..")
 		outfile <- file.path( path, paste( group1, prefix, "UP.GSEA", "csv", sep="."))
 		out <- read.csv( outfile, as.is=T)
-		nKeep <- if (addCellTypes) 6 else 5
+		nKeep <- if (addCellTypes) 7 else 6
 	}
 
 	otherGrpString <- paste( setdiff( sort( unique( labels)), group1), collapse=" + ")
@@ -247,20 +247,20 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 							myFC <- as.numeric( stats[wh])
 							return( mean( myFC, na.rm=T))
 					})
-		pathFold <- round( pathFold, digits=3)
+		pathFold <- round( pathFold, digits=4)
 	
 		# we gave GSEA the short names, put the longer full names back
 		where <- match( pathName, shortNames)
 		pathName <- longNames[ where]
 		if ( addCellTypes) {
 			cellType <- geneSetCellType( pathName, max.type=4)
-			nKeep <- 6
-			out <- data.frame( "PATHWAY"=pathName, "CellType"=cellType, "LOG2FOLD"=pathFold, 
+			nKeep <- 7
+			out <- data.frame( "PATHWAY"=pathName, "CellType"=cellType, "NES"=nes, "LOG2FOLD"=pathFold, 
 					"PVALUE"=pval, "PADJUST"=padj, "N_GENES"=pathSize, 
 					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
 		} else {
-			nKeep <- 5
-			out <- data.frame( "PATHWAY"=pathName, "LOG2FOLD"=pathFold, 
+			nKeep <- 6
+			out <- data.frame( "PATHWAY"=pathName, "NES"=nes, "LOG2FOLD"=pathFold, 
 					"PVALUE"=pval, "PADJUST"=padj, "N_GENES"=pathSize, 
 					"GENE_LIST"=pathGenes, stringsAsFactors=FALSE)
 		}
@@ -271,7 +271,7 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 		cat( "\nUsing previously calculated GSEA results..")
 		outfile <- file.path( path, paste( group1, prefix, "DOWN.GSEA", "csv", sep="."))
 		out <- read.csv( outfile, as.is=T)
-		nKeep <- if (addCellTypes) 6 else 5
+		nKeep <- if (addCellTypes) 7 else 6
 	}
 
 	otherGrpString <- paste( setdiff( sort( unique( labels)), group1), collapse=" + ")
