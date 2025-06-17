@@ -148,7 +148,9 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 		}
 
 		# first put the result into our wanted UP to DOWN order
-		ord <- diffExpressRankOrder( ans$NES, ans$padj)
+		ans$NES <- as.numeric( ans$NES)
+		ans$pval <- as.numeric( ans$pval)
+		ord <- diffExpressRankOrder( ans$NES, ans$pval)
 		ans <- ans[ ord, ]
 		# now extract and clean up the wanted results
 		pval <- ans$pval
@@ -218,11 +220,18 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 		if (doGSEA) {
 		
 		# ok, call GSEA again
-		SAVGSEA <<- ans <- suppressWarnings( fgsea( pathways=geneSets, stats=stats, minSize=minSize, maxSize=maxSize, 
-					eps=eps, nPermSimple=nPermSimple, scoreType="neg", ...))
+		if (majorVersion >= 4) {
+			SAVGSEA <<- ans <- suppressWarnings( fgsea( pathways=geneSets, stats=stats, minSize=minSize, maxSize=maxSize, 
+						eps=eps, nPermSimple=nPermSimple, scoreType="neg", ...))
+		} else {
+			SAVGSEA <<- ans <- suppressWarnings( fgsea( pathways=geneSets, stats=stats, minSize=minSize, maxSize=maxSize, 
+						nperm=nPermSimple, ...))
+		}
 
 		# first put the result into our wanted UP to DOWN order
-		ord <- diffExpressRankOrder( -ans$NES, ans$padj)
+		ans$NES <- as.numeric( ans$NES)
+		ans$pval <- as.numeric( ans$pval)
+		ord <- diffExpressRankOrder( -ans$NES, ans$pval)
 		ans <- ans[ ord, ]
 		# now extract and clean up the wanted results
 		pval <- ans$pval
