@@ -135,9 +135,17 @@ do.GSEA <- function( geneSets, group1="Group1", descriptor="GeneSets",
 		# 2) duplicate numeric values:  only reasonable fix is to introduce random jitter to break ties
 		while ( any( duplicated( stats))) stats <- jitter( stats)
 
+		# the package seems to have some changing command line arguments, so call it differently as needed
+		majorVersion <- as.numeric( R.version$major)
+
 		# ok, call GSEA
-		SAVGSEA <<- ans <- suppressWarnings( fgsea( pathways=geneSets, stats=stats, minSize=minSize, maxSize=maxSize, 
-					eps=eps, nPermSimple=nPermSimple, scoreType="pos", ...))
+		if (majorVersion >= 4) {
+			SAVGSEA <<- ans <- suppressWarnings( fgsea( pathways=geneSets, stats=stats, minSize=minSize, maxSize=maxSize, 
+						eps=eps, nPermSimple=nPermSimple, scoreType="pos", ...))
+		} else {
+			SAVGSEA <<- ans <- suppressWarnings( fgsea( pathways=geneSets, stats=stats, minSize=minSize, maxSize=maxSize, 
+						nperm=nPermSimple, ...))
+		}
 
 		# first put the result into our wanted UP to DOWN order
 		ord <- diffExpressRankOrder( ans$NES, ans$padj)
