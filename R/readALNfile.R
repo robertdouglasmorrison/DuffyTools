@@ -199,8 +199,9 @@ readALN <- function( file, verbose=TRUE) {
 
 
 `plotALN` <- function( aln, type=c("fill","dots"), cex.letter=1, cex.label=1, y.label.length=NULL, 
-			codonMap=getCodonMap(), ref.row=1, number.from=NULL, range=NULL, 
-			number.shown.offset=NULL, bottom.axis=TRUE, top.axis=TRUE, xLabel="Amino Acid Location", ...) {
+			codonMap=getCodonMap(), ref.row=1, number.from=NULL, range=NULL, max.X=NULL, 
+			number.shown.offset=NULL, bottom.axis=TRUE, top.axis=TRUE, 
+			xLabel="Amino Acid Location", main="MSA Alignment", ...) {
 
 	# we may be given the top level ALN object or just the aligment matrix
 	# or even just the filename
@@ -235,8 +236,14 @@ readALN <- function( file, verbose=TRUE) {
 	aln <- toupper(aln)
 	nch <- ncol(aln)
 	niso <- nrow(aln)
-	plot( 1,1, type="n", xlim=c(0,nch+1), ylim=c(0,niso+1), xlab=xLabel,
+	bigX <- nch + 1
+	if ( ! is.null( max.X)) bigX <- max.X
+	plot( 1,1, type="n", xlim=c(0,bigX), ylim=c(0,niso+1), xlab=NA, main=NA, 
 			xaxs="i", xaxt="n", ylab=NA, yaxs="i", yaxt="n", ...)
+	# place the labels and main text more precisely
+	if ( ! is.na( main)) title( main=main, line=1.25, ...)
+	title( xlab=xLabel, line=2.05, ...)
+
 	if ( is.null( number.from)) {
 		if (bottom.axis) axis( side=1, ...)
 		if (top.axis) axis( side=3, mgp=c(3,0.5,0), ...)
@@ -321,6 +328,71 @@ readALN <- function( file, verbose=TRUE) {
 	if ( ! is.null( y.label.length)) ylabs <- substr( ylabs, 1, y.label.length)
 	axis( side=2, at=1:niso, label=ylabs, cex.axis=cex*cex.label, las=2)
 	dev.flush()
+}
+
+
+`plotALN.Panels` <- function( aln, type=c("fill","dots"), n.per.panel=100, cex.letter=1, cex.label=1, y.label.length=NULL, 
+							codonMap=getCodonMap(), ref.row=1, number.from=1, range=NULL, 
+							bottom.axis=TRUE, top.axis=FALSE, xLabel="Amino Acid Location", 
+							max.X=NULL, letter.col=NULL,  main="MSA Alignment", 
+							mai=c( 0.42,1,0.42,0.2), ...) {
+
+	# version for longer ALN sequences, where we do N letters per panel
+	# we may be given the top level ALN object or just the aligment matrix
+	# or even just the filename
+	if ( length(aln) == 1 && is.character(aln) && file.exists(aln)) {
+		aln <- readALN( aln, verbose=F)
+	}
+	if ( "alignment" %in% names(aln)) {
+		aln <- aln$alignment
+	}
+	nch <- ncol(aln)
+
+	# show numbering based on the reference sequence
+	referenceRowChars <- aln[ ref.row, ]
+	refNumbering <- cumsum( referenceRowChars != "-") + number.from - 1
+	colnames(aln) <- refNumbering
+	
+	# see how many panels we need
+	nPanels <- ceiling( nch / n.per.panel)
+	if (nPanels > (par("fin")[2]/1.25)) cat( "\nWarning: may need too many panels for current plot window height..")
+	savMF <- par( "mfrow")
+	on.exit( par( mfrow=savMF), add=TRUE)
+	par( mfrow=c( nPanels, 1))
+	if ( ! is.null(mai)) {
+		savMAI <- par( "mai")
+		on.exit( par( mai=savMAI), add=TRUE)
+		par( mai=mai)
+	}
+		
+	type <- match.arg( type)
+	nDone <- 0
+	nowNumberFrom <- number.from
+	lastRow <- FALSE
+	while (nDone < nch) {
+		# get the bounds of the next panel to show
+		nFrom <- nDone + 1
+		nTo <- nDone + n.per.panel
+		if ( nTo > nch) {
+			lastRow <- TRUE
+			nTo <- nch
+		} else {
+			max.X <- NULL
+		}
+		smlALN <- aln[ , nFrom:nTo, drop=F]
+		nowNumberFrom <- as.numeric( colnames(smlALN)[1])
+		if ( lastRow) max.X <- n.per.panel
+
+		# do this chunk, only show the title on the top one
+		mainText <- if (nDone < 1) main else NA
+		plotALN( smlALN, type=type, codonMap=codonMap, number.from=nowNumberFrom, main=mainText,
+						max.X=max.X, etter.col=letter.col, cex.letter=cex.letter, cex.label=cex.label,  
+						ref.row=ref.row, bottom.axis=bottom.axis, top.axis=top.axis, xLabel=xLabel, 
+						letter.col=letter.col, ...)
+						
+		# increment
+		nDone <- nDone + n.per.panel
+	}
 }
 
 
