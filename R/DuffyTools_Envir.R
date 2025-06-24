@@ -78,7 +78,7 @@ BACTERIA_GENE_SETS <- c( "GO.BiologicalProcess", "GO.CellularComponent", "GO.Mol
 			"KEGG.Pathways", "MetabolicPathways", "HGNC.GeneFamily", "Panther.Pathways", "Reactome", 
 			"WikiPathways", "STRING",
 			"TFOE.Regulons", "Tuberculist.FunctionalGroups", "Tuberculist.GO.Ontology", "ISB.Corems",
-			"iModulons","Regulons")
+			"iModulons","TRN.Regulons")
 
 # TimeHour tools
 TimeHourEnv <- new.env( hash=TRUE, parent=emptyenv())
