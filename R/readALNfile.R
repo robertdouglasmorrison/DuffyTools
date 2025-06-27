@@ -234,11 +234,15 @@ readALN <- function( file, verbose=TRUE) {
 		range.offset <- low - 1
 	}
 	aln <- toupper(aln)
-	nch <- ncol(aln)
+	nchScaling <- nch <- ncol(aln)
 	niso <- nrow(aln)
 	bigX <- nch + 1
-	if ( ! is.null( max.X)) bigX <- max.X
-	plot( 1,1, type="n", xlim=c(0,bigX), ylim=c(0,niso+1), xlab=NA, main=NA, 
+	if ( ! is.null( max.X)) {
+		bigX <- max.X
+		nchScaling <- max.X
+	}
+
+	plot( 1,1, type="n", xlim=c(0,bigX), ylim=c(0.4,niso+0.6), xlab=NA, main=NA, 
 			xaxs="i", xaxt="n", ylab=NA, yaxs="i", yaxt="n", ...)
 	# place the labels and main text more precisely
 	if ( ! is.na( main)) title( main=main, line=1.25, ...)
@@ -281,8 +285,8 @@ readALN <- function( file, verbose=TRUE) {
 		if (ref.row > niso) ref.row <- niso
 	}
 
-	cexScaleX <- 20 / niso
-	cexScaleY <- 120 / nch
+	cexScaleY <- 20 / niso
+	cexScaleX <- 120 / nchScaling
 	cex <- min( cexScaleX, cexScaleY)
 
 	# draw the alignment letters
@@ -332,10 +336,9 @@ readALN <- function( file, verbose=TRUE) {
 
 
 `plotALN.Panels` <- function( aln, type=c("fill","dots"), n.per.panel=100, cex.letter=1, cex.label=1, y.label.length=NULL, 
-							codonMap=getCodonMap(), ref.row=1, number.from=1, range=NULL, 
-							bottom.axis=TRUE, top.axis=FALSE, xLabel="Amino Acid Location", 
-							max.X=NULL, letter.col=NULL,  main="MSA Alignment", 
-							mai=c( 0.42,1,0.42,0.2), ...) {
+				codonMap=getCodonMap(), ref.row=1, number.from=1, range=NULL, 
+				bottom.axis=TRUE, top.axis=FALSE, xLabel="Amino Acid Location", 
+				letter.col=NULL,  main="MSA Alignment", mai=c( 0.42,1,0.42,0.2), ...) {
 
 	# version for longer ALN sequences, where we do N letters per panel
 	# we may be given the top level ALN object or just the aligment matrix
@@ -375,13 +378,13 @@ readALN <- function( file, verbose=TRUE) {
 		nTo <- nDone + n.per.panel
 		if ( nTo > nch) {
 			lastRow <- TRUE
+			max.X <- n.per.panel
 			nTo <- nch
 		} else {
 			max.X <- NULL
 		}
 		smlALN <- aln[ , nFrom:nTo, drop=F]
 		nowNumberFrom <- as.numeric( colnames(smlALN)[1])
-		if ( lastRow) max.X <- n.per.panel
 
 		# do this chunk, only show the title on the top one
 		mainText <- if (nDone < 1) main else NA
@@ -521,8 +524,8 @@ readALN <- function( file, verbose=TRUE) {
 
 
 `plotALN.BitScore` <- function( aln, heightM=NULL, codonMap=getCodonMap(), ref.row=1, number.from=1, 
-								max.X=NULL, max.Y=NULL, letter.col=NULL, min.bit.score=0.01, main="Sequence Logo",
-								xLabel="Amino Acid Location (NF54)", gap.x=0.08, gap.y=0.05, ...) {
+				max.X=NULL, max.Y=NULL, letter.col=NULL, min.bit.score=0.01, main="Sequence Logo",
+				xLabel="Amino Acid Location (NF54)", gap.x=0.08, gap.y=0.05, ...) {
 
 	# we may be given the top level ALN object or just the aligment matrix
 	# or even just the filename
@@ -609,9 +612,9 @@ readALN <- function( file, verbose=TRUE) {
 
 
 `plotALN.BitScore.Panels` <- function( aln, n.per.panel=100, codonMap=getCodonMap(), ref.row=1, number.from=1, 
-								max.X=NULL, max.Y=NULL, letter.col=NULL, min.bit.score=0.01, main="Sequence Logo", 
-								xLabel="Amino Acid Location (NF54)", gap.x=0.12, gap.y=0.1, 
-								mai=c( 0.42,1,0.42,0.2), ...) {
+					max.X=NULL, max.Y=NULL, letter.col=NULL, min.bit.score=0.01, main="Sequence Logo", 
+					xLabel="Amino Acid Location (NF54)", gap.x=0.12, gap.y=0.1, 
+					mai=c( 0.42,1,0.42,0.2), ...) {
 
 	# version for longer ALN sequences, where we do N letters per panel
 	# we may be given the top level ALN object or just the aligment matrix
@@ -669,8 +672,8 @@ readALN <- function( file, verbose=TRUE) {
 		# do this chunk, only show the title on the top one
 		mainText <- if (nDone < 1) main else NA
 		plotALN.BitScore( smlALN, heightM=smlHT, codonMap=codonMap, number.from=nowNumberFrom, main=mainText,
-						max.X=max.X, max.Y=bigY, letter.col=letter.col, min.bit.score=min.bit.score, 
-						gap.x=gap.x, gap.y=gap.y, ...)
+				max.X=max.X, max.Y=bigY, letter.col=letter.col, min.bit.score=min.bit.score, 
+				gap.x=gap.x, gap.y=gap.y, ...)
 						
 		# increment
 		nDone <- nDone + n.per.panel
