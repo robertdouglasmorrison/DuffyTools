@@ -218,8 +218,8 @@
 	addTarget( "MacFasPcy", "Pcy,MacFas", "Pcy,MacFas")
 	addTarget( "MacFasPkH", "PkH,MacFas", "PkH,MacFas")
 
-	addTarget( "Pvvv", "Pvvv", "Pvvv")
-	addTarget( "PvvvMmu", "Pvvv,Mmu_grc", "Pvvv,Mmus")
+	addTarget( "PvvCY", "PvvCY", "PvvCY")
+	addTarget( "PvvMmu", "PvvCY,Mmu_grc", "PvvCY,Mmus")
 
 	addTarget( "Povale", "Povale", "Povale")
 	addTarget( "Pmalar", "Pmalar", "Pmalar")

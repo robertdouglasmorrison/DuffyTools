@@ -23,10 +23,10 @@ TARGET_NAMES <- c( "TargetID", "SpeciesSet", "PrefixSet")
 # group names for classes of species
 MAMMAL_SPECIES <- c( "Hs_grc", "Mmu_grc", "Rnor", "MacMu", "MacFas", "Anan", "Agris", "Drerio", "Gsurd", "Ocun", "Cjac")
 MAMMAL_PREFIXES <- c( "Hs", "Mmus", "Rnor", "MacMu", "MacFas", "Anan", "Agris", "Dr", "Gsurd", "Ocun", "Cjac")
-PARASITE_SPECIES <- c( "Pf3D7", "Py17X", "PyYM", "PvSal1", "PvP01", "PbANKA", "PkH", "PchAS", "PCO", "Pcy", "Pvvv", 
-			"PcoAH", "Pvvv", "Povale", "Pmalar")
-PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pv", "PvP01", "Pb", "Pk", "Pch", "Pco", "Pcy", "Pvvv", 
-			"PcoAH", "Pvvv", "Povale", "Pmalar")
+PARASITE_SPECIES <- c( "Pf3D7", "Py17X", "PyYM", "PvSal1", "PvP01", "PbANKA", "PkH", "PchAS", "PCO", "Pcy", 
+			"PcoAH", "PvvCY", "Povale", "Pmalar")
+PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pv", "PvP01", "Pb", "Pk", "Pch", "Pco", "Pcy", 
+			"PcoAH", "PvvCY", "Povale", "Pmalar")
 ORIGID_PARASITE_SPECIES <- c( "Pf3D7", "Py17X", "PyYM", "PbANKA")
 ORIGID_PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pb")
 BACTERIA_SPECIES <- c( "MT_H37", "Msmeg_mc2_155", "Styph", "Mchel", "Mabsc", "Mavium", "MT_HN878", "BCG", "Mmar","Otsu")

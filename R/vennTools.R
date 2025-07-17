@@ -189,7 +189,6 @@
 		return( newDF)
 	}
 
-
 	for ( extraCol in extras) {
 		where1 <- match( extraCol, colnames(df1), nomatch=0)
 		where2 <- match( extraCol, colnames(df2), nomatch=0)
@@ -205,7 +204,30 @@
 		}
 	}
 
-	enrichAnsGenome <- enrichment( nMatch=Nboth, nYourSet=N1, nTotal=N_TotalGenes, nTargetSubset=N2)
+	# create some descriptive text
+	subText1 <- ""
+	if ( ! is.null( value1Column)) subText1 <- paste( "Gene Selection Criteria:   Value of '", value1Column, "' >= ", minValue1, sep="")
+	if ( ! is.null( minCount)) subText1 <- paste( subText1, "   Min_Genes = ", minCount, sep="")
+	if ( ! is.null( maxCount)) subText1 <- paste( subText1, "   Max_Genes = ", maxCount, sep="")
+	subTextGenome <- paste( "Enrichment:   Likelihood of  ", Nboth, "  in common:   P = ", 
+				formatC(pvalGenome, format='e', digits=2),
+				"    (Expected = ", formatC( nExpectGenome, format='f', digits=2), ")", sep="")
+
+	# at this point we have everything we need to calc and plot the venns
+	vennAns <- vennOverlap.counts( N1=N1, N2=N2, Nboth=Nboth, Ntotal=N_TotalGenes, label=label, 
+			subText1=subText1, subText2=subTextGenome, cex=cex, col1=col1, col2=col2,
+			fid1=fid1, fid2=fid2)
+
+	return( list( "intersection"=intersectDF, "only1"=only1DF, "only2"=only2DF, 
+			"overlap"=Nboth, "PercentOverlap"=PctBoth, "Percent1"=Pct1, "Percent2"=Pct2, 
+			vennAns))
+}
+
+
+`vennOverlap.counts` <- function( N1, N2, Nboth, Ntotal, label="", subText1="", subText2="", col1='blue', col2='red', 
+				cex=2, fid1="", fid2="") {
+
+	enrichAnsGenome <- enrichment( nMatch=Nboth, nYourSet=N1, nTotal=Ntotal, nTargetSubset=N2)
 	nExpectGenome <- enrichAnsGenome$nExpected
 	if ( Nboth >= nExpectGenome) {
 		pvalGenome <- enrichAnsGenome$P_atLeast
@@ -224,7 +246,7 @@
 	y <- 0
 	powerFactor <- 1
 	# when the pools are very different in size, we need to push them together a bit more
-	ratio <- (min( N1,N2) / max( N1,N2)) ^ 0.33
+	ratio <- (min( N1,N2) / max( N1,N2)) ^ 0.05   #  0.33
 	powerFactor <- 1 / (2 - ratio)
 	pctOverlap1 <- Nboth / N1
 	shift1 <- pctOverlap1 ^ powerFactor
@@ -232,33 +254,24 @@
 	pctOverlap2 <- Nboth / N2
 	shift2 <- pctOverlap2 ^ powerFactor
 	x2 <- x2 - if (shift2 > 0) (sqrt(shift2)*r2) else -(r2*0.1)
-	#cat( "\nDebug: ratio,power,shift1, shift2: ", ratio, powerFactor, shift1, shift2)
 
 	# draw them
 	require( plotrix)
 	xlim <- max(c(r1,r2)*2) * c( -1.05,1.05)
 	ylim <- max(r1,r2) * c( -1.05,1.05)
 	mainText <- paste( "Venn Overlap:    ", label)
-	#subTextGiven <- paste( "Given Genes Only:   Likelihood of  ", Nboth, "  in common:   P = ", 
-	#			formatC(pvalGiven, format='e', digits=2),
-	#			"    (Expected = ", formatC( nExpectGiven, format='f', digits=2), ")", sep="")
-	subText1 <- ""
-	if ( ! is.null( value1Column)) subText1 <- paste( "Gene Selection Criteria:   Value of '", value1Column, "' >= ", minValue1, sep="")
-	if ( ! is.null( minCount)) subText1 <- paste( subText1, "   Min_Genes = ", minCount, sep="")
-	if ( ! is.null( maxCount)) subText1 <- paste( subText1, "   Max_Genes = ", maxCount, sep="")
-
-	subTextGenome <- paste( "Enrichment:   Likelihood of  ", Nboth, "  in common:   P = ", 
-				formatC(pvalGenome, format='e', digits=2),
-				"    (Expected = ", formatC( nExpectGenome, format='f', digits=2), ")", sep="")
 	plot( 1,1, type='n', main=paste( "Venn Overlap:    ", label), xaxt='n', yaxt='n', xlab=NA, ylab=NA,
 			xlim=xlim, ylim=ylim, frame.plot=FALSE)
-	mtext( subText1, side=1, line=1, font=2, cex=1.1)
-	mtext( subTextGenome, side=1, line=2, font=2, cex=1.1)
+	if (subText1 != "") mtext( subText1, side=1, line=1, font=2, cex=1.1)
+	if (subText2 != "") mtext( subText2, side=1, line=2, font=2, cex=1.1)
 
 	draw.circle( x1, y, r1, nv=200, border=col1, lwd=4)
 	draw.circle( x2, y, r2, nv=200, border=col2, lwd=4)
 
 	# show the gene counts
+	Nonly1 <- N1 - Nboth
+	Nonly2 <- N2 - Nboth
+	Neither <- Nonly1 + Nonly2 + Nboth
 	text( 0, y, Nboth, col=1, font=2, cex=cex)
 	text( ((x1-r1) + (x2-r2))/2, y, Nonly1, col=col1, font=2, cex=cex)
 	text( ((x1+r1) + (x2+r2))/2, y, Nonly2, col=col2, font=2, cex=cex)
@@ -272,8 +285,5 @@
 	text( x2+r2*0.5, r2*1.005, fid2, col=col2, font=2, cex=cex*0.5)
 
 	dev.flush()
-	return( list( "intersection"=intersectDF, "only1"=only1DF, "only2"=only2DF, 
-			"overlap"=Nboth, "PercentOverlap"=PctBoth, "Percent1"=Pct1, "Percent2"=Pct2, 
-			"expected"=nExpectGenome, "p.value"=pvalGenome))
+	return( list( "expected"=nExpectGenome, "p.value"=pvalGenome))
 }
-
