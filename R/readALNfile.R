@@ -525,7 +525,8 @@ readALN <- function( file, verbose=TRUE) {
 
 `plotALN.BitScore` <- function( aln, heightM=NULL, codonMap=getCodonMap(), ref.row=1, number.from=1, 
 				max.X=NULL, max.Y=NULL, letter.col=NULL, min.bit.score=0.01, main="Sequence Logo",
-				xLabel="Amino Acid Location (NF54)", gap.x=0.08, gap.y=0.05, ...) {
+				xLabel="Amino Acid Location (NF54)", yLabel="Bit Score", gap.x=0.08, gap.y=0.05, 
+				col.axis=1, col.lab=1, ...) {
 
 	# we may be given the top level ALN object or just the aligment matrix
 	# or even just the filename
@@ -553,14 +554,15 @@ readALN <- function( file, verbose=TRUE) {
 	nch <- ncol(aln)
 	bigX <- number.from + nch - 1
 	if ( ! is.null( max.X)) bigX <- max( bigX, max.X)
-	yBig <- max( heightM)
+	yBig <- max( apply(heightM,2,sum,na.rm=T)) + (gap.y * 3) # allow for a bit extra between letters
 	if ( ! is.null( max.Y)) yBig <- max.Y
 
 	# place the labels and main text more precisely
 	plot( 1,1, type="n", xlim=c(number.from, bigX), ylim=c(0,yBig), 
-			xlab=NA, ylab="Bit Score", frame.plot=F, main=NA, xaxt="n", ...)
-	if ( ! is.na( main)) title( main=main, line=1.25)
-	title( xlab=xLabel, line=2.05)
+			xlab=NA, ylab=yLabel, frame.plot=F, main=NA, xaxt="n", yaxt="n", col.lab=col.lab, ...)
+	if ( ! is.na( main)) title( main=main, line=1.25, col.main=col.lab)
+	title( xlab=xLabel, line=2.05, col.lab=col.lab)
+	axis( side=2, col=col.axis, col.ticks=col.axis, col.axis=col.axis, ...)
 	
 	# for the axis numbers, try to account for gaps, and try to make the range fill the actual sequence
 	prettyXpts <- intersect( pretty(refNumbering), refNumbering)
@@ -573,7 +575,7 @@ readALN <- function( file, verbose=TRUE) {
 		prettyXpts <- c( prettyXpts, refNumbering[nch])
 	}
 	prettyXats <- match( prettyXpts, refNumbering) + refNumbering[1] - 1
-	axis( side=1, at=prettyXats, label=prettyXpts, ...)
+	axis( side=1, at=prettyXats, label=prettyXpts, col=col.axis, col.ticks=col.axis, col.axis=col.axis, ...)
 
 	# draw the alignment letters, with size proportional to abundance
 	# set up the gapping details
