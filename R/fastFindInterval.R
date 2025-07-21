@@ -25,8 +25,14 @@
 	}
 
 	if ( majorVersion == 4) {
-   		return( .Internal( findInterval( as.double(vec), as.double(x), rightmost.closed=FALSE, 
+		if ( minorVersion > 5.0) {
+   			return( .Internal( findInterval( as.double(vec), as.double(x), rightmost.closed=FALSE, 
        				all.inside=FALSE, left.open=FALSE)))
+		} else {
+   			return( .Internal( findInterval( as.double(vec), as.double(x), rightmost.closed=FALSE, 
+       				all.inside=FALSE, left.open=FALSE, checkNA=TRUE)))
+		}
+
 	}
 
 	warning( "No implementation of 'fastFindInterval' for R version", majorVersion, minorVersion)
