@@ -2,7 +2,7 @@
 
 `kaplanMeier` <- function( groups, times, outcomes, eventOutcome="Y", col=2:(length(unique(groups))+1),
 			makePlot=TRUE, xlab="Time  (weeks)", ylab="Survival", lwd=3, lty=1, legend.cex=1.1,
-			main="Kaplan-Meier: ", nFDR=0, legend.bty="o", 
+			main="Kaplan-Meier: ", nFDR=0, legend.bty="o", legend.title=NULL, 
 			xscale=1, yscale=1, mark.time=FALSE, pch=3, cumhaz=FALSE, ylim=c(0,1.03),
 			xstagger=0, ystagger=0, show.pvalue=TRUE, legend.loc="topright", pval.loc="bottomleft", 
 			fdr.loc="bottomright", show.group.size=FALSE, ...) {
@@ -51,7 +51,7 @@
 		}
 		myFDR <- sum( pFDR < pval) / nFDR
 		if ( ! is.na(fdr.loc)) legend( fdr.loc, paste( "FDR (Trials=",nFDR,") = ", round( myFDR, digits=4), sep=""), 
-			bg='white', cex=legend.cex, bty=legend.bty)
+			bg='white', cex=legend.cex, bty=legend.bty, title=legend.title)
 	} else {
 		myFDR <- NA
 	}

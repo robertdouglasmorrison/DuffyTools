@@ -369,7 +369,11 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		thisStrand <- gmap$STRAND[ ig]
 		cdsmap <- subset.data.frame( cdsMap, GENE_ID == thisG)
 		if ( nrow(cdsmap) < 1) next
-
+		# force the CDS rows to be in forward strand order
+		if ( nrow(cdsmap) > 1) {
+			ord <- order( cdsmap$POSITION)
+			cdsmap <- cdsmap[ ord, ]
+		}
 		# build the string of coding nucleotides from the forward strand
 		forwardDNA <- vector()
 		for ( ie in 1:nrow(cdsmap)) {
@@ -385,7 +389,6 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 			codingDNA <- tmp
 			names( codingDNA) <- REV( names( forwardDNA))
 		}
-
 		# force a trim to multiple of 3 bases
 		bigN <- floor( length(codingDNA)/3) * 3
 		nCodingBases <- length( codingDNA) <- bigN
@@ -512,6 +515,11 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 	cdsmap <- subset.data.frame( getCurrentCdsMap(), GENE_ID == geneID)
 	if ( nrow( cdsmap) < 1) return( out)
+	# force the CDS rows to be in forward strand order
+	if ( nrow(cdsmap) > 1) {
+		ord <- order( cdsmap$POSITION)
+		cdsmap <- cdsmap[ ord, ]
+	}
 	outSID <- cdsmap$SEQ_ID[1]
 
 	# make a little band of relative DNA positions
@@ -590,6 +598,11 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		cdsmap <- subset.data.frame( cdsmap, GENE_ID == geneID)
 	}
 	if ( nrow( cdsmap) < 1) return( out)
+	# force the CDS rows to be in forward strand order
+	if ( nrow(cdsmap) > 1) {
+		ord <- order( cdsmap$POSITION)
+		cdsmap <- cdsmap[ ord, ]
+	}
 
 	# make a little band of relative DNA positions
 	vNow <- vector()
@@ -629,6 +642,11 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		return( outDNA)
 	}
 	seqID <- cdsmap$SEQ_ID[1]
+	# force the CDS rows to be in forward strand order
+	if ( nrow(cdsmap) > 1) {
+		ord <- order( cdsmap$POSITION)
+		cdsmap <- cdsmap[ ord, ]
+	}
 
 	# make a little band of absolute DNA positions
 	vNow <- vector()

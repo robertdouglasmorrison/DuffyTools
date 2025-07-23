@@ -14,6 +14,10 @@
 		cat( "GeneID has no CDS fragments:  ", gene)
 		return( NULL)
 	}
+	if ( nrow( cmap) > 1) {
+		ord <- cmap$POSITION
+		cmap <- cmap[ ord, ]
+	}
 	nCDS <- nrow( cmap)
 	nAA <- nchar( protein.sequence[1])
 	mySeqID <- gmap$SEQ_ID

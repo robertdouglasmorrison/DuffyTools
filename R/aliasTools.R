@@ -7,19 +7,20 @@
 	if ( (!exists( "AliasTable", envir=AliasEnv)) || (AliasEnv[[ "AliasSpecies"]] != curSpecies)) {
 		AliasTable <- NULL
 		toLoad <- paste( getCurrentSpeciesFilePrefix(), "AliasTable", sep=".")
-		data( list=toLoad, envir=environment())
+
+		# let's allow a local copy to take precedence over the built-in copy
+		localFile <- paste( toLoad, "rda", sep=".")
+		if ( file.exists(localFile)) {
+			cat( "\nLoading Alias Table from local file:  ", localFile, "\n")
+			who <- load( localFile)
+		} else {
+			data( list=toLoad, envir=environment())
+		}
 		if ( is.null( AliasTable)) {
-			# before we complain, allow looking in the current path
-			localFile <- paste( toLoad, "rda", sep=".")
-			if ( file.exists(localFile)) {
-				cat( "\nInfo: no Alias Table in package. Using local file:  ", localFile, "\n")
-				who <- load( localFile)
-			} else {
-				cat( "\nWarn: Failed to find/load Alias Table:  ", toLoad, "\n")
-				AliasEnv[[ "AliasTable"]] <- NULL
-				AliasEnv[[ "AliasSpecies"]] <- ""
-				return( data.frame())
-			}
+			cat( "\nWarn: Failed to find/load Alias Table:  ", toLoad, "\n")
+			AliasEnv[[ "AliasTable"]] <- NULL
+			AliasEnv[[ "AliasSpecies"]] <- ""
+			return( data.frame())
 		}
 		
 		# prep it a bit...
