@@ -165,80 +165,94 @@
 	assign( "CurrentTarget", value=data.frame(), envir=TargetEnv)
 
 	cat( "\nLoading Target Species: ")
+	# default is Falciparum + Human
 	addTarget( "Pf3D7", "Pf3D7", "Pf")
 	addTarget( "Hs_grc", "Hs_grc", "Hs")
-	addTarget( "HsPf", "Pf3D7,Hs_grc", "Pf,Hs")
 
+	# other parasites
+	addTarget( "PbANKA", "PbANKA", "Pb")
+	addTarget( "PchAS", "PchAS", "Pch")
+	addTarget( "Py17X", "Py17X", "Py17X")
+	addTarget( "PvSal1", "PvSal1", "Pv")
+	addTarget( "PvP01", "PvP01", "PvP01")
+	addTarget( "PyYM", "PyYM", "Pym")
 	addTarget( "PCO", "PCO", "Pco")
 	addTarget( "PcoAH", "PcoAH", "PcoAH")
 	addTarget( "PkH", "PkH", "PkH")
+	addTarget( "Pcy", "Pcy", "Pcy")
+	addTarget( "PvvCY", "PvvCY", "PvvCY")
+	addTarget( "Povale", "Povale", "Povale")
+	addTarget( "Pmalar", "Pmalar", "Pmalar")
+
+	# other primates
 	addTarget( "MacMu", "MacMu", "MacMu")
 	addTarget( "MacFas", "MacFas", "MacFas")
 	addTarget( "Anan", "Anan", "Anan")
 	addTarget( "Agris", "Agris", "Agris")
+
+	# other mammals
+	addTarget( "Mmu_grc", "Mmu_grc", "Mmus")
+	addTarget( "Gsurd", "Gsurd", "Gsurd")
+	addTarget( "Ocun", "Ocun", "Ocun")
+	addTarget( "Rnor", "Rnor", "Rnor")
+	addTarget( "Cjac", "Cjac", "Cjac")
+
+	# infected humans
+	addTarget( "HsPf", "Pf3D7,Hs_grc", "Pf,Hs")
+	addTarget( "HsPv", "Hs_grc,PvSal1", "Hs,Pv")
+	addTarget( "HsPvP01", "Hs_grc,PvP01", "Hs,PvP01")
+
+	# infected primates
+
 	addTarget( "MacMuPCO", "PCO,MacMu", "Pco,MacMu")
 	addTarget( "MacMuPcoAH", "PcoAH,MacMu", "PcoAH,MacMu")
 	addTarget( "MacMuPkH", "PkH,MacMu", "PkH,MacMu")
 	addTarget( "MacFasPCO", "PCO,MacFas", "Pco,MacFas")
 	addTarget( "MacFasPcoAH", "PcoAH,MacFas", "PcoAH,MacFas")
 	addTarget( "MacFasPkH", "PkH,MacFas", "PkH,MacFas")
+	addTarget( "MacFasPcy", "Pcy,MacFas", "Pcy,MacFas")
+	addTarget( "MacFasPkH", "PkH,MacFas", "PkH,MacFas")
 	addTarget( "AnanPcoAH", "PcoAH,Anan", "PcoAH,Anan")
 	addTarget( "AnanPf", "Pf3D7,Anan", "Pf,Anan")
 	addTarget( "AgrisPf", "Pf3D7,Agris", "Pf,Agris")
 
-	addTarget( "PbANKA", "PbANKA", "Pb")
+	# infected mammals
 	addTarget( "PbMmu", "PbANKA,Mmu_grc", "Pb,Mmus")
-	addTarget( "PbHs", "PbANKA,Hs_grc", "Pb,Hs")
-
-	addTarget( "Py17X", "Py17X", "Py17X")
-	addTarget( "Mmu_grc", "Mmu_grc", "Mmus")
 	addTarget( "PyMmu", "Py17X,Mmu_grc", "Py17X,Mmus")
-	addTarget( "PyHsMmu", "Py17X,Hs_grc,Mmu_grc", "Py17X,Hs,Mmus")
-
-	addTarget( "Ocun", "Ocun", "Ocun")
-	addTarget( "Rnor", "Rnor", "Rnor")
-	addTarget( "Cjac", "Cjac", "Cjac")
-
-	addTarget( "PfHsMmu", "Pf3D7,Hs_grc,Mmu_grc", "Pf,Hs,Mmus")
-
-	addTarget( "PyYM", "PyYM", "Pym")
 	addTarget( "PymMmu", "PyYM,Mmu_grc", "Pym,Mmus")
-	addTarget( "PymHsMmu", "PyYM,Hs_grc,Mmu_grc", "Pym,Hs,Mmus")
-
-	addTarget( "PvSal1", "PvSal1", "Pv")
-	addTarget( "HsPv", "Hs_grc,PvSal1", "Hs,Pv")
-	addTarget( "PvHsMmu", "PvSal1,Hs_grc,Mmu_grc", "Pv,Hs,Mmus")
-	addTarget( "PvP01", "PvP01", "PvP01")
-	addTarget( "HsPvP01", "Hs_grc,PvP01", "Hs,PvP01")
-
-	addTarget( "PchAS", "PchAS", "Pch")
 	addTarget( "PchMmu", "PchAS,Mmu_grc", "Pch,Mmus")
-
-	addTarget( "Pcy", "Pcy", "Pcy")
-	addTarget( "MacFasPcy", "Pcy,MacFas", "Pcy,MacFas")
-	addTarget( "MacFasPkH", "PkH,MacFas", "PkH,MacFas")
-
-	addTarget( "PvvCY", "PvvCY", "PvvCY")
 	addTarget( "PvvMmu", "PvvCY,Mmu_grc", "PvvCY,Mmus")
+	addTarget( "PbGsurd", "PbANKA,Gsurd", "Pb,Gsurd")
+	addTarget( "PyGsurd", "Py17X,Gsurd", "Py17X,Gsurd")
 
-	addTarget( "Povale", "Povale", "Povale")
-	addTarget( "Pmalar", "Pmalar", "Pmalar")
+	# infected chimeric mammals
+	addTarget( "PyHsMmu", "Py17X,Hs_grc,Mmu_grc", "Py17X,Hs,Mmus")
+	addTarget( "PfHsMmu", "Pf3D7,Hs_grc,Mmu_grc", "Pf,Hs,Mmus")
+	addTarget( "PymHsMmu", "PyYM,Hs_grc,Mmu_grc", "Pym,Hs,Mmus")
+	addTarget( "PvHsMmu", "PvSal1,Hs_grc,Mmu_grc", "Pv,Hs,Mmus")
 
-	addTarget( "Agam", "Agam", "Ag")
-	addTarget( "AgPf", "Pf3D7,Agam", "Pf,Ag")
-	addTarget( "AgPv", "PvSal1,Agam", "Pv,Ag")
-	addTarget( "AgPy", "Py17X,Agam", "Py17X,Ag")
+	# mosquito vectors
+	addTarget( "Agam", "Agam", "Agam")
 	addTarget( "Asteph", "Asteph", "Asteph")
+	addTarget( "AgamPf", "Pf3D7,Agam", "Pf,Agam")
 	addTarget( "AstephPf", "Pf3D7,Asteph", "Pf,Asteph")
 
 	addTarget( "Ecoli", "Ecoli", "Eco")
-
 	addTarget( "Dmel", "Dmel", "Dmel")
 	# for Sanaria SPX, a blend of PF + A.steph + Drosophila
 	addTarget( "AstephDmelPf", "Pf3D7,Dmel,Asteph", "Pf,Dmel,Asteph")
 
+	# TB bacteria, with their hosts
 	addTarget( "MT_H37", "MT_H37", "MTb")
 	addTarget( "MT_HN878", "MT_HN878", "MTbHN878")
+	addTarget( "Msmeg_mc2_155", "Msmeg_mc2_155", "Msmeg")
+	addTarget( "Mabsc", "Mabsc", "Mabsc")
+	addTarget( "Mchel", "Mchel", "Mchel")
+	addTarget( "Mavium", "Mavium", "Mavium")
+	addTarget( "Mmar", "Mmar", "Mmar")
+	addTarget( "Bbrevis", "Bbrevis", "Bbrevis")
+	addTarget( "CMV", "CMV", "CMV")
+	addTarget( "BCG", "BCG", "BCG")
 	addTarget( "HsMTb", "MT_H37,Hs_grc", "MTb,Hs")
 	addTarget( "HsMTbHN878", "MT_HN878,Hs_grc", "MTbHN878,Hs")
 	addTarget( "MTbMmu", "MT_H37,Mmu_grc", "MTb,Mmus")
@@ -250,38 +264,20 @@
 	addTarget( "StyphHs", "Styph_sl1344,Hs_grc", "Styph,Hs")
 	addTarget( "StyphMmu", "Styph_sl1344,Mmu_grc", "Styph,Mmus")
 
-	addTarget( "Msmeg_mc2_155", "Msmeg_mc2_155", "Msmeg")
-	addTarget( "Mabsc", "Mabsc", "Mabsc")
-	addTarget( "Mchel", "Mchel", "Mchel")
-	addTarget( "Mavium", "Mavium", "Mavium")
-	addTarget( "Mmar", "Mmar", "Mmar")
-	addTarget( "Bbrevis", "Bbrevis", "Bbrevis")
 	addTarget( "Otsu", "Otsu", "Otsu")
 	addTarget( "HsOtsu", "Hs_grc,Otsu", "Hs,Otsu")
 	addTarget( "MmuOtsu", "Mmu_grc,Otsu", "Mmus,Otsu")
 
-	addTarget( "Tb927", "Tb927", "Tbr")
-	addTarget( "Tb427", "Tb427", "Tbr427")
-	
+	# falciparum lab strains & custom genes
 	addTarget( "PfDD2", "PfDD2", "PfDD2")
 	addTarget( "PfIT", "PfIT", "PfIT")
-
 	addTarget( "VarGenes", "VarGenes", "VarGenes")
 	addTarget( "PF.VSA.JOS", "Pf3D7,VSA,JOS", "Pf,VSA,JOS")
 	addTarget( "VSA.JOS", "VSA,JOS", "VSA,JOS")
 
 	#addTarget( "GrammDol", "GrammDol", "GrammDol")
-	addTarget( "Gsurd", "Gsurd", "Gsurd")
-	addTarget( "PbGsurd", "PbANKA,Gsurd", "Pb,Gsurd")
-	addTarget( "PyGsurd", "Py17X,Gsurd", "Py17X,Gsurd")
 
 	addTarget( "Drerio", "Drerio", "Dr")
-
-	addTarget( "KSHV", "KSHV", "KSHV")
-	addTarget( "HsKSHV", "Hs_grc,KSHV", "Hs,KSHV")
-
-	addTarget( "CMV", "CMV", "CMV")
-	addTarget( "BCG", "BCG", "BCG")
 
 	# Pichia for cell production systems
 	addTarget( "Kphaf", "Kphaf", "Kphaf")
