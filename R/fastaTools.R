@@ -212,6 +212,7 @@ assign( "currentFastaObject", NULL, envir=FastaFilePathEnv)
 	for ( i in visitOrder) {
 		thisGene <- gmap$GENE_ID[i]
 		thisSeqID <- gmap$SEQ_ID[i]
+		thisProd <- gmap$PRODUCT[i]
 
 		gdna <- getFastaSeqFromFilePath( filePath=genomicDNAfilePath, seqID=thisSeqID )
 
@@ -228,7 +229,7 @@ assign( "currentFastaObject", NULL, envir=FastaFilePathEnv)
 			if (mode == "aa") str <- DNAtoAA( str, readingFrame=1, clipAtStop=F)
 		} 
 
-		outDesc[i] <- thisGene
+		outDesc[i] <- paste( thisGene, thisProd, sep=" | ")
 		outSeq[i] <- str
 
 		if (verbose) cat( "\r", i, "  ", thisGene, "   N_Ch=", nchar(str))
