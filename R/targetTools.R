@@ -189,6 +189,7 @@
 	addTarget( "MacFas", "MacFas", "MacFas")
 	addTarget( "Anan", "Anan", "Anan")
 	addTarget( "Agris", "Agris", "Agris")
+	addTarget( "Sbol", "Sbol", "Sbol")
 
 	# other mammals
 	addTarget( "Mmu_grc", "Mmu_grc", "Mmus")

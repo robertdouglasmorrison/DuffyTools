@@ -21,8 +21,8 @@ TargetEnv <- new.env( hash=TRUE, parent=emptyenv())
 TARGET_NAMES <- c( "TargetID", "SpeciesSet", "PrefixSet")
 
 # group names for classes of species
-MAMMAL_SPECIES <- c( "Hs_grc", "Mmu_grc", "Rnor", "MacMu", "MacFas", "Anan", "Agris", "Drerio", "Gsurd", "Ocun", "Cjac")
-MAMMAL_PREFIXES <- c( "Hs", "Mmus", "Rnor", "MacMu", "MacFas", "Anan", "Agris", "Dr", "Gsurd", "Ocun", "Cjac")
+MAMMAL_SPECIES <- c( "Hs_grc", "Mmu_grc", "Rnor", "MacMu", "MacFas", "Anan", "Agris", "Sbol", "Drerio", "Gsurd", "Ocun", "Cjac")
+MAMMAL_PREFIXES <- c( "Hs", "Mmus", "Rnor", "MacMu", "MacFas", "Anan", "Agris", "Sbol", "Dr", "Gsurd", "Ocun", "Cjac")
 PARASITE_SPECIES <- c( "Pf3D7", "Py17X", "PyYM", "PvSal1", "PvP01", "PbANKA", "PkH", "PchAS", "PCO", "Pcy", 
 			"PcoAH", "PvvCY", "Povale", "Pmalar")
 PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pv", "PvP01", "Pb", "Pk", "Pch", "Pco", "Pcy", 
@@ -32,7 +32,7 @@ ORIGID_PARASITE_PREFIXES <- c( "Pf", "Py17X", "PyYM", "Pb")
 BACTERIA_SPECIES <- c( "MT_H37", "Msmeg_mc2_155", "Styph", "Mchel", "Mabsc", "Mavium", "MT_HN878", "BCG", "Mmar","Otsu")
 BACTERIA_PREFIXES <- c( "MTb", "Msmeg", "Styph", "Mchel", "Mabsc", "Mavium", "MTbHN878", "BCG", "Mmar","Otsu")
 INSECT_SPECIES <- c( "Agam", "Asteph", "Dmel")
-INSECT_PREFIXES <- c( "Ag", "Asteph", "Dmel")
+INSECT_PREFIXES <- c( "Agam", "Asteph", "Dmel")
 
 
 # Codon environment
