@@ -16,7 +16,7 @@
 		print(sampleIDset)
 		cat(  "\nUsing results from Species:  ", speciesID)
 		cat(  "\nUsing results from DE tool:  ", toolName)
-		cat(  "\nGene Sets to analyze:        ", geneSets,"\n")
+		if (is.character(geneSets)) cat(  "\nGene Sets to analyze:        ", geneSets,"\n")
 	}
 
 	annT <- readAnnotationTable( annotationFile)

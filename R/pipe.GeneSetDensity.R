@@ -90,7 +90,7 @@
 		cat( "\n\n=============================")
 		cat( "\nStarting 'GeneSetDensity' on a data matrix")
 		cat(  "\nStated Species:              ", speciesID)
-		cat(  "\nGene Sets to analyze:        ", geneSets,"\n")
+		if (is.character(geneSets)) cat(  "\nGene Sets to analyze:        ", geneSets,"\n")
 	}
 	setCurrentSpecies( speciesID)
 
@@ -144,7 +144,7 @@
 		cat( "\n\n=============================")
 		cat( "\nStarting 'GeneSetDensity' on a file set")
 		cat(  "\nStated Species:              ", speciesID)
-		cat(  "\nGene Sets to analyze:        ", geneSets,"\n")
+		if (is.character(geneSets)) cat(  "\nGene Sets to analyze:        ", geneSets,"\n")
 	}
 	setCurrentSpecies( speciesID)
 
