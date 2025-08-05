@@ -65,7 +65,7 @@
 				baselineGroup=baselineGroup, reload=FALSE, Nshow=Nshow, 
 				label.cex=label.cex, cex=cex, main=main, max.label.length=max.label.length,
 				xBubbleLim=xBubbleLim)
-		geneSetName <- "Bubble"
+		geneSetName <- "Bubble.UnnamedGeneSet"
 		plotFile <- file.path( bubblePath, geneSetName)
 		printPlot( plotFile, optT=optionsFile)
 		csvFile <- file.path( bubblePath, paste( geneSetName, "csv", sep="."))

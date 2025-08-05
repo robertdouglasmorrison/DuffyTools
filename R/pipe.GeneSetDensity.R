@@ -41,6 +41,19 @@
 				optionsFile=optionsFile, results.path=results.path, folderName=folderName,
 				toolName=toolName)
 	
+	# the names of the result files depend on what we were given for the GeneSet object...
+	isLIST <- is.list( geneSets)
+	isVECT <- is.character(geneSets)
+	nGS <- if (isVECT) length(geneSets) else 0
+	if ( nGS > 1) {
+		fileNameTerm <- "CombinedGeneSets"
+	} else if ( nGS == 1) {
+		fileNameTerm <- geneSets[1]
+	} else {
+		fileNameTerm <- "UnnamedGeneSet"
+	}
+	descriptor <- fileNameTerm
+
 	# allow several way of giving gene sets...
 	GSanswer <- gatherGeneSets( geneSets, descriptor, mode=mode)
 	nbig <- GSanswer$n
@@ -100,6 +113,19 @@
 	# use the group names to get the right colors
 	mygrps <- names(DE_list)
 	mycolors <- colors[ match( mygrps, groups)]
+
+	# the names of the result files depend on what we were given for the GeneSet object...
+	isLIST <- is.list( geneSets)
+	isVECT <- is.character(geneSets)
+	nGS <- if (isVECT) length(geneSets) else 0
+	if ( nGS > 1) {
+		fileNameTerm <- "CombinedGeneSets"
+	} else if ( nGS == 1) {
+		fileNameTerm <- geneSets[1]
+	} else {
+		fileNameTerm <- "UnnamedGeneSet"
+	}
+	descriptor <- fileNameTerm
 
 	# allow several way of giving gene sets...
 	GSanswer <- gatherGeneSets( geneSets, descriptor, mode=mode)
@@ -170,6 +196,19 @@
 	}
 	names( DE_list) <- groups
 	mycolors <- colors
+
+	# the names of the result files depend on what we were given for the GeneSet object...
+	isLIST <- is.list( geneSets)
+	isVECT <- is.character(geneSets)
+	nGS <- if (isVECT) length(geneSets) else 0
+	if ( nGS > 1) {
+		fileNameTerm <- "CombinedGeneSets"
+	} else if ( nGS == 1) {
+		fileNameTerm <- geneSets[1]
+	} else {
+		fileNameTerm <- "UnnamedGeneSet"
+	}
+	descriptor <- fileNameTerm
 
 	# allow several way of giving gene sets...
 	GSanswer <- gatherGeneSets( geneSets, descriptor, mode=mode)

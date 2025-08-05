@@ -126,6 +126,19 @@
 	annT2 <- subset( annT, SampleID %in% flatSamples)
 	myGrps <- sort( unique( annT2[[ groupColumn]]))
 
+	# after all tools have been called, combine all results.
+	# the names of the result file depend on what we were given for the GeneSet object...
+	isLIST <- is.list( geneSets)
+	isVECT <- is.character(geneSets)
+	nGS <- if (isVECT) length(geneSets) else 0
+	if ( nGS > 1) {
+		densityFileName <- "CombinedGeneSets"
+		radarFileName <- "All.CombinedGeneSets"
+	} else if ( nGS == 1) {
+		densityFileName <- radarFileName <- geneSets[1]
+	} else {
+		densityFileName <- radarFileName <- "UnnamedGeneSet"
+	}
 	for ( grp in myGrps) {
 
 		cat( "\n\nDoing MetaGeneSets on:    ", grp)
@@ -142,7 +155,7 @@
 
 		if ( hasDensity) {
 			# Combined Gene Sets has what was Significant and UP for each Group
-			f <- file.path( densityFolder, paste( grp, prefix, direction, "CombinedGeneSets.txt", sep="."))
+			f <- file.path( densityFolder, paste( grp, prefix, direction, densityFileName, "txt", sep="."))
 			if ( ! file.exists(f)) {
 				cat( "\nCombinedGeneSets results not found:\n", f)
 			} else {
@@ -180,7 +193,7 @@
 		}
 		if ( hasRadar) {
 			# Radar Plots only have a single combined file, with all groups and all directions
-			f <- file.path( radarFolder, "Radar.All.CombinedGeneSets.csv")
+			f <- file.path( radarFolder, paste( "Radar", radarFileName, "csv", sep="."))
 			if ( ! file.exists(f)) {
 				if ( ! file.exists( radarFolder)) {
 					cat( "\nNo RadarPlots results found: \n", radarFolder)

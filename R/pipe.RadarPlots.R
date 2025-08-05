@@ -57,6 +57,9 @@
 	}
 
 
+	# remove any old results, to assure final result is just what we were asked to process
+	removePreviousRadarPlotResults( radarPath)
+
 	# now we are read to make those radar plots
 	if ( is.list( geneSets)) {
 		ans <- pipe.OneRadarPlot( sampleIDset=allSamples, speciesID=speciesID, annotationFile=annotationFile,
@@ -67,7 +70,7 @@
 				boxed.radial=boxed.radial, label.prop=label.prop, lwd=lwd, main=main, 
 				legend.order=legend.order, legend.prefix=legend.prefix, legend.cex=legend.cex, cex=cex, label.cex=label.cex,
 				max.label.length=max.label.length, ...)
-		geneSetName <- "Radar"
+		geneSetName <- "Radar.UnnamedGeneSet"
 		plotFile <- file.path( radarPath, geneSetName)
 		printPlot( plotFile, optT=optionsFile)
 		csvFile <- file.path( radarPath, paste( geneSetName, "csv", sep="."))
@@ -84,7 +87,7 @@
 			gs <- geneSets[k]
 			cat( "\nDoing Radar Plot for:  ", gs)
 
-			# a few geneSets was "()" for several things...
+			# a few geneSets has "()" for several things...
 			wrapParentheses <- ( length( grep( "BTM", gs)) == 0)
 
 			thisRestrictionSet <- restrictionSets
@@ -124,8 +127,8 @@
 		cat( "\nDone Radar Plots for", length(geneSets), "GeneSets.\n")
 	}
 
-	# make a single combined .CSV file of all the gene sets together
-	combineRadarPlotResults( radarPath)
+	# make a single combined .CSV file of all the gene sets together, when were given 2+ names sets
+	if ( is.character(geneSets) && length(geneSets) > 1) combineRadarPlotResults( radarPath)
 
 	return( invisible( out))
 }
@@ -543,6 +546,17 @@
 	out <- out[ , outOrd]
 
 	return(out)
+}
+
+
+`removePreviousRadarPlotResults` <- function( radarPath) {
+
+	# given a folder of radar plots and .CSV results, clean out previous results, so they are
+	# not treated like new results
+	fset1 <- dir( radarPath, pattern="^Radar\\..+\\.csv$", full.name=T, recursive=F)
+	fset2 <- dir( radarPath, pattern="^Radar\\..+\\.pdf$", full.name=T, recursive=F)
+	file.delete( c( fset1, fset2))
+	return()
 }
 
 
