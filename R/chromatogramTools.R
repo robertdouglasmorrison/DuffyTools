@@ -79,8 +79,28 @@
 		}
 	}
 
-	colnames(traceM) <- c( "A", "C", "G", "T")
+	# give the trace matrix expected names
+	colnames(traceM) <- BASES <- c( "A", "C", "G", "T")
 	rownames(traceM) <- 1:nrow(traceM)
+
+	# we could have cases where the ABI peak/base caller chose to give ambiguous (non-ACGT) base calls.
+	# do not keep those.  If seen, look to the trace matrix to decide
+	allBases <- strsplit( dna.seq, split="")[[1]]
+	toFix <- which( ! ( allBases %in% BASES))
+	if ( length(toFix)) {
+		# find and fix those...
+		cat( "\nFixing degenerate base calls.  N=", length(toFix))
+		for (k in toFix) {
+			myRow <- peakPos[k]
+			myCnts <- traceM[ myRow, ]
+			best <- which.max(myCnts)
+			allBases[k] <- BASES[best]
+		}
+		# when all cleaned, rebuild everything that needs it
+		dna.seq <- paste( allBases, collapse="")
+		seqData <- chromatogramSequences( dna.seq)
+		names(peakPos) <- allBases
+	}
 	
 	# lastly, calculate confidence scores for each peak
 	peakConfidence <- calcChromatogramPeakConfidence( traceM, peakPos)
