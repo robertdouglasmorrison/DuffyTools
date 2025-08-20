@@ -47,7 +47,8 @@
 			cat( "\nError:  failed to load a Newick tree from arguement: ", newick)
 			return(NULL)
 		}
-		ids <- newickAns$tip.label <- sub( "^[0-9]+ ", "", newickAns$tip.label) 
+		# clean the numeric prefixes from the labels
+		ids <- newickAns$tip.label <- sub( "^[0-9]+[_ ]", "", newickAns$tip.label) 
 		N <- length(ids)
 	}
 	# catch/cleanup the label colors
