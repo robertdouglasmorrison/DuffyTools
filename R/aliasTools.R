@@ -139,7 +139,7 @@
 			if (coreSubsetOnly) {
 				drops <- vector()
 				drops <- c( drops, grep( "^CCDS", aliai))
-				drops <- c( drops, grep( "^ENSG", aliai))
+				drops <- c( drops, grep( "^ENS[GPT]", aliai))
 				drops <- c( drops, grep( "^OTTHUMG", aliai))
 				drops <- c( drops, grep( "^GI[0-9]+$", aliai))
 				drops <- c( drops, grep( "^GI:", aliai))
@@ -149,10 +149,14 @@
 				drops <- c( drops, grep( "^MGI:", aliai))
 				drops <- c( drops, grep( "^RGD:", aliai))
 				drops <- c( drops, grep( "^UniSTS:", aliai))
-				drops <- c( drops, grep( "[0-9]{5}$", aliai))
+				drops <- c( drops, grep( "^uc[0-9]", aliai))
+				drops <- c( drops, grep( "^[A-Z]{1,3}.*[0-9]{4,6}$", aliai))
 				drops <- c( drops, grep( "^MGC[0-9]{4,6}$", aliai))
 				drops <- c( drops, grep( "^KIAA[0-9]{4,6}$", aliai))
 				drops <- c( drops, grep( "^Q[0-9]{1,3}[A-Z]{1,3}[0-9]{1,3}[A-Z]?[0-9]?$", aliai))
+				
+				# let's also drop the RefSeq/GenBank transcript & protein names
+				drops <- c( drops, grep( "^[NX][MPRT]_[0-9]", aliai))
 
 				drops <- sort( unique( drops))
 				if ( length(drops)) aliai <- aliai[ -drops]
