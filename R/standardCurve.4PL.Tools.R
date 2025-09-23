@@ -48,7 +48,7 @@
 			lower=lowers, upper=uppers)
 	
 	nlsAns2 <- coef( summary( nlsAns))
-	out1 <- round( nlsAns2[ , "Estimate"], digits=5)
+	out1 <- round( nlsAns2[ , "Estimate"], digits=6)
 	
 	# also use this model to predict the OD values we should have seen for our inputs
 	odPredicted <- predict( nlsAns)
@@ -58,15 +58,17 @@
 	out <- list( "estimate"=out2, model=nlsAns)
 	
 	if ( plot) {
-		plot.default( 1:NCV, odValues, type="p", pch=1, col=1, xlab="Concentration", ylab="OD Values", 
+		# make the plot have the expected direction, with high OD at the right
+		ord <- order( odValues, decreasing=FALSE)
+		plot.default( 1:NCV, odValues[ord], type="p", pch=1, col=1, xlab="Concentration", ylab="OD Values", 
 				xaxt="n", main=paste("Standard Curve Fit: ", label))
-		axis( side=1, at=1:NCV, round( concValues, digits=digits), las=las)
-		lines( 1:NCV, odValues, lty=1, col=1)
-		points( 1:NCV, odPredicted, pch=2, col=4)
-		lines( 1:NCV, odPredicted, lty=2, col=4)
-		legend( 'bottomleft', c("Observed","Fitted"), pch=c(1,2), col=c(1,4), lwd=2)
+		axis( side=1, at=1:NCV, round( concValues[ord], digits=digits), las=las)
+		lines( 1:NCV, odValues[ord], lty=1, col=1)
+		points( 1:NCV, odPredicted[ord], pch=2, col=4)
+		lines( 1:NCV, odPredicted[ord], lty=2, col=4)
+		legend( 'bottomright', c("Observed","Fitted"), pch=c(1,2), col=c(1,4), lwd=2)
 		outNames <- sub( "(^[ABCD])", "    \\1", names(out2))
-		legend( 'topright', paste( outNames, "=", round(out2, digits=4)))
+		legend( 'topleft', paste( outNames, "=", round(out2, digits=digits)))
 	}
 
 	return( out)
