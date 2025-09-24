@@ -1719,7 +1719,6 @@
 
 		# force the NLS to try to keep the percentages near 1.0, but don't let that penalty
 		# affect what we show in the plots
-		SAV_NLS_PCTS <<- modelPcts
 		totalPct <- sum(modelPcts, na.rm=T)
 		modelProfileShow <- modelProfile
 		if ( totalPct > 1.0) {
@@ -1898,6 +1897,15 @@
 		require( GenSA)
 		ans <- GenSA.FitCellTypeModel()
 	}
+
+	# catch errors gracefully
+	if ( is.null(ans)) {
+		rmsd <- round( sqrt( mean( obsProfile^2)), digits=4)
+		errorOut <- list( "Iterations"=1, "RMSD"=rmsd, "CellProportions"=fit.starts*100)
+		return( errorOut)
+	}
+
+	# clean the final answer
 	model.pcts <- ans$model.pcts
 	rmsd <- ans$rmsd
 	iterations <- ans$iterations
