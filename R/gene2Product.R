@@ -19,19 +19,31 @@
 
 	# find those genes, and extract out the Product
 	where <- base::match( gNames, geneMap$GENE_ID, nomatch=0)
-	found <- where > 0
+	found <- (where > 0)
 	out[ found] <-  geneMap$PRODUCT[ where]
 
 	# if not yet found, try by common name too
 	try2 <- which( !found)
-	where <- base::match( gNames[try2], geneMap$NAME, nomatch=0)
-	out[ try2[ where > 0]] <- geneMap$PRODUCT[ where]
+	if ( length(try2)) {
+		where <- base::match( gNames[try2], geneMap$NAME, nomatch=0)
+		out[ try2[ where > 0]] <- geneMap$PRODUCT[ where]
+		found <- (out != "")
+	}
+
+	# also allow for upper/lower case issues
+	try2 <- which( !found)
+	if ( length(try2)) {
+		where <- base::match( toupper(gNames[try2]), toupper(geneMap$NAME), nomatch=0)
+		out[ try2[ where > 0]] <- geneMap$PRODUCT[ where]
+		found <- (out != "")
+	}
 
 	if ( "ORIG_ID" %in% colnames(geneMap)) {
-		found <- (out != "")
 		try3 <- which( !found)
-		where <- base::match( gNames[try3], geneMap$ORIG_ID, nomatch=0)
-		out[ try3[ where > 0]] <- geneMap$PRODUCT[ where]
+		if ( length(try3)) {
+			where <- base::match( gNames[try3], geneMap$ORIG_ID, nomatch=0)
+			out[ try3[ where > 0]] <- geneMap$PRODUCT[ where]
+		}
 	}
 
 	return(out)
@@ -76,11 +88,21 @@
 		# pass 2:  human only short names
 		if ( spec %in% MAMMAL_SPECIES) {
 			try2b <- which( !found)
-			gNamesTry <- shortGeneName( gNames[ try2b], keep=1)
-			gNamesMap <- shortGeneName( geneMap$GENE_ID, keep=1)
-			where <- base::match( gNamesTry, gNamesMap, nomatch=0)
-			out[ try2b[ where > 0]] <-  geneMap$PRODUCT[ where]
-			if ( all( found <- (out != ""))) break
+			if ( length(try2b)) {
+				gNamesTry <- shortGeneName( gNames[ try2b], keep=1)
+				gNamesMap <- shortGeneName( geneMap$GENE_ID, keep=1)
+				where <- base::match( gNamesTry, gNamesMap, nomatch=0)
+				out[ try2b[ where > 0]] <-  geneMap$PRODUCT[ where]
+				if ( all( found <- (out != ""))) break
+			}
+			try2b <- which( !found)
+			if ( length(try2b)) {
+				gNamesTry <- toupper( shortGeneName( gNames[ try2b], keep=1))
+				gNamesMap <- toupper( shortGeneName( geneMap$GENE_ID, keep=1))
+				where <- base::match( gNamesTry, gNamesMap, nomatch=0)
+				out[ try2b[ where > 0]] <-  geneMap$PRODUCT[ where]
+				if ( all( found <- (out != ""))) break
+			}
 		}
 
 		# pass 3: partial matching
