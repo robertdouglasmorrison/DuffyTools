@@ -1719,7 +1719,8 @@
 
 		# force the NLS to try to keep the percentages near 1.0, but don't let that penalty
 		# affect what we show in the plots
-		totalPct <- sum(modelPcts)
+		SAV_NLS_PCTS <<- modelPcts
+		totalPct <- sum(modelPcts, na.rm=T)
 		modelProfileShow <- modelProfile
 		if ( totalPct > 1.0) {
 			modelProfileShow <- modelProfile / totalPct
