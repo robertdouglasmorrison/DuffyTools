@@ -501,7 +501,7 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 
 
 # try to convert AA to DNA given the current annotation info
-`convertAApositionToGenomicDNAposition` <- function( geneID, AAposition, AAlength=1) {
+`convertAApositionToGenomicDNAposition` <- function( geneID, AAposition, AAlength=1, codon.base=NULL, cdsmap=NULL) {
 
 	outSID <- outPos <- outEnd <- NA
 	out <- list( "SEQ_ID"=outSID, "SEQ_POSITION"=outPos, "SEQ_END"=outEnd)
@@ -513,6 +513,8 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 		AAlength <- AAlength[1]
 	}
 
+	# get the coding cds info for this gene
+	if ( is.null(cdsmap)) cdsmap <- getCurrentCdsMap()
 	cdsmap <- subset.data.frame( getCurrentCdsMap(), GENE_ID == geneID)
 	if ( nrow( cdsmap) < 1) return( out)
 	# force the CDS rows to be in forward strand order
@@ -543,6 +545,12 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	if ( outPos > outEnd) { tmp <- outPos; outPos <- outEnd; outEnd <- tmp }
 	names(outSID) <- names(outPos) <- names(outEnd) <- ""
 
+	# if given a codon position, then narrow the Pos/End range to a single DNA base
+	if ( ! is.null(codon.base) && codon.base %in% 1:3) {
+		codonOffset <- codon.base - 1
+		outEnd <- outPos <- outPos + codonOffset
+	}
+
 	out <- list( "SEQ_ID"=outSID, "SEQ_POSITION"=outPos, "SEQ_END"=outEnd)
 	return( out)
 }
@@ -558,6 +566,10 @@ bestAAreadingFrame <- function( peptideTriple, protein, max.mismatch=3) {
 	if ( length(seqID) > 1) {
 		warning( "Only using the first SeqID element")
 		seqID <- seqID[1]
+	}
+	if ( ! is.null(geneID) && length(geneID) > 1) {
+		warning( "Only using the first GeneID element")
+		geneID <- geneID[1]
 	}
 	if ( is.null(geneID) && length(DNAposition) > 1) {
 		warning( "Only using the first DNAposition element")
