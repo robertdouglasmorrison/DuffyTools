@@ -27,6 +27,8 @@
 	# visit each column and perhaps do an averaging...
 	cat( "   Averaging columns:  ")
 	for ( j in 1:ncol(x)) {
+		# skip columns that we know are not numeric
+		if ( grepl( "ENTREZ", colnames(out)[j])) next
 		v <- x[[j]]
 		if ( is.character( v)) next
 		if ( is.logical( v)) next

@@ -41,7 +41,7 @@
 					"Ring1","Ring2"), colnames(lifeCycleData))
 		etrophPtrs <- match( c("OttoHr24","StunHr25","HoeijHr25",
 					"HoeijHr30","StunHr30"), colnames(lifeCycleData))
-		ltrophPtrs <- match( c("OttoHr32","StunHr35","HoeijHr35"), colnames(lifeCycleData))
+		ltrophPtrs <- match( c("OttoHr32","StunHr35","HoeijHr35","Su.LateTroph"), colnames(lifeCycleData))
 		schizPtrs <- match( c("OttoHr40","StunHr40","HoeijHr40","SanariaBLOOD_1",
 					"SanariaBLOOD_2"), colnames(lifeCycleData))
 		gcyte5Ptrs <- match( c("Su.GcyteV","AO_Gcyte","SauerGcyte_Female","SauerGcyte_Male1",
