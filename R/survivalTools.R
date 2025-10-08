@@ -5,7 +5,7 @@
 			main="Kaplan-Meier: ", nFDR=0, legend.bty="o", legend.title=NULL, 
 			xscale=1, yscale=1, mark.time=FALSE, pch=3, cumhaz=FALSE, ylim=c(0,1.03),
 			xstagger=0, ystagger=0, show.pvalue=TRUE, legend.loc="topright", pval.loc="bottomleft", 
-			fdr.loc="bottomright", show.group.size=FALSE, ...) {
+			fdr.loc="bottomright", pval.cex=max(1,legend.cex), show.group.size=FALSE, ...) {
 
 	require( survival)
 
@@ -35,7 +35,7 @@
 		}
 		if (show.pvalue) {
 			if ( ! is.na(pval.loc)) legend( pval.loc, paste( "P-value =", round( pval, digits=4)), bg='white', 
-					cex=max(1,legend.cex), bty=legend.bty)
+					cex=pval.cex, bty=legend.bty)
 		}
 	}
 
