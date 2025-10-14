@@ -287,3 +287,92 @@
 	dev.flush()
 	return( list( "expected"=nExpectGenome, "p.value"=pvalGenome))
 }
+
+
+`vennOverlap.list` <- function( listOfGeneVectors) {
+
+	# given one list, with arbitrary number of vectors, try to do a fully generic Venn Overlap
+	N <- length( listOfGeneVectors)
+	if ( N < 2) return(NULL)
+	setName <- names( listOfGeneVectors)
+
+	# step over all possible counts of sets of genes
+	# record the group compare string and count as we go
+	outCompText <- outOverlap <- outFirstOnly <- outSecondOnly <- vector()
+	whoOverlap <- vector()
+	nOut <- 0
+
+	# create all the permutations, generically.  Use a call to expand.grid()
+	oneSeqText <- paste( 1, N, sep=":")
+	nSeqText <- paste( "list(", paste( rep( oneSeqText, times=N), collapse=", "), ")", sep="")
+	permM <- expand.grid( eval( parse( text=nSeqText)))
+
+	# this is a data.frame of N columns, with every possible permutation of 1 to N
+	for ( set1size in 1:(N-1)) {
+		# grab the first K columns to be set 1
+		set1M <- as.matrix( permM[ , 1:set1size, drop=F])
+		for ( set2size in 1:(N-set1size)) {
+			# grab the next K columns to be set 2
+			set2M <- as.matrix( permM[ , (1:set2size)+set1size, drop=F])
+			# now visit every row of the permutations
+			for ( k in 1:nrow(permM)) {
+				is1 <- sort( unique( set1M[ k, ]))
+				n1 <- length(is1)
+				is2 <- sort( unique( set2M[ k, ]))
+				n2 <- length(is2)
+				# if any sets are in both lists, skip this compare
+				if ( length( intersect( is1, is2)) > 0) next
+				text1 <- paste( "(", paste( setName[is1], collapse="+"), ")", sep="")
+				text2 <- paste( "(", paste( setName[is2], collapse="+"), ")", sep="")
+				# make the smaller set be first
+				if ( length(is1) < length(is2)) {
+					thisCompText <- paste( text1, text2, sep=".vs.")
+				} else if ( length(is1) > length(is2)) {
+					thisCompText <- paste( text2, text1, sep=".vs.")
+				} else {
+					# when both sets same size, have the 'earlier' one go first
+					if ( is1[1] < is2[1]) {
+						thisCompText <- paste( text1, text2, sep=".vs.")
+					} else {
+						thisCompText <- paste( text2, text1, sep=".vs.")
+					}
+				}
+				# if we have this already, skip it
+				if ( thisCompText %in% outCompText) next
+				# we have a new compare, so get those genes.  
+				#Take the intersection of all genes in each set of sets
+				genes1 <- listOfGeneVectors[[ is1[1]]]
+				if ( n1 > 1) for ( j in 2:n1) genes1 <- intersect( genes1, listOfGeneVectors[[ is1[j]]])
+				genes2 <- listOfGeneVectors[[ is2[1]]]
+				if ( n2 > 1) for ( j in 2:n2) genes2 <- intersect( genes2, listOfGeneVectors[[ is2[j]]])
+				# we have a new compare to store results for
+				nOut <- nOut + 1
+				outCompText[nOut] <- thisCompText
+				outOverlap[nOut] <- nInBoth <- length( genesInBoth <- intersect( genes1, genes2))
+				outFirstOnly[nOut] <- length( setdiff( genes1, genes2))
+				outSecondOnly[nOut] <- length( setdiff( genes2, genes1))
+				whoOverlap[nOut] <- if ( nInBoth) paste( sort( genesInBoth), collapse="; ") else ""
+			}
+		}
+	}
+
+	out <- data.frame( "Groups.Compared"=outCompText, "Overlap"=outOverlap, "Group1.Only"=outFirstOnly, 
+				"Group2.Only"=outSecondOnly, "Who.In.Overlap"=whoOverlap, stringsAsFactors=F)
+	rownames(out) <- 1:nOut
+
+	# when given more than 2 groups, we need one final intersection of all groups
+	if ( N > 2) {
+		genesAll <- listOfGeneVectors[[ 1]]
+		for ( j in 2:N) genesAll <- intersect( genesAll, listOfGeneVectors[[ j]])
+		nOverlapAll <- length( genesAll)
+		whoAll <- if ( nOverlapAll) paste( sort( genesAll), collapse="; ") else ""
+		allCompText <- paste( "All(", paste( setName, collapse="+"), ")", sep="")
+		out2 <- data.frame( "Groups.Compared"=allCompText, "Overlap"=nOverlapAll, "Group1.Only"=NA, 
+				"Group2.Only"=NA, "Who.In.Overlap"=whoAll, stringsAsFactors=F)
+		
+		out <- rbind( out, out2)
+		rownames(out) <- 1:nrow(out)
+	}
+
+	return( out)
+}
