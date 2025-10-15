@@ -365,12 +365,13 @@
 				# when either of the two groups were themselves a overlap of previous groups, the P-values need to be combined
 				if ( any( c(n1,n2) > 1)) {
 					if ( n1 > 1) {
-						grpTextString <- gsub( "+", ").vs.(", text1, fixed=T)
+						# undo the 'combining' text, and find that earlier overlap comparison
+						grpTextString <- sub( "+", ").vs.(", text1, fixed=T)
 						wh <- match( grpTextString, outCompText, nomatch=0)
 						if (wh > 0) myPval <- myPval * outPval[wh]
 					}
 					if ( n2 > 1) {
-						grpTextString <- gsub( "+", ").vs.(", text2, fixed=T)
+						grpTextString <- sub( "+", ").vs.(", text2, fixed=T)
 						wh <- match( grpTextString, outCompText, nomatch=0)
 						if (wh > 0) myPval <- myPval * outPval[wh]
 					}
