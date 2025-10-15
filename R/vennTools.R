@@ -289,7 +289,7 @@
 }
 
 
-`vennOverlap.list` <- function( listOfGeneVectors) {
+`vennOverlap.list` <- function( listOfGeneVectors, geneUniverse=NULL) {
 
 	# given one list, with arbitrary number of vectors, try to do a fully generic Venn Overlap
 	N <- length( listOfGeneVectors)
@@ -298,9 +298,16 @@
 
 	# step over all possible counts of sets of genes
 	# record the group compare string and count as we go
-	outCompText <- outOverlap <- outFirstOnly <- outSecondOnly <- vector()
+	outCompText <- outOverlap <- outFirstOnly <- outSecondOnly <- outPval <- vector()
 	whoOverlap <- vector()
 	nOut <- 0
+
+	# set up to do enrichment analysis on the overlaps, of what genes could be seen
+	if ( is.null( geneUniverse)) {
+		gmap <- subset( getCurrentGeneMap(), REAL_G == TRUE)
+		geneUniverse <- unique( shortGeneName( gmap$GENE_ID, keep=1))
+	}
+	nTotal <- length( geneUniverse)
 
 	# create all the permutations, generically.  Use a call to expand.grid()
 	oneSeqText <- paste( 1, N, sep=":")
@@ -352,12 +359,30 @@
 				outFirstOnly[nOut] <- length( setdiff( genes1, genes2))
 				outSecondOnly[nOut] <- length( setdiff( genes2, genes1))
 				whoOverlap[nOut] <- if ( nInBoth) paste( sort( genesInBoth), collapse="; ") else ""
+				# calc the enrichment of the overlap, and extract the appropriate P-value
+				enrichAns <- enrichment( nMatch=nInBoth, nYourSet=length(genes1), nTotal=nTotal, nTargetSubset=length(genes2))
+				outPval[nOut] <- myPval <- if ( enrichAns$nExpected < nInBoth) enrichAns$P_atLeast_N else enrichAns$P_atMost_N
+				# when either of the two groups were themselves a overlap of previous groups, the P-values need to be combined
+				if ( any( c(n1,n2) > 1)) {
+					if ( n1 > 1) {
+						grpTextString <- gsub( "+", ".vs.", text1, fixed=T)
+						wh <- match( grpTextString, outCompText, nomatch=0)
+						if (wh > 0) myPval <- myPval * outPval[wh]
+					}
+					if ( n2 > 1) {
+						grpTextString <- gsub( "+", ".vs.", text2, fixed=T)
+						wh <- match( grpTextString, outCompText, nomatch=0)
+						if (wh > 0) myPval <- myPval * outPval[wh]
+					}
+					outPval[nOut] <- myPval
+				}
 			}
 		}
 	}
 
 	out <- data.frame( "Groups.Compared"=outCompText, "Overlap"=outOverlap, "Group1.Only"=outFirstOnly, 
-				"Group2.Only"=outSecondOnly, "Who.In.Overlap"=whoOverlap, stringsAsFactors=F)
+				"Group2.Only"=outSecondOnly, "P.Value"=outPval, "Who.In.Overlap"=whoOverlap, 
+				stringsAsFactors=F)
 	rownames(out) <- 1:nOut
 
 	# when given more than 2 groups, we need one final intersection of all groups
@@ -368,7 +393,7 @@
 		whoAll <- if ( nOverlapAll) paste( sort( genesAll), collapse="; ") else ""
 		allCompText <- paste( "All(", paste( setName, collapse="+"), ")", sep="")
 		out2 <- data.frame( "Groups.Compared"=allCompText, "Overlap"=nOverlapAll, "Group1.Only"=NA, 
-				"Group2.Only"=NA, "Who.In.Overlap"=whoAll, stringsAsFactors=F)
+				"Group2.Only"=NA, "P.Value"=NA, "Who.In.Overlap"=whoAll, stringsAsFactors=F)
 		
 		out <- rbind( out, out2)
 		rownames(out) <- 1:nrow(out)
