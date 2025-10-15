@@ -352,6 +352,8 @@
 				if ( n1 > 1) for ( j in 2:n1) genes1 <- intersect( genes1, listOfGeneVectors[[ is1[j]]])
 				genes2 <- listOfGeneVectors[[ is2[1]]]
 				if ( n2 > 1) for ( j in 2:n2) genes2 <- intersect( genes2, listOfGeneVectors[[ is2[j]]])
+				nGenes1 <- length(genes1)
+				nGenes2 <- length(genes2)
 				# we have a new compare to store results for
 				nOut <- nOut + 1
 				outCompText[nOut] <- thisCompText
@@ -360,9 +362,13 @@
 				outSecondOnly[nOut] <- length( setdiff( genes2, genes1))
 				whoOverlap[nOut] <- if ( nInBoth) paste( sort( genesInBoth), collapse="; ") else ""
 				# calc the enrichment of the overlap, and extract the appropriate P-value
-				enrichAns <- enrichment( nMatch=nInBoth, nYourSet=length(genes1), nTotal=nTotal, nTargetSubset=length(genes2))
-				outPval[nOut] <- myPval <- if ( enrichAns$nExpected < nInBoth) enrichAns$P_atLeast_N else enrichAns$P_atMost_N
+				outPval[nOut] <- myPval <- 1
+				if ( all( c( nGenes1, nGenes2) > 0)) {
+					enrichAns <- enrichment( nMatch=nInBoth, nYourSet=nGenes1, nTotal=nTotal, nTargetSubset=nGenes2)
+					if ( enrichAns$nExpected < nInBoth) outPval[nOut] <- myPval <- enrichAns$P_atLeast_N
+				}
 				# when either of the two groups were themselves a overlap of previous groups, the P-values need to be combined
+				# with the P's from the earlier subsets
 				if ( any( c(n1,n2) > 1)) {
 					if ( n1 > 1) {
 						# undo the 'combining' text, and find that earlier overlap comparison
