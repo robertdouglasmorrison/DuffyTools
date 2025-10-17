@@ -17,17 +17,22 @@
 `inverse.4pl` <- function( y, A, B, C, D) { return( (((1/(y-D) * (A-D)) - 1) ^ (1/B)) * C)}
 
 
-`calculateStandardCurveABCD` <- function( odValues, concValues, plot=FALSE, label="", las=1, digits=4) {
+`calculateStandardCurveABCD` <- function( odValues, concValues, plot=FALSE, label="", las=1, digits=4, 
+					pt.col=4, lin.col=1, fit.col=4, add.plot=FALSE, show.legend=!add.plot) {
 
 	require( minpack.lm)
 
+	# prep the OD and Concentration values
 	odValues <- as.numeric( odValues)
 	concValues <- as.numeric( concValues)
 	useV <- which( ! is.na( odValues))
 	odValues <- odValues[useV]
 	concValues <- concValues[useV]
 	NCV <- length(concValues)
-	if ( length(odValues)!= NCV || NCV < 4) stop( "Error: not enough OD & Concentration values to fit")
+	if ( length(odValues)!= NCV || NCV < 5) {
+		cat( "\nError: not enough OD & Concentration values to fit: ", NCV)
+		return(NULL)
+	}
 	
 	# we can now do the 4PL fit to deduce the best A/B/C/D variables.  
 	# A = lowest asymptote (lowest OD)
@@ -59,16 +64,32 @@
 	
 	if ( plot) {
 		# make the plot have the expected direction, with high OD at the right
-		ord <- order( odValues, decreasing=FALSE)
-		plot.default( 1:NCV, odValues[ord], type="p", pch=1, col=1, xlab="Concentration", ylab="OD Values", 
-				xaxt="n", main=paste("Standard Curve Fit: ", label))
-		axis( side=1, at=1:NCV, round( concValues[ord], digits=digits), las=las)
-		lines( 1:NCV, odValues[ord], lty=1, col=1)
-		points( 1:NCV, odPredicted[ord], pch=2, col=4)
-		lines( 1:NCV, odPredicted[ord], lty=2, col=4)
-		legend( 'bottomright', c("Observed","Fitted"), pch=c(1,2), col=c(1,4), lwd=2)
-		outNames <- sub( "(^[ABCD])", "    \\1", names(out2))
-		legend( 'topleft', paste( outNames, "=", round(out2, digits=digits)))
+		ord <- order( concValues, odValues, decreasing=FALSE)
+		concValues <- concValues[ord]
+		odValues <- odValues[ord]
+		odPredicted <- odPredicted[ord]
+		concFac <- factor( concValues)
+		NCONC <- nlevels(concFac)
+		xPtr <- tapply( 1:NCV, concFac, FUN=NULL)
+		avgODobs <- tapply( odValues, concFac, mean)
+		avgODpred <- tapply( odPredicted, concFac, mean)
+
+		# we may have replicates of the concentrations.  So deduce how many unique values
+
+		# either create a new plot, or just add data to existing
+		if ( ! add.plot) {
+			plot.default( xPtr, odValues, type="p", pch=1, col=1, xlab="Concentration", ylab="OD Values", 
+					xaxt="n", main=paste("Standard Curve Fit: ", label))
+			axis( side=1, at=1:NCONC, round( as.numeric(levels(concFac)), digits=digits), las=las)
+		}
+		lines( 1:NCONC, avgODobs, lty=1, col=lin.col)
+		points( xPtr, odPredicted, pch=2, col=pt.col)
+		lines( 1:NCONC, avgODpred, lty=2, col=fit.col)
+		if ( show.legend) {
+			legend( 'bottomright', c("Observed","Fitted"), pch=c(1,2), col=c(1,4), lwd=2)
+			outNames <- sub( "(^[ABCD])", "    \\1", names(out2))
+			legend( 'topleft', paste( outNames, "=", round(out2, digits=digits)))
+		}
 	}
 
 	return( out)
