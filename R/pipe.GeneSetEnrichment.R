@@ -70,7 +70,7 @@
 		ans <- geneSetMetaEnrichment( geneList, Ngenes=steps, geneSets=geneSets, wt.enrich=wt.enrich, 
 					wt.pvalue=wt.pvalue, verbose=F)
 		ans <- subset( ans, AVG_PVALUE <= maxPvalue)
-		rownames(ans) <- 1:nrow(ans)
+		if (nrow(ans)) rownames(ans) <- 1:nrow(ans)
 
 		# turn it to a HTML result
 		outfile <- file.path( outPath, paste( thisGroup, "UP", "Enrichment.html", sep="."))
@@ -98,7 +98,7 @@
 		ans <- geneSetMetaEnrichment( geneList, Ngenes=steps, geneSets=geneSets, wt.enrich=wt.enrich, 
 					wt.pvalue=wt.pvalue, verbose=F)
 		ans <- subset( ans, AVG_PVALUE <= maxPvalue)
-		rownames(ans) <- 1:nrow(ans)
+		if (nrow(ans)) rownames(ans) <- 1:nrow(ans)
 		outfile <- file.path( outPath, paste( thisGroup, "DOWN", "Enrichment.html", sep="."))
 		title <- paste( "Pathway Enrichment: &nbsp; Meta Results: &nbsp; DOWN in '", thisGroup, "'", 
 				" &nbsp;  Species: ", speciesID, sep="")
