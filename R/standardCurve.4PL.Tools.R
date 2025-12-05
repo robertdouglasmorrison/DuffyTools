@@ -29,9 +29,15 @@
 	# prep the OD and Concentration values
 	odValues <- as.numeric( odValues)
 	concValues <- as.numeric( concValues)
-	useV <- which( ! is.na( odValues))
+	useV <- intersect( which( ! is.na( odValues)), which( ! is.na( concValues)))
 	odValues <- odValues[useV]
 	concValues <- concValues[useV]
+	# do not let any blank wells go into the fit
+	isZero <- which( concValues <= 0)
+	if ( length(isZero)) {
+		odValues <- odValues[ -isZero]
+		concValues <- concValues[ -isZero]
+	}
 	NCV <- length(concValues)
 	if ( length(odValues)!= NCV || NCV < 5) {
 		cat( "\nError: not enough OD & Concentration values to fit 4PL: ", NCV)
@@ -62,8 +68,9 @@
 	# also use this model to predict the OD values we should have seen for our inputs
 	odPredicted <- predict( nlsAns)
 	r2 <- cor( odValues, odPredicted) ^ 2
-	
-	out2 <- c( out1, "R^2"=r2)	
+	minOD <- round( min( odPredicted), digits=digits)
+	maxOD <- round( max( odPredicted), digits=digits)
+	out2 <- c( out1, "R^2"=r2, "min.OD"=minOD, "max.OD"=maxOD)	
 	out <- list( "estimate"=out2, model=nlsAns)
 	
 	if ( plot) {
@@ -114,9 +121,15 @@
 	# prep the OD and Concentration values
 	odValues <- as.numeric( odValues)
 	concValues <- as.numeric( concValues)
-	useV <- which( ! is.na( odValues))
+	useV <- intersect( which( ! is.na( odValues)), which( ! is.na( concValues)))
 	odValues <- odValues[useV]
 	concValues <- concValues[useV]
+	# do not let any blank wells go into the fit
+	isZero <- which( concValues <= 0)
+	if ( length(isZero)) {
+		odValues <- odValues[ -isZero]
+		concValues <- concValues[ -isZero]
+	}
 	NCV <- length(concValues)
 	if ( length(odValues)!= NCV || NCV < 3) {
 		cat( "\nError: not enough OD & Concentration values to fit 2PL: ", NCV)
@@ -136,8 +149,9 @@
 	# also use this model to predict the OD values we should have seen for our inputs
 	odPredicted <- predict( lmAns)
 	r2 <- cor( odValues, odPredicted) ^ 2
-	
-	out2 <- c( out1, "R^2"=round( r2, digits=6))	
+	minOD <- round( min( odPredicted), digits=digits)
+	maxOD <- round( max( odPredicted), digits=digits)
+	out2 <- c( out1, "R^2"=round( r2, digits=6), "min.OD"=minOD, "max.OD"=maxOD)
 	out <- list( "estimate"=out2, model=lmAns)
 	
 	if ( plot) {
