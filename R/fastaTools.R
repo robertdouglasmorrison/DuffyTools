@@ -52,14 +52,14 @@
 `is.Fasta` <- function( x) return( is.list(x) && all( c("desc","seq") %in% names(x)))
 
 
-`writeFasta` <- function( fasta, file=NULL, line.width=80) {
+`writeFasta` <- function( fasta, file=NULL, line.width=80, append=FALSE) {
 
 	if ( is.null( file)) stop( "writeFasta:  required 'file' argument is missing")
 	require( Biostrings)
 	# convert to a Biostrings object
 	bstring <- BStringSet( fasta$seq)
 	names( bstring) <- fasta$desc
-	writeXStringSet( bstring, filepath=file, width=line.width)
+	writeXStringSet( bstring, filepath=file, width=line.width, append=append)
 	#writeLines( as.text.Fasta( fasta, line.width=line.width), con=file, sep="\n")
 }
 
