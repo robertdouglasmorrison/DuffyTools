@@ -18,11 +18,11 @@ function( f, sampleID="", verbose=TRUE, mode="full", what=c("lineCount", "readCo
 
 	if ( ! file.exists(f)) {
 		if (verbose) warning( paste( "getFileLineCount:  file not found:  ", f))
-		return( 0)
+		return( -1)
 	}
 	if ( ! file.readable(f)) {
 		if (verbose) warning( paste( "getFileLineCount:  not a read-able file:  ", f))
-		return( 0)
+		return( -1)
 	}
 	
 	what <- match.arg( what)
@@ -117,7 +117,7 @@ quickFileLineCountLookup <- function( f, sampleID="", what=c("lineCount", "readC
 	}
 
 	if ( ! file.exists( useLineCountFile))  {
-		return( 0)
+		return( -1)
 	}
 
 	file.lock( useLineCountFile, ID=f, sleeptime=1)
@@ -131,7 +131,7 @@ quickFileLineCountLookup <- function( f, sampleID="", what=c("lineCount", "readC
 		row <- base::match( basename(ftry), rownames( curInfo), nomatch=0)
 		checkSize <- FALSE
 	}
-	if ( row == 0) return( 0)
+	if ( row == 0) return( -1)
 	#cat( "\nRow= ", row, "\n",f,"\n")
 
 	# see if this file is the same
@@ -140,7 +140,7 @@ quickFileLineCountLookup <- function( f, sampleID="", what=c("lineCount", "readC
 		if ( fInfo$size == curInfo$size[row]) {
 			return( curInfo[[ what]][ row])
 		} else {
-			return(0)
+			return(-1)
 		}
 	}
 

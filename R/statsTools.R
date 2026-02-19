@@ -3,7 +3,6 @@
 
 `cv` <- function( x, y=NULL, na.rm=FALSE) {
 
-
 	# do either the 1-sample or 2-sample Coefficient fo Variance
 	if ( is.null( y)) {
 
@@ -19,6 +18,25 @@
 	mySD <- sqrt( sum( (x-y)^2) / twoN)
 
 	return( mySD / myMean)
+}
+
+
+`loocv` <- function( x, FUN=mean, na.rm=FALSE) {
+
+	# do a Leave One Out assessment of a vector of values, and then measure the variance
+	# to assess the consistency of the values
+	if ( ! is.function(FUN)) stop( "argument 'FUN' must be a callable function")
+
+	N <- length(x)
+	if ( N < 4) stop( "argument 'x' must contain at least 4 values")
+
+	# evalute the data leaving out each value
+	looValue <- rep.int( NA, N)
+	for ( i in 1:N) looValue[i] <- FUN( x[-i], na.rm=na.rm)
+
+	myCV <- cv( looValue, na.rm=na.rm)
+
+	return( myCV)
 }
 
 
