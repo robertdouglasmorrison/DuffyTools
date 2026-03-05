@@ -15,8 +15,10 @@
 # Calling this new linear method '2PL' curves
 
 
+# turn EU into OD
 `forward.4pl` <- function(x, A, B, C, D) { return( D + ((A - D) / (1 + (x / C) ^ B)))}
 
+# turn OD into EU
 `inverse.4pl` <- function( y, A, B, C, D) { return( (((1/(y-D) * (A-D)) - 1) ^ (1/B)) * C)}
 
 
