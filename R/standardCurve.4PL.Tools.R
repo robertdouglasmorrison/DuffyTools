@@ -23,8 +23,7 @@
 
 
 `calculateStandardCurveABCD` <- function( odValues, concValues, plot=FALSE, label="", las=1, digits=4, 
-					pt.col=4, lin.col=1, fit.col=4, add.plot=FALSE, 
-					show.legend=!add.plot, ...) {
+					pt.col=4, lin.col=1, fit.col=4, add.plot=FALSE, show.legend=!add.plot, ...) {
 
 	require( minpack.lm)
 
