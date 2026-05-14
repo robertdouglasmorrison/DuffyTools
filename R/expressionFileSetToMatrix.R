@@ -154,15 +154,28 @@
 		colnames(sml) <- c( geneColumn, "PRODUCT", intensityColumn)
 
 		# if we need to make this look like NGS data, add a few more data fields
+		smlV <- sml[[3]]
 		if (addNGScolumns) {
-			if ( intensityColumn != "READS_M") sml$READS_M <- sml[[3]]
-			if ( intensityColumn != "RPKM_M") sml$RPKM_M <- sml[[3]]
-			sml$SIGMA_M <- rosettaSigma( sml[[3]])
+			if ( intensityColumn != "READS_M") sml$READS_M <- smlV
+			if ( intensityColumn != "RPKM_M") sml$RPKM_M <- smlV
+			if ( intensityColumn != "TPM_M") sml$TPM_M <- smlV
+			# some NGS expression values need info about the gene's size
+			sml$SIGMA_M <- rosettaSigma( smlV)
 			sml$N_EXON_BASES <- 1000
 			wh1 <- match( sml[[1]], gmap$GENE_ID, nomatch=0)
 			sml$N_EXON_BASES[ wh1 > 0] <- gmap$N_EXON_BASES[wh1]
 			wh2 <- match( sml[[1]], gmap$NAME, nomatch=0)
 			sml$N_EXON_BASES[ wh2 > 0] <- gmap$N_EXON_BASES[wh2]
+			# with those facts in place, convert the counts to normalized counts
+			if ( grepl( "READS", toupper(intensityColumn))) {
+				totalReads <- sum( smlV, na.rm=T)
+				sml$RPKM_M <- calculateRPKM( smlV, exonBases=sml$N_EXON_BASES, totalReads=totalReads)
+				sml$TPM_M <- tpm( smlV, geneLen=sml$N_EXON_BASES, readLen = 100, minReadsPerSpecies = 10000)
+			}
+			# we did add NGS expression values, so re-order to reflect those
+			ord <- order( sml$RPKM_M, decreasing=T)
+			sml <- sml[ ord, ]
+			rownames(sml) <- 1:nrow(sml)
 		}
 
 		# many downstream tools expect fully unique gene IDs
