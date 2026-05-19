@@ -119,6 +119,14 @@
 	cat( "\nN_Genes in Universe:   ",  N_TotalGenes)
 	cat( "\n")
 
+	enrichAnsGenome <- enrichment( nMatch=Nboth, nYourSet=N1, nTotal=Neither, nTargetSubset=N2)
+	nExpectGenome <- enrichAnsGenome$nExpected
+	if ( Nboth >= nExpectGenome) {
+		pvalGenome <- enrichAnsGenome$P_atLeast
+	} else {
+		pvalGenome <- enrichAnsGenome$P_atMost
+	}
+
 	# create a joint meta ranked table of the gene intersection
 	if ( length(both)) {
 		dfList <- vector( mode="list")

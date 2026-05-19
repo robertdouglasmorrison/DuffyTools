@@ -29,7 +29,7 @@
 	# 2) the IC in bits, using both Wikipedia and ggseqlogo package (Omar Wagih)
 	Hi <- - apply( pctM, 2, function(x) sum( x * log2(x), na.rm=T))
 	en <- ( 1/log(2)) * ((N-1)/(2*nseq))
-	Ric <- pmax( log2(N) - (Hi + en), 0)
+	Ric <- pmax( log2(N) - (Hi + en), 1)  # was pmax vs zero...
 
 	# 3) lastly, the heights of each base
 	htM <- pctM

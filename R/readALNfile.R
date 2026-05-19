@@ -675,7 +675,7 @@ readALN <- function( file, verbose=TRUE) {
 		mainText <- if (nDone < 1) main else NA
 		plotALN.BitScore( smlALN, heightM=smlHT, codonMap=codonMap, number.from=nowNumberFrom, main=mainText,
 				max.X=max.X, max.Y=bigY, letter.col=letter.col, min.bit.score=min.bit.score, 
-				gap.x=gap.x, gap.y=gap.y, ...)
+				gap.x=gap.x, gap.y=gap.y, xLabel=xLabel, ...)
 						
 		# increment
 		nDone <- nDone + n.per.panel
