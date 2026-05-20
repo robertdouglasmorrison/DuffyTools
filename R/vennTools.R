@@ -270,6 +270,10 @@
 	mainText <- paste( "Venn Overlap:    ", label)
 	plot( 1,1, type='n', main=paste( "Venn Overlap:    ", label), xaxt='n', yaxt='n', xlab=NA, ylab=NA,
 			xlim=xlim, ylim=ylim, frame.plot=FALSE)
+
+	# if not given any sub-text, create some
+	if (subText1 == "") subText1 <- paste( "Expected overlap by random chance =", round(nExpectGenome,digits=2)) 
+	if (subText2 == "") subText2 <- paste( "P.value =", if (pvalGenome > 0.0005) round(pvalGenome,digits=4) else formatC(pvalGenome,format="e", digits=2)) 
 	if (subText1 != "") mtext( subText1, side=1, line=1, font=2, cex=1.1)
 	if (subText2 != "") mtext( subText2, side=1, line=2, font=2, cex=1.1)
 
