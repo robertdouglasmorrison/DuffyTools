@@ -811,7 +811,7 @@
 
 	defaultReference <- NA
 	if (speciesID %in% PARASITE_SPECIES) defaultReference <- "Parasite.LifeCycle"
-	if (speciesID %in% MAMMAL_SPECIES) defaultReference <- "27.Blood.CellTypes"
+	if (speciesID %in% MAMMAL_SPECIES) defaultReference <- "28.Blood.CellTypes"
 	if (speciesID %in% BACTERIA_SPECIES) defaultReference <- "TB.Phenotypes"
 	if ( file.exists( optionsFile)) {
 		reference <- getOptionValue( optionsFile, arg="cellTypeReference", speciesID=speciesID, 
