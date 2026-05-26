@@ -166,15 +166,17 @@ correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE,
 			oldMAI <- par("mai")
 			if ( oldMAI[4] < 1) par( "mai"=c( oldMAI[1:3], 1))
 			if ( ig == 1) {
-				plot( 1, 1, type="n", xlab="ELISA: Sqrt(EU)", ylab="% TRA", xlim=range(sqrtEU)*c(0.9,1.1),
-						main=label, ylim=range(lmr)*1.2, yaxt="n", ...)
+				plot( 1, 1, type="n", xlab="ELISA EU  (sqrt scale)", ylab="% TRA", xlim=range(sqrtEU)*c(0.8,1.1),
+						main=label, ylim=range( lmr, 0, 2.5), xaxt="n", yaxt="n", ...)
+				elisaAts <- c( 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000)
+				axis( side=1, at=sqrt(elisaAts), labels=elisaAts, ...)
 				axis( side=4, at=pretty(lmr), ...)
-				mtext( "Log Mean Ratio (LMR)", side=4, line=2.5, ...)
+				mtext( "Log Mean Ratio (LMR)", side=4, line=2.5, cex=1.25)
 				traAts <- c( 0, 50, 80, 90, 95, 99)
 				lmrAts <- logMeanRatio( traAts)
 				axis( side=2, at=lmrAts, labels=traAts, ...)
 			}
-			points( sqrtEU[use], lmr[use], pch=pch[ig], col=col[ig], bg=bg[ig], ...)
+			points( jitter(sqrtEU[use],amount=0.025), jitter(lmr[use],amount=0.025), pch=pch[ig], col=col[ig], bg=bg[ig], ...)
 			abline( reg=smlLM, col=col[ig], lwd=lwd, lty=lty)
 		}
 	}
