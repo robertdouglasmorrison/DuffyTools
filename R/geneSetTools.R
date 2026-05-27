@@ -527,16 +527,17 @@
 
 	# set the universe of all possible gene names
 	all1 <- genes1
-	smallerUniverse <- FALSE
-	if (is.null(geneUniverse)) {
+	if ( is.null(geneUniverse)) {
 		geneUniverse <- unique.default( unlist( geneSets))
+		smallerUniverse <- FALSE
+	} else {
 		smallerUniverse <- TRUE
 	}
 	nAllGenes <- length( union( all1, geneUniverse))
 
 	for ( j in 1:N2) {
 		genes2 <- geneSets[[j]]
-		if (smallerUniverse) genes2 <- intersect( genes, geneUniverse)
+		if (smallerUniverse) genes2 <- intersect( genes2, geneUniverse)
 		len2 <- length( genes2)
 		if ( ! len2) next
 
