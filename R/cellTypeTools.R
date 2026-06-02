@@ -2398,7 +2398,7 @@
 	# extract the parts we want
 	genes <- shortGeneName( as.character( tmp[[ geneColumn]]), keep=1)
 	fold <- as.numeric( tmp[[ foldColumn]])
-	if ( is.null( xRange)) xRange <- quantile( fold, probs=c(0.025,0.975), na.rm=T)
+	if ( is.null( xRange)) xRange <- quantile( fold, probs=c(0.01,0.99), na.rm=T)
 	meanFold <- 0
 	if (xMeanNormalize) meanFold <- mean( fold, na.rm=T)
 
