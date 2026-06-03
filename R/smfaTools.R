@@ -110,9 +110,9 @@ logMeanRatio <- function( tra) {
 
 # do the correlation of TRA to ELISE EU, and perhaps plot the data as well
 correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE, 
-									col='black', bg='white', pch=1, icThreshold=80, 
-									lwd=2, lty=2, legend.loc="topleft", label="Correlation of TRA & ELISA", 
-									showIC=TRUE, ...) {
+				col='black', bg='white', pch=1, icThreshold=80, 
+				lwd=2, lty=2, legend.loc="topleft", label="Correlation of TRA & ELISA", 
+				showIC=TRUE, ...) {
 
 	# implement the math and figure style of Kazutoyo Miura (Vaccine 2017)
 	N <- length(tra)
@@ -182,7 +182,7 @@ correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE,
 	}
 	
 	# done with the math and plotting
-	if (PLOT && Ngrp > 1) {
+	if (PLOT && Ngrp >= 1) {
 		legendText <- grpNames
 		if ( showIC) {
 			moreText <- paste( "IC", round(icThreshold), " = ", round(icOut), "EU  (P=", formatC(pvOut,format="e",digits=2), ")", sep="")

@@ -2136,6 +2136,7 @@
 	# we are plotting -log10(pval) on Y axis, Fold on X axis
 	clip.fold <- 10
 	clip.pvalue <- 1e-10
+	if ( ! is.null(forceXmax)) clip.fold <- forceXmax
 	# prevent absurd numbers from dominating
 	fold[ fold > clip.fold] <- clip.fold
 	fold[ fold < -clip.fold] <- -clip.fold
@@ -2235,13 +2236,14 @@
 	}
 	# force all dots to be seen, whether we crop or not
 	crop.x <- min( crop.x, quantile(fold, highQuantile, na.rm=T))
+	if ( ! is.null(forceXmax)) crop.x <- forceXmax
 	# don't let the crop be smaller than the balloons, or too small overall
 	big.balloon <- max( abs(out$Log2Fold) + out$Radius)
 	if (crop.x < big.balloon) crop.x <- big.balloon
 	if (crop.x < 0.5) crop.x <- 0.5
 	fold[ fold > crop.x] <- crop.x
 	fold[ fold < -crop.x] <- -crop.x
-	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.175
+	myRangeX[1] <- myRangeX[1] - diff(myRangeX)*0.185
 	bigY <- max( 1, quantile( y, highQuantile*0.9, na.rm=T), out$Log10.Pvalue+(out$Radius * 1.15))
 	myRangeY <- c( 0, bigY*1.01)
 	if ( ! is.null( forceYmax)) {
