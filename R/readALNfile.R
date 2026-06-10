@@ -198,7 +198,7 @@ readALN <- function( file, verbose=TRUE) {
 }
 
 
-`plotALN` <- function( aln, type=c("fill","dots"), cex.letter=1, cex.label=1, y.label.length=NULL, 
+`plotALN` <- function( aln, type=c("fill","dots"), cex.letter=1, cex.lab=1, y.label.length=NULL, 
 			codonMap=getCodonMap(), ref.row=1, number.from=NULL, range=NULL, max.X=NULL, 
 			number.shown.offset=NULL, bottom.axis=TRUE, top.axis=TRUE, 
 			xLabel="Amino Acid Location", main="MSA Alignment", ...) {
@@ -330,12 +330,12 @@ readALN <- function( file, verbose=TRUE) {
 	# draw the names.  Recall that we draw fist at the top...
 	ylabs <- rev( rownames(aln))
 	if ( ! is.null( y.label.length)) ylabs <- substr( ylabs, 1, y.label.length)
-	axis( side=2, at=1:niso, label=ylabs, cex.axis=cex*cex.label, las=2)
+	axis( side=2, at=1:niso, label=ylabs, cex.axis=cex*cex.lab, las=2)
 	dev.flush()
 }
 
 
-`plotALN.Panels` <- function( aln, type=c("fill","dots"), n.per.panel=100, cex.letter=1, cex.label=1, y.label.length=NULL, 
+`plotALN.Panels` <- function( aln, type=c("fill","dots"), n.per.panel=100, cex.letter=1, cex.lab=1, y.label.length=NULL, 
 				codonMap=getCodonMap(), ref.row=1, number.from=1, range=NULL, 
 				bottom.axis=TRUE, top.axis=FALSE, xLabel="Amino Acid Location", 
 				letter.col=NULL,  main="MSA Alignment", mai=c( 0.42,1,0.42,0.2), ...) {
@@ -389,7 +389,7 @@ readALN <- function( file, verbose=TRUE) {
 		# do this chunk, only show the title on the top one
 		mainText <- if (nDone < 1) main else NA
 		plotALN( smlALN, type=type, codonMap=codonMap, number.from=nowNumberFrom, main=mainText,
-						max.X=max.X, etter.col=letter.col, cex.letter=cex.letter, cex.label=cex.label,  
+						max.X=max.X, etter.col=letter.col, cex.letter=cex.letter, cex.lab=cex.lab,  
 						ref.row=ref.row, bottom.axis=bottom.axis, top.axis=top.axis, xLabel=xLabel, 
 						letter.col=letter.col, ...)
 						
@@ -628,7 +628,7 @@ readALN <- function( file, verbose=TRUE) {
 		aln <- aln$alignment
 	}
 	nch <- ncol(aln)
-
+	
 	# show numbering based on the reference sequence
 	referenceRowChars <- aln[ ref.row, ]
 	refNumbering <- cumsum( referenceRowChars != "-") + number.from - 1

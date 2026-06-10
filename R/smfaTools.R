@@ -110,9 +110,10 @@ logMeanRatio <- function( tra) {
 
 # do the correlation of TRA to ELISE EU, and perhaps plot the data as well
 correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE, 
-				col='black', bg='white', pch=1, icThreshold=80, 
-				lwd=2, lty=2, legend.loc="topleft", label="Correlation of TRA & ELISA", 
-				showIC=TRUE, ...) {
+				col='black', bg='white', pch=1, pt.cex=1, cex.lab=1.2, cex.axis=1.2, 
+				color.by=c("group","point"), icThreshold=80, 
+				lwd=2, lty=2, legend.loc="topleft", legend.cex=1, label="Correlation of TRA & ELISA", 
+				showIC=TRUE, bty="o", ...) {
 
 	# implement the math and figure style of Kazutoyo Miura (Vaccine 2017)
 	N <- length(tra)
@@ -127,15 +128,25 @@ correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE,
 		grpNames <- levels(group)
 	} else {
 		group <- rep.int( 1, N)
+		grpNames <- "All Data"
 	}
 	
 	if (PLOT) {
-		if ( length(col) < Ngrp) col <- rep( col, length.out=Ngrp)
-		if ( length(bg) < Ngrp) bg <- rep( bg, length.out=Ngrp)
-		if ( length(pch) < Ngrp) pch <- rep( pch, length.out=Ngrp)
+		color.by <- match.arg( color.by)
+		if ( color.by == "group") {
+			if ( length(col) < Ngrp) col <- rep( col, length.out=Ngrp)
+			if ( length(bg) < Ngrp) bg <- rep( bg, length.out=Ngrp)
+			if ( length(pch) < Ngrp) pch <- rep( pch, length.out=Ngrp)
+		} else {
+			if ( length(col) < N) col <- rep( col, length.out=N)
+			if ( length(bg) < N) bg <- rep( bg, length.out=N)
+			if ( length(pch) < N) pch <- rep( pch, length.out=N)
+		}
 	}
 
 	# step 1: transform the input values to the desired units, after discarding any NA data
+	tra <- as.numeric(tra)
+	eu <- as.numeric(eu)
 	naTRA <- which( is.na(tra))
 	naEU <- which( is.na(eu))
 	drops <- sort( union( naTRA, naEU))
@@ -143,21 +154,28 @@ correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE,
 		tra <- tra[ -drops]
 		eu <- eu[ -drops]
 		group <- group[ -drops]
+		if (color.by == "point") {
+			col <- col[ -drops]
+			bg <- bg[ -drops]
+			pch <- pch[ -drops]
+		}
 	}
 	lmr <- logMeanRatio( tra)
 	sqrtEU <- sqrt( eu)
 	
 	# step 2: do the linear regression for each group
-	icOut <- pvOut <- vector( length=Ngrp)
+	icOut <- pvOut <- r2Out <- vector( length=Ngrp)
 	for ( ig in 1:Ngrp) {
 		use <- which( as.numeric(group) == ig)
 		
 		# do the regression for this subset of data
 		smlLM <<- lm( lmr[use] ~ sqrtEU[use])
-		smlCoef <- coef( summary( smlLM))
+		summLM <- summary( smlLM)
+		smlCoef <- coef( summLM)
 		b0 <- smlCoef[ 1, 1]
 		b1 <- smlCoef[ 2, 1]
 		pvOut[ig] <- smlCoef[ 2, 4]
+		r2Out[ig] <- summLM$r.squared
 		icValue <- ( ( log10( 100/(100-icThreshold)) - b0) / b1) ^ 2
 		icOut[ig] <- icValue
 		
@@ -166,31 +184,45 @@ correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE,
 			oldMAI <- par("mai")
 			if ( oldMAI[4] < 1) par( "mai"=c( oldMAI[1:3], 1))
 			if ( ig == 1) {
-				plot( 1, 1, type="n", xlab="ELISA EU  (sqrt scale)", ylab="% TRA", xlim=range(sqrtEU)*c(0.8,1.1),
-						main=label, ylim=range( lmr, 0, 2.5), xaxt="n", yaxt="n", ...)
+				plot( 1, 1, type="n", xlab="ELISA EU  (sqrt scale)", ylab="% TRA", xlim=range(sqrtEU,na.rm=T)*c(0.8,1.1),
+						main=label, ylim=range( lmr*1.05, 0, 2.5), xaxt="n", yaxt="n", cex.lab=cex.lab, cex.axis=cex.axis, ...)
 				elisaAts <- c( 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000)
-				axis( side=1, at=sqrt(elisaAts), labels=elisaAts, ...)
-				axis( side=4, at=pretty(lmr), ...)
-				mtext( "Log Mean Ratio (LMR)", side=4, line=2.5, cex=1.25)
-				traAts <- c( 0, 50, 80, 90, 95, 99)
+				axis( side=1, at=sqrt(elisaAts), labels=elisaAts, cex.axis=cex.axis, cex.lab=cex.lab, ...)
+				axis( side=4, at=pretty(lmr), cex.axis=cex.axis, cex.lab=cex.lab, ...)
+				mtext( "Log Mean Ratio (LMR)", side=4, line=2.5, cex=cex.lab*par("cex"))
+				traAts <- c( 0, 50, 80, 90, 95, 99, 99.9)
 				lmrAts <- logMeanRatio( traAts)
-				axis( side=2, at=lmrAts, labels=traAts, ...)
+				axis( side=2, at=lmrAts, labels=traAts, cex.axis=cex.axis, cex.lab=cex.lab, ...)
+				lmr80 <- logMeanRatio( icThreshold)
+				lines( c(0,1000), rep.int(lmr80,2), col='grey60', lwd=1.25, lty=3)
 			}
-			points( jitter(sqrtEU[use],amount=0.025), jitter(lmr[use],amount=0.025), pch=pch[ig], col=col[ig], bg=bg[ig], ...)
-			abline( reg=smlLM, col=col[ig], lwd=lwd, lty=lty)
+			if (color.by == "group") {
+				points( jitter(sqrtEU[use],amount=0.025), jitter(lmr[use],amount=0.025), pch=pch[ig], col=col[ig], bg=bg[ig], cex=pt.cex)
+				abline( reg=smlLM, col=col[ig], lwd=lwd, lty=lty)
+			} else {
+				points( jitter(sqrtEU[use],amount=0.025), jitter(lmr[use],amount=0.025), pch=pch[use], col=col[use], bg=bg[use], cex=pt.cex)
+				grpColor <- unique( col[use])
+				if ( length(grpColor) > 1) grpColor <- 'black'
+				abline( reg=smlLM, col=grpColor, lwd=lwd, lty=lty)
+			}
 		}
 	}
 	
 	# done with the math and plotting
-	if (PLOT && Ngrp >= 1) {
+	if (PLOT && Ngrp >= 1 && !is.na(legend.loc) && legend.cex > 0) {
 		legendText <- grpNames
 		if ( showIC) {
-			moreText <- paste( "IC", round(icThreshold), " = ", round(icOut), "EU  (P=", formatC(pvOut,format="e",digits=2), ")", sep="")
+			moreText <- paste( "IC", round(icThreshold), " = ", round(icOut), "EU  (P=", formatC(pvOut,format="e",digits=2), "  R2=", round(r2Out,digits=2), ")", sep="")
 			legendText <- paste( legendText, moreText)
 		}
-		legend( legend.loc, legendText, pch=pch, col=col, pt.bg=bg)
+		if ( color.by == "group") {
+			legend( legend.loc, legendText, pch=pch, col=col, pt.bg=bgi, bty=bty, cex=legend.cex)
+		} else {
+			legendText <- moreText
+			legend( legend.loc, legendText, bty=bty, cex=legend.cex)
+		}
 	}
 	
-	out <- list( "IC"=icOut, "p.value"=pvOut)
+	out <- list( "IC"=icOut, "p.value"=pvOut, "r.squared"=r2Out)
 	return(out)
 }
