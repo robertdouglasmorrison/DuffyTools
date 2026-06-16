@@ -235,8 +235,11 @@
 	# mosquito vectors
 	addTarget( "Agam", "Agam", "Agam")
 	addTarget( "Asteph", "Asteph", "Asteph")
+	addTarget( "Adirus", "Adirus", "Adirus")
 	addTarget( "AgamPf", "Pf3D7,Agam", "Pf,Agam")
 	addTarget( "AstephPf", "Pf3D7,Asteph", "Pf,Asteph")
+	addTarget( "AstephPv", "PvP01,Asteph", "PvP01,Asteph")
+	addTarget( "AdirusPv", "PvP01,Adirus", "PvP01,Adirus")
 
 	addTarget( "Ecoli", "Ecoli", "Eco")
 	addTarget( "Dmel", "Dmel", "Dmel")
