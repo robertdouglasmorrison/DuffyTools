@@ -248,6 +248,7 @@
 
 	# TB bacteria, with their hosts
 	addTarget( "MT_H37", "MT_H37", "MTb")
+	addTarget( "H37Rv1", "H37Rv1", "H37Rv1")
 	addTarget( "MT_HN878", "MT_HN878", "MTbHN878")
 	addTarget( "Msmeg_mc2_155", "Msmeg_mc2_155", "Msmeg")
 	addTarget( "Mabsc", "Mabsc", "Mabsc")
