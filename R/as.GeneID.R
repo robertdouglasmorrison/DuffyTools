@@ -9,7 +9,7 @@
 	#some expect all upper case
 	allCapitalSpecies <- c( PARASITE_SPECIES, "Hs_grc", "MacMu", "MacFas", "Anan", "Msmeg_mc2_155",
 				"Mchel", "Mabsc")
-	firstLetterCapitalSpecies <- c( "Mmu_grc", "Rnor_grc", "MT_H37")
+	firstLetterCapitalSpecies <- c( "Mmu_grc", "Rnor_grc", "MT_H37", "H37Rv1")
 	allLowerSpecies <- c( "Drerio")
 
 	# first do the general case
