@@ -1,13 +1,24 @@
 # exprotTargetToGFF.R -- turn a target set of species into a single GFF file
+#
+#	as of July 2026, updating to use 'product=' attribute, on both mRNA and CDS lines
+# 	(to better match GenBank submission requirements)
 
-`exportTargetToGFF` <- function( target=getCurrentTarget()$TargetID,
-				outfile=paste( target, "gff", sep=".")) {
+`exportTargetToGFF` <- function( target=getCurrentTarget()$TargetID, outfile=paste( target, "gff", sep="."), 
+				genomicDNAfilePath=NULL) {
 
 	# load the wanted target
 	prevTarget <- curTarget <- getCurrentTarget()$TargetID
 	prevSpecies <- getCurrentSpecies()
 	if ( curTarget != target) curTarget <- setCurrentTarget( target)
 	curSpeciesSet <- getCurrentTargetSpecies()
+
+	if ( is.null(genomicDNAfilePath)) {
+		cat( "\nNo checking for gene/pseudogene distinctions..")
+		doAA <- FALSE
+	} else {
+		cat( "\nWill translate genes into proteins to check for pseudogenes..")
+		doAA <- TRUE
+	}
 
 	# open the new file for writing, and put out the GFF header
 	con <- file( outfile, open="wt")
@@ -34,14 +45,14 @@
 		
 		mRNAid <- paste( gid, "mRNA", sep=".")
 		attribs <- paste( "ID=", mRNAid, ";Parent=", gid, ";Name=", nam, 
-					";Note=\"", prod, "\"", sep="")
+					";product=\"", prod, "\"", sep="")
 		txt <- paste( seqid, ".", "mRNA", pos, end, ".", strand,
 				".", attribs, sep="\t")
 		writeLines( txt, con=con)
 	}
 
 
-	write.Exon.Lines <- function( seqid, gid, emap, cdsmap) {
+	write.Exon.Lines <- function( seqid, gid, emap, cdsmap, prod) {
 		
 		Nexons <- nrow( emap)
 		mRNAid <- paste( gid, "mRNA", sep=".")
@@ -63,17 +74,31 @@
 		
 		# calc the phasing for CDS
 		Ncds <- nrow( cdsmap)
+		if ( ! Ncds) return()
 		cdsid <- paste( gid, "cds", 1:Ncds, sep=".")
+		myStrand <- cdsmap$STRAND[1]
+		if ( Ncds > 1) {
+			if (myStrand == "+") {
+				ord <- order( cdsmap$POSITION, decreasing=FALSE)
+			} else {
+				ord <- order( cdsmap$END, decreasing=TRUE)
+			}
+			if ( any( ord != 1:Ncds)) cdsmap <- cdsmap[ ord, ]
+		}
+		pos <- as.integer( cdsmap$POSITION)
+		end <- as.integer( cdsmap$END)
 		nbp <- end - pos + 1
 		myPhase <- rep.int( 0, Ncds)
 		if ( Ncds > 1) {
+		    # perhaps the phasing is done backward when on reverse strand
 			cumbp <- cumsum( nbp)
 			isMod1 <- which( cumbp[1:(Ncds-1)] %% 3 == 1)
 			myPhase[ isMod1 + 1] <- 2
 			isMod2 <- which( cumbp[1:(Ncds-1)] %% 3 == 2)
 			myPhase[ isMod2 + 1] <- 1
 		}
-		attribs <- paste( "ID=", cdsid, ";Parent=", mRNAid, sep="")
+		attribs <- paste( "ID=", cdsid, ";Parent=", mRNAid, 
+					";product=\"", prod, "\"", sep="")
 		txt <- paste( seqid, ".", "CDS", pos, end, ".", cdsmap$STRAND, myPhase, attribs, sep="\t")
 		writeLines( txt, con=con)
 	}
@@ -99,17 +124,34 @@
 			allPos <- as.integer( gmap$POSITION)
 			allEnd <- as.integer( gmap$END)
 			allStrands <- gmap$STRAND
+			# clean the product strings a bit. Remove any attribute separators, and convert any commas and internal equal signs
 			allProds <- gsub( ";", "", gmap$PRODUCT)
+			allProds <- gsub( ",", "%2C", allProds)
+			allProds <- gsub( "=", " ", allProds)
 			allAttribs <- paste( "ID=", allGenes, ";", "Name=", allNames, sep="")
 			for ( i in 1:nrow(gmap)) {
 				thisG <- allGenes[i]
+				if ( doAA) {
+					# see we the protein is full length
+					aaAns <- gene2Fasta( thisG, genomicDNAfilePath=genomicDNAfilePath, mode="aa")
+					aa <- aaAns$seq[1]
+					NAA <- nchar(aa)
+					isPS <- TRUE
+					startM <- ( substr(aa,1,1) == "M")
+					endStop <- ( substr(aa,NAA,NAA) == "*")
+					internStop <- grepl( "\\*", substr(aa, 1, (NAA-1)))
+					if ( startM && endStop && ! internStop) isPS <- FALSE
+					if ( isPS) {
+						allAttribs[i] <- paste( allAttribs[i], "pseudo=true", sep=";")
+					}
+				}
 				write.Gene.Line( seqid, allPos[i], allEnd[i], allStrands[i], allAttribs[i])
 				eemap <- subset.data.frame( emap, GENE_ID == thisG)
 				ccmap <- subset.data.frame( cmap, GENE_ID == thisG)
 				if ( nrow( eemap)) {
 					write.mRNA.Line( seqid, thisG, allPos[i], allEnd[i], allNames[i], 
-							allStrands[i], allProds[i])
-					write.Exon.Lines( seqid, thisG, eemap, ccmap)
+							allStrands[i], prod=allProds[i])
+					write.Exon.Lines( seqid, thisG, eemap, ccmap, prod=allProds[i])
 				}
 				if ( i %% 10 == 0) cat( "\r", i, thisG)
 			}
@@ -121,3 +163,4 @@
 	setCurrentTarget( prevTarget)
 	setCurrentSpecies( prevSpecies)
 }
+

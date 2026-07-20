@@ -216,7 +216,7 @@ correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE,
 			legendText <- paste( legendText, moreText)
 		}
 		if ( color.by == "group") {
-			legend( legend.loc, legendText, pch=pch, col=col, pt.bg=bgi, bty=bty, cex=legend.cex)
+			legend( legend.loc, legendText, pch=pch, col=col, pt.bg=bg, bty=bty, cex=legend.cex)
 		} else {
 			legendText <- moreText
 			legend( legend.loc, legendText, bty=bty, cex=legend.cex)
