@@ -11,6 +11,7 @@
 	prevSpecies <- getCurrentSpecies()
 	if ( curTarget != target) curTarget <- setCurrentTarget( target)
 	curSpeciesSet <- getCurrentTargetSpecies()
+	cat( "\nExporting GFF files for species: ", curSpeciesSet, "\n")
 
 	if ( is.null(genomicDNAfilePath)) {
 		cat( "\nNo checking for gene/pseudogene distinctions..")
@@ -19,6 +20,7 @@
 		cat( "\nWill translate genes into proteins to check for pseudogenes..")
 		doAA <- TRUE
 	}
+	nPS <- nTRUE <- 0
 
 	# open the new file for writing, and put out the GFF header
 	con <- file( outfile, open="wt")
@@ -128,6 +130,9 @@
 			allProds <- gsub( ";", "", gmap$PRODUCT)
 			allProds <- gsub( ",", "%2C", allProds)
 			allProds <- gsub( "=", " ", allProds)
+			# see if a product ends in a ortholog species phrase, like "[Macaca nemestrina]"
+			endsWithBracket <- which( grepl( "\\]$", allProds))
+			if ( length(endsWithBracket)) allProds[endsWithBracket] <- sub( "\\[.+\\]$", "", allProds[endsWithBracket])
 			allAttribs <- paste( "ID=", allGenes, ";", "Name=", allNames, sep="")
 			for ( i in 1:nrow(gmap)) {
 				thisG <- allGenes[i]
@@ -143,6 +148,9 @@
 					if ( startM && endStop && ! internStop) isPS <- FALSE
 					if ( isPS) {
 						allAttribs[i] <- paste( allAttribs[i], "pseudo=true", sep=";")
+						nPS <- nPS + 1
+					} else {
+						nTRUE <- nTRUE + 1
 					}
 				}
 				write.Gene.Line( seqid, allPos[i], allEnd[i], allStrands[i], allAttribs[i])
@@ -158,6 +166,8 @@
 		}
 	}
 	cat( "\nDone.\n")
+	if (doAA) cat( "\n\nCounts of true genes and pseudogenes:  True Gene =", nTRUE, "  Pseudogene =", nPS, "\n")
+
 	close( con)
 
 	setCurrentTarget( prevTarget)
