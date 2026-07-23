@@ -5,7 +5,8 @@
 			main="Kaplan-Meier: ", nFDR=0, legend.bty="o", legend.title=NULL, 
 			xscale=1, yscale=1, mark.time=FALSE, pch=3, cumhaz=FALSE, ylim=c(0,1.03),
 			xstagger=0, ystagger=0, show.pvalue=TRUE, legend.loc="topright", pval.loc="bottomleft", 
-			fdr.loc="bottomright", pval.cex=max(1,legend.cex), show.group.size=FALSE, ...) {
+			fdr.loc="bottomright", pval.cex=max(1,legend.cex), show.group.size=FALSE, 
+			rev.legend.groups=FALSE, ...) {
 
 	require( survival)
 
@@ -31,7 +32,14 @@
 				grpCounts <- tapply( groups, factor(groups,levels=grpNames), length)
 				grpNames <- paste( grpNames, " (N=", as.numeric(grpCounts), ")", sep="")
 			}
-			legend( legend.loc, grpNames, col=col, lwd=lwd, lty=lty, bg='white', cex=legend.cex, bty=legend.bty)
+			if (rev.legend.groups) {
+				grpNamesShow <- rev( grpNames)
+				colShow <- rev( col)
+			} else {
+				grpNamesShow <- grpNames
+				colShow <- col
+			}
+			legend( legend.loc, grpNamesShow, col=colShow, lwd=lwd, lty=lty, bg='white', cex=legend.cex, bty=legend.bty)
 		}
 		if (show.pvalue) {
 			if ( ! is.na(pval.loc)) legend( pval.loc, paste( "P-value =", round( pval, digits=4)), bg='white', 
