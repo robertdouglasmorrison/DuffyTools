@@ -4,6 +4,7 @@
 
 require( Biostrings)
 require( pwalign)
+require( DuffyTools)
 
 
 consensusNanopore <- function( file, max.reads=500, down.sample=TRUE, final.pct.match=95) {
@@ -27,16 +28,17 @@ consensusNanopore <- function( file, max.reads=500, down.sample=TRUE, final.pct.
 	DNA.DM <<- nucleotideSubstitutionMatrix()
 	
 	# repeatedly try to merge clusters, lowering the score threshold as we go
-	matchPct <- 100
+	pct.match <- 100
 	N.MERGES <<- 0
 	repeat {
-		mergeClusters( pct.match=matchPct)
-		matchPct <- round( matchPct - 0.1, digits=2)
-		if ( matchPct < final.pct.match) break
+		ans <- mergeClusters( pct.match=pct.match)
+		if ( is.null(ans)) break
+		pct.match <- round( pct.match - 0.1, digits=2)
+		if ( pct.match < final.pct.match) break
 	}
 	
 	# when done turn each cluster with enough members into an MSA object
-	MSAbyCluster( min.seq=10)
+	MSAbyCluster( min.seq.per.cluster=10)
 }
 
 
@@ -125,7 +127,7 @@ makeClusters <- function( seqs) {
 }
 
 
-plotClusters <- function( scaleFactor=0.25, label="") {
+plotClusters <- function( scaleFactor=0.45, label="") {
 	
 	require( plotrix)
 	maxColors <- round(N.Seq/2)
@@ -138,7 +140,7 @@ plotClusters <- function( scaleFactor=0.25, label="") {
 
 	# show all that are any non-zero size irst			
 	toShow <- which( ClustSize > 0)
-	points( Clust.X[toShow], Clust.Y[toShow], pch='.', col=colRamp[1])
+	points( Clust.X[toShow], Clust.Y[toShow], pch='.', col=colRamp[1], cex=2)
 	
 	for ( i in toShow) {
 		mySize <- ClustSize[i]
@@ -156,6 +158,7 @@ plotClusters <- function( scaleFactor=0.25, label="") {
 mergeClusters <- function( pct.match=99) {	
 
 	nClust <- sum( ClustSize > 0)
+	if ( nClust < 2) return(NULL)
 	cat( "\nStarting Merges of ", nClust, "Sequence Clusters at ", pct.match,"% match threshold..\n")
 	# set up to visit all the clusters in random order, to find other clusters of highly similar sequences
 	visitOrder <- sample( N.Clusters)
@@ -237,6 +240,76 @@ mergeClusters <- function( pct.match=99) {
 }
 
 
+
+reshuffleClusters <- function() {	
+
+	# as the merging of clusters continues with less than perfect match threshold, make a pass to 
+	# see if some sequences might be better fits to some other cluster, than the one they are currently in
+	
+	# visit all clusters in the order from shortest sequence to longest
+	toVisit <- which( ClustSize > 0)
+	visitOrd <- order( ClustSize[toVisit])
+	clusterVisitOrder <- toVisit[visitOrd]
+	nClust <- length(clusterVisitOrder)
+
+	cat( "\nStarting Reshuffle tests of ", nClust, "Sequence Clusters..\n")
+	nShuffles <- 0
+	
+	for ( i in clusterVisitOrder) {
+		mySize <- ClustSize[ i]
+		if (mySize < 2) next
+		myMembers <- ClustMembers[[ i]]
+		# within each cluster, the longest seq is first, and all others are in decreasing sequence length order.
+		# start with the shortest one, and find out if some other cluster is a better match
+		mySeqsToVisit <- rev( myMembers[ 2:mySize])
+		# we will compare to every other sequence not already in this cluster
+		otherPtrs <- setdiff( 1:N.Seq, myMembers)
+		otherLens <- SequenceLens[otherPtrs]
+		
+		for ( myPtr in mySeqsToVisit) {
+			myLen <- SequenceLens[myPtr]
+			myCurScore <- getPairwiseAlignScores( myMembers[1], myPtr)
+			# get all the other scores vs me
+			# get the pairwise overlap scores between all the others and me
+			paScore <- getPairwiseAlignScores( otherPtrs, myPtr)
+			# see if the best score is better than what I currently have
+			bestScore <- max( paScore, na.rm=T)
+			if (bestScore > myCurScore) {
+				isBest <- which( paScore == bestScore)
+				# if more than one, take the shortest one
+				if ( length(isBest) > 1) isBest <- isBest[ which.min( otherLens[isBest])]
+				bestOtherPtr <- otherPtrs[ isBest]
+				# yes found a better, find what cluster that other sequence is in
+				bestOtherClust <- 0
+				for ( k in 1: N.Clusters) {
+					if ( k == i) next
+					possOtherPtrs <- ClustMembers[[k]]
+					if ( bestOtherPtr %in% possOtherPtrs) {
+						bestOtherClust <- k
+						break
+					}
+				}
+				if (bestOtherClust == 0) next
+				#OK, move this sequence from previous to new cluster.
+				# step 1: add this to the other cluster
+				otherMembers <- ClustMembers[[ bestOtherClust]]
+				otherMembers <- c( otherMembers, myPtr)
+				ord <- order( SequenceLens[ otherMembers], decreasing=T)
+				ClustMembers[[ bestOtherClust]] <<- otherMembers[ ord]
+				ClustSize[bestOtherClust] <<- length(otherMembers)
+				# step 2: remove from my cluster
+				myMembers <- setdiff( myMembers, myPtr)
+				ClustMembers[[ i]] <<- myMembers
+				ClustSize[ i] <<- length( myMembers)
+				nShuffles <- nShuffles + 1
+			}
+		}
+	}
+	cat( "Done re-shuffling.  N shuffled sequences=", nShuffles)
+	return( nShuffles)	
+}
+
+
 getPairwiseAlignScores <- function( otherSeqPtrs, mySeqPtr) {
 
 	# given a vector of pointers to sequences that are the 'pattern' seqs and one pointer to the 'subject' seq
@@ -263,15 +336,19 @@ getPairwiseAlignScores <- function( otherSeqPtrs, mySeqPtr) {
 }
 
 
-MSAbyCluster <- function( min.seq=5) {
+MSAbyCluster <- function( min.seq.per.cluster=5) {
 
 	# make DNA Multiple Sequence alignments of each cluster, that has enough members
-	hasEnoughMembers <- which( ClustSize >= min.seq)
+	hasEnoughMembers <- which( ClustSize >= min.seq.per.cluster)
 	
 	# visit them by decreasing cluster size
 	cSize <- ClustSize[ hasEnoughMembers]
 	visitOrd <- order( cSize, decreasing=T)
 	hasEnoughMembers <- hasEnoughMembers[visitOrd]
+	
+	# for tallying percentage of used sequence, only count these
+	totalUsedSeqs <- sum( cSize, na.rm=T)
+	
 	for ( i in 1:length(hasEnoughMembers)) {
 		k <- hasEnoughMembers[i]
 		myPtrs <- ClustMembers[[ k]]
@@ -286,7 +363,7 @@ MSAbyCluster <- function( min.seq=5) {
 		writeALN( aln, alnname, line=100)
 		consensusDNA <- consensusAlignment( aln$alignment)
 		consensusAA <- DNAtoBestPeptide( consensusDNA)
-		pctOfSeqs <- round( length(myPtrs) * 100 / N.Seq, digits=1)
+		pctOfSeqs <- round( length(myPtrs) * 100 / totalUsedSeqs, digits=1)
 		faDNA <- as.Fasta( paste( "Cluster.", i, ".DNA ", "Pct of Reads=", pctOfSeqs, sep=""), consensusDNA)
 		writeFasta( faDNA, paste( "Cluster", i, "Consensus.DNA.fasta", sep="."), line=100)
 		faAA <- as.Fasta( paste( "Cluster.", i, ".AA ", "Pct of Reads=", pctOfSeqs, sep=""), consensusAA)
