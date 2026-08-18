@@ -1237,7 +1237,7 @@
 		}
 
 		plot( 1,1, type="n", main=mainText, xlim=c(0.5,N_STAGES+0.5), ylim=c(yMin,yMax), 
-			log="", xaxt="n", xlab=NA, ylab="Gene Intensity per Stage  (RPKM)", las=3, font.axis=2, font.lab=2)
+			log="", xaxt="n", xlab=NA, ylab="Gene Intensity per Stage", las=3, font.axis=2, font.lab=2)
 		axis( 1, at=1:N_STAGES, label=STAGE_NAMES, las=3, font=2)
 	}
 
