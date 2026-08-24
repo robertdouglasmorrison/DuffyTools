@@ -1,32 +1,40 @@
-# consensusNanopore.R - create consensus sequences from a Nanopore style FASTQ dataset
+# nanoporeClusters.R - create cluster-based consensus sequences from a Nanopore style FASTQ dataset
 
 # Overview:  start every sequence as its own cluster, then repeatedly merge by 
-#			declining pairwise similarity score threshold
+#			declining pairwise similarity score threshold, to find the most common 
+#			sequences in a raw dataset.
 
 # set up the tool as a closure, to allow encapulation and access to the various parts
 
 
-consensusNanopore <- function( file, max.reads=1000, final.pct.match=97, 
-							prefix=sub("\\.f[aq](stq)?(\\.gz)?$","",basename(file)), 
+nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected.aa.seq=NULL, final.pct.match=97, 
+							trim=0.01, prefix=sub("\\.f[aq](stq)?(\\.gz)?$","",basename(file)), 
 							results.path=paste( prefix, "ConsensusNanopore.Results",sep="."),
-							verbose=TRUE, plot=TRUE) {
+							min.seq.per.cluster=5, min.pct.per.cluster=5, verbose=TRUE, plot=TRUE) {
 
 	require( Biostrings)
 	require( pwalign)
-	require( DuffyTools)
 	require( plotrix)
 	checkX11( width=9, height=8)
+	
 
-	# define local variables that are globally available inside the closure
-	PREFIX <- gsub( " +", ".", prefix)
-	PATH <- results.path
-	if ( ! exists( PATH)) dir.create( PATH, recursive=T, showWarnings=F)
-	VERBOSE <- verbose
-	PLOT <- plot
 	# use the Biostrings DNA scoring matrix
 	DNA.DM <- nucleotideSubstitutionMatrix()
-	N.MERGES <- 0
 
+	# define local variables that are globally available inside the closure
+	FILE <- file
+	MAX.READS <- max.reads
+	EXPECT.SIZE <- expected.size
+	EXPECT.AA.SEQ <- expected.aa.seq
+	FINAL.PCT.MATCH <- final.pct.match
+	PREFIX <- gsub( " +", ".", prefix)
+	RESULTS.PATH <- results.path
+	TRIM <- trim
+	MIN.SEQ.PER.CLUSTER <- min.seq.per.cluster
+	MIN.PCT.PER.CLUSTER <- min.pct.per.cluster
+	VERBOSE <- verbose
+	PLOT <- plot
+	
 	# storage for the Sequences that are members of clusters
 	N.Seq <- integer(1)
 	Sequences <- character(1)
@@ -36,70 +44,70 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 	ClustMembers <- vector( mode="list")
 	ClustSize <- integer(1)
 	Clust.X <- Clust.Y <- numeric(1)
+	
+	# storage for final MSA objects
+	MSAs <- vector( mode="list")
+	ConsensusCalls <- vector( mode="list")
+
 	# storage for the pairwise alignment scoring matrix
 	ScoreMatrix <- matrix( NA, nrow=1, ncol=1)
 	# other storage for convenience 
 	seqsRaw <- seqsNet <- character(1)
 
+	# a global counter for showing progress
+	N.MERGES <- 0
+
 
 	# top level function to do everything
-	main <- function( file, max.reads=1000, final.pct.match=95) {
+	do.all <- function() {
+	
+		# step 1: load the reads, down-select, and build initial clusters
+		setup()
+		# step 2: merge exact duplicates
+		nMergesD <- mergeDuplicates()	
+		N.MERGES <<- N.MERGES + nMergesD
+		# step 3: merge perfect substrings
+		nMergesS <- mergePerfectSubstrings()	
+		N.MERGES <<- N.MERGES + nMergesS
+		# step 4:  the main merging step, to iteratively find merges as the score threshold comes down
+		N.MERGES <<-  mergeClusters( final.pct.match=FINAL.PCT.MATCH)
+			
+		# when done, turn each cluster with enough members into an MSA object
+		MSAbyCluster( min.seq.per.cluster=MIN.SEQ.PER.CLUSTER, min.pct.per.cluster=MIN.SEQ.PER.CLUSTER, prefix=PREFIX)
+		
+		# final step: if 2+ clusters, check their similarity
+		MultiClusterMSA()
+	}
+
+
+	setup <- function() {
+	
 		# read in the raw FASTQ reads
-		seqsRaw <<- loadNanoporeFastq( file, max.reads=NULL)
+		seqsRaw <<- loadNanoporeFastq( file=FILE, max.reads=NULL)
+		
+		# create the folder where results will land. and if needed, remove older previous results
+		if ( ! exists( RESULTS.PATH)) dir.create( RESULTS.PATH, recursive=T, showWarnings=F)
+		oldFiles <- dir( RESULTS.PATH, pattern="Cluster\\.[0-9]+\\.(Consensus.AA.fasta|Consensus.DNA.fasta|aln|fasta|Diversity.csv)$", full=T)
+		if ( length( oldFiles)) file.delete( oldFiles)
+
 		# down select, giving preference to sequences seen 2+ times
-		seqsNet <<- downSampleSequences( seqsRaw, max.reads=max.reads, trim=0.1)
+		seqsNet <<- downSampleSequences( seqs=seqsRaw, max.reads=MAX.READS, expected.size=EXPECT.SIZE, trim=TRIM)
+		
 		# show what we kept/discarded
 		plotSeqLenHistogram( seqsRaw, seqsNet)	
+		
 		# try to put them all into coding strand orientation
 		seqsNet <<- asCodingStrandSequence( seqsNet)
 	
 		# start with every sequence in its own cluster
 		makeClusters( seqsNet)
+		
+		# perhaps show it
 		if (PLOT) { 
 			plotClusters( label=paste( "Starting with:", N.Seq));  
 			Sys.sleep(1)
-			printPlot( file.path( PATH, paste(prefix,"Starting.Clusters",sep=".")), width=9, height=8)
+			printPlot( file.path( RESULTS.PATH, paste(prefix,"Starting.Clusters",sep=".")), width=9, height=8)
 		}
-	
-		# first pass to merge exact duplicates
-		nMergesD <- combineDuplicateClusters()
-		if (VERBOSE) cat( "\nN.Exact.Duplicates: ", nMergesD)
-		if (PLOT) { 
-			plotClusters( label=paste( "N.Duplicates:", nMergesD));  
-			Sys.sleep(1)
-			printPlot( file.path( PATH, paste(prefix,"After.Exact.Duplicates",sep=".")), width=9, height=8)
-		}
-	
-		# second pass for exact substrings
-		nMergesS <- perfectSubstringClusters()
-		if (VERBOSE) cat( "\nN.Perfect.Substrings: ", nMergesS)
-		if (PLOT) { 
-			plotClusters( label=paste( "N.Perfect.Substrings:", nMergesS));  
-			Sys.sleep(1) 
-			printPlot( file.path( PATH, paste(prefix,"After.Perfect.Substrings",sep=".")), width=9, height=8)
-		}
-	
-		# repeatedly try to merge clusters, lowering the score threshold as we go
-		# because we catch all the perfect duplicates and proper substrings already, start the
-		# merging process 1 step below perfect.  A 1bp mismatch in a 500bp sequence would be a 99.8% match
-		pct.match <- 99.8
-		repeat {
-			ans <- mergeClusters( pct.match=pct.match, random.order=F)
-			if ( is.null(ans)) break
-			pct.match <- round( pct.match - 0.1, digits=2)
-			if ( pct.match < final.pct.match) break
-		}
-		if (PLOT) { 
-			finalMergeCnt <- N.MERGES + nMergesD + nMergesS 
-			nOrphans <- sum( ClustSize == 1)
-			plotClusters( label=paste( "Final Clustering:   N.Seq:", N.Seq, "   N.Merge:", finalMergeCnt, "   N.Orphan:", nOrphans));  
-			Sys.sleep(1) 
-			printPlot( file.path( PATH, paste(prefix,"Final.Clusters",sep=".")), width=9, height=8)
-		}
-	
-		# when done turn each cluster with enough members into an MSA object
-		ans <- MSAbyCluster( min.seq.per.cluster=5, min.pct.per.cluster=5, prefix=PREFIX)
-		
 	}
 
 
@@ -144,12 +152,18 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 	}
 
 
-	downSampleSequences <- function( seqs=seqsRaw, max.reads=1000, trim=0.1) {
+	downSampleSequences <- function( seqs=seqsRaw, max.reads=1000, expected.size=NULL, trim=0.05) {
 	
 		# as we down sample to the max count of starting clusters, find sequences that deserve to be discarded or kept
 		N <- N.Raw <- length(seqs)	
-		mustKeep <- vector()
-		if (VERBOSE) cat( "\nReducing sequences down to", max.reads, "by: ")	
+		slen <- nchar( seqs)
+		if ( is.null( expected.size)) {
+			expected.size <- round( mean( slen))
+			if (VERBOSE) cat( "\nEstimating expected size of raw reads.  Expected =", expected.size,"bp")
+		}
+
+		if (VERBOSE) cat( "\nReducing sequences down to", max.reads, "by: ")
+		
 		# test1:  allow discarding very short & very long reads
 		if ( ! is.null(trim)) {
 			if ( trim > 0.25) stop( "'trim' value must be below 0.25")
@@ -163,53 +177,42 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 			from <- round( N * trim)
 			to <- round( N * (1-trim))
 			keep <- ord[ from : to]
+			if (VERBOSE) cat( "  Trimming", (from-1), "reads from each end of length distribution")
 			seqs <- seqs[ keep]
+			slen <- slen[ keep]
 			N <- length( seqs)
 			if (VERBOSE) cat("  N_Now: ", N)
 		}
-		# test 2: any duplicates always stay
-		isDUP <- which( duplicated( seqs))
-		if ( length(isDUP)) {
-			dupSeqs <- seqs[ isDUP]
-			keep1 <- which( seqs %in% dupSeqs)
-			mustKeep <- keep1
-			if (VERBOSE) cat( "  Duplicates: ", length(keep1))
+		
+		# we used to favor perfect duplicates and substrings, but this idea seemed to favor
+		# short unwanted artifacts.  Just do random sampling.
+		if ( N < max.reads) return( seqs)
+		
+		# use the expected size to create a normal sampling pattern.  Generate a list of random sizes around the expected size,
+		# using a growing wider Std Deviation, to favor the right size but allow outliers
+		randLens <- vector()
+		for ( mySD in seq( 0.1, 3, by=0.10)) {
+			smlRandLens <- round( (rnorm( N, mean=0, sd=mySD) * expected.size / 3) + expected.size)  # scale by 100% of values inside +/-3*SD
+			randLens <- c( randLens, smlRandLens)
 		}
-		# test 3: any sequences that are perfect substrings of others, get kept
-		if ( length(mustKeep) < max.reads) {
-			nKeep <- length( mustKeep)
-			nNeed <- max( max.reads - nKeep, 0)
-			if ( nNeed) {
-				keep2 <- vector()
-				for ( k in 1:N) {
-					hits <- grep( seqs[k], seqs, fixed=T)
-					# we always hit ourself, so we need 2+ for it to be real
-					if ( length(hits) < 2) next
-					keep2 <- c( keep2, hits)
-				}
-				if ( length(keep2)) {
-					keep2 <- sort( unique( keep2))
-					if ( length( keep2) > nNeed) keep2 <- sample( keep2, size=nNeed)
-					mustKeep <- c( mustKeep, keep2)
-					if (VERBOSE) cat( "  Substrings: ", length(keep2))
-				}
-			}
-		}	
-		# after every reason to keep a sequence, use random sampling to get up to N wanted
-		mustKeep <- sort( unique( mustKeep))
-		nKeep <- length( mustKeep)
-		nNeed <- max( min( N.Raw, max.reads) - nKeep, 0)
-		others <- integer(0)
-		if (nNeed) {
-			otherSeqs <- setdiff( 1:N, mustKeep)
-			if ( length(otherSeqs) > nNeed) {
-				others <- sample( otherSeqs, size=nNeed)
-				if (VERBOSE) cat( "  Random sampling: ", length(others))
-			} else {
-				others <- otherSeqs
-			}
+		drop1 <- which( randLens < min(slen))
+		drop2 <- which( randLens > max(slen))
+		drops <- sort( unique( c( drop1, drop2)))
+		if ( length(drops)) randLens <- randLens[ -drops]
+		avail <- 1:N
+		chosen <- vector()
+		nnow <- 0
+		for ( i in 1:length(randLens)) {
+			who <- match( randLens[i], slen[avail])
+			if ( is.na(who)) next
+			nnow <- nnow + 1
+			chosen[nnow] <- avail[who]
+			avail <- avail[ -who]
+			if ( nnow >= max.reads) break
 		}
-		finalSet <- sort( unique( c( mustKeep, others)))
+		# we have our final set
+		finalSet <- chosen
+		if (VERBOSE) cat( "  Normal Random sampling: ", length(finalSet))
 		return( seqs[finalSet])
 	}
 
@@ -222,8 +225,8 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 		Nraw <- length(seqsRaw)
 		Nnet <- length(seqsNet)	
 		# set the breaks value to create ~50bp sized bins
-		breaksRaw <- max( round( diff( range(ncRaw)) / 10), 30)
-		breaksNet <- max( round( diff( range(ncNet)) / 10), 30)
+		breaksRaw <- max( round( diff( range(ncRaw)) / 100), 30)
+		breaksNet <- max( round( diff( range(ncNet)) / 100), 5)
 		# draw the original distribution
 		hist( ncRaw, breaks=breaksRaw, main=paste( "Nanopore sample: ", PREFIX, "\nHistogram of raw sequence read lengths"),
 				xlab="Sequence length (bp)", ylab="Number of sequences", col='grey70')
@@ -231,7 +234,7 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 		hist( ncNet, breaks=breaksNet, add=T, col='green3')
 		legend( 'topleft', paste( c("Original","Selected"), "  (N=", c(Nraw,Nnet), ")", sep=""), fill=c('grey70','green3'), cex=1.05)
 		dev.flush(); Sys.sleep(1)
-		printPlot( file.path( PATH, paste(prefix,"Sequence.Length.Histograms",sep=".")), width=9, height=7)
+		printPlot( file.path( RESULTS.PATH, paste(prefix,"Sequence.Length.Histograms",sep=".")), width=9, height=7)
 		return(NULL)
 	}
 
@@ -265,6 +268,57 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 	}
 
 
+	mergeDuplicates <- function() {
+		
+		# first pass to merge exact duplicates
+		nMergesD <- combineDuplicateClusters()
+		if (VERBOSE) cat( "\nN.Exact.Duplicates: ", nMergesD)
+		if (PLOT) { 
+			plotClusters( label=paste( "N.Duplicates:", nMergesD));  
+			Sys.sleep(1)
+			printPlot( file.path( RESULTS.PATH, paste(prefix,"After.Exact.Duplicates",sep=".")), width=9, height=8)
+		}
+		return( nMergesD)
+	}
+	
+	
+	mergePerfectSubstrings <- function() {
+	
+		# second pass to merge perfect substrings
+		nMergesS <- perfectSubstringClusters()
+		if (VERBOSE) cat( "\nN.Perfect.Substrings: ", nMergesS)
+		if (PLOT) { 
+			plotClusters( label=paste( "N.Perfect.Substrings:", nMergesS));  
+			Sys.sleep(1) 
+			printPlot( file.path( RESULTS.PATH, paste(prefix,"After.Perfect.Substrings",sep=".")), width=9, height=8)
+		}
+		return( nMergesS)
+	}
+		
+
+	mergeClusters <- function( final.pct.match=FINAL.PCT.MATCH, start.pct.match=99.8) {
+		
+		# repeatedly try to merge clusters, lowering the score threshold as we go
+		# because we catch all the perfect duplicates and proper substrings already, start the
+		# merging process 1 step below perfect.  A 1bp mismatch in a 500bp sequence would be a 99.8% match
+		cur.pct.match <- start.pct.match
+		repeat {
+			ans <- findAndMergeClusters( pct.match=cur.pct.match, random.order=F)
+			if ( is.null(ans)) break
+			cur.pct.match <- round( cur.pct.match - 0.1, digits=2)
+			if ( cur.pct.match < final.pct.match) break
+		}
+		if (PLOT) { 
+			finalMergeCnt <- N.MERGES
+			nOrphans <- sum( ClustSize == 1)
+			plotClusters( label=paste( "Final Clustering:   N.Seq:", N.Seq, "   N.Merge:", finalMergeCnt, "   N.Orphan:", nOrphans));  
+			Sys.sleep(1) 
+			printPlot( file.path( RESULTS.PATH, paste(prefix,"Final.Clusters",sep=".")), width=9, height=8)
+		}
+		return(N.MERGES)
+	}
+	
+	
 	combineDuplicateClusters <- function() {
 
 		# do a pre-pass, to find exact duplicate sequences, so they can become clusters right away
@@ -353,7 +407,7 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 				xlab="Cluster (X axis location)", ylab="Cluster (Y axis location)")
 		# show all that are any non-zero size first			
 		toShow <- which( ClustSize > 0)
-		points( Clust.X[toShow], Clust.Y[toShow], pch='.', col=colRamp[1], cex=2)	
+		points( Clust.X[toShow], Clust.Y[toShow], pch='.', col=colRamp[1], cex=3)	
 		# now make circles for the larger cluster, use color to show the percentage of the clustered sequences
 		# draw from small to big, to prevent visual overlap
 		ord <- order( ClustSize[toShow])
@@ -374,7 +428,7 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 	}
 
 
-	mergeClusters <- function( pct.match=99, random.order=TRUE) {	
+	findAndMergeClusters <- function( pct.match=99, random.order=TRUE) {	
 
 		# main workhorse function: given a similarity threshold, combine clusters that are good enough matches
 		nClust <- sum( ClustSize > 0)
@@ -486,7 +540,7 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 			if (PLOT) {
 				plotClusters( label=paste( "N.Cluster.Merge:", N.MERGES, "    Pct.Match.Threshold:", pct.match, "%"))
 				Sys.sleep(0.01) 
-				printPlot( file.path( PATH, paste(prefix,"Clustering.Progress",sep=".")), width=9, height=8)
+				printPlot( file.path( RESULTS.PATH, paste(prefix,"Clustering.Progress",sep=".")), width=9, height=8)
 			}
 
 		}
@@ -515,7 +569,7 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 	}
 
 
-	MSAbyCluster <- function( min.seq.per.cluster=5, min.pct.per.cluster=2, prefix=PREFIX) {
+	MSAbyCluster <- function( min.seq.per.cluster=5, min.pct.per.cluster=5, prefix=PREFIX) {
 
 		# make DNA Multiple Sequence alignments of every cluster, that has enough members
 		hasEnoughMembers <- which( ClustSize >= min.seq.per.cluster)
@@ -525,7 +579,6 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 		hasEnoughMembers <- hasEnoughMembers[visitOrd]
 		# for tallying percentage of used sequence, only count those with 2+ seqs
 		totalClustSeqs <- sum( ClustSize)
-		prefix <- paste( prefix, "Cluster", sep=".")
 		nout <- 0	
 		for ( i in 1:length(hasEnoughMembers)) {
 			k <- hasEnoughMembers[i]
@@ -533,36 +586,57 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 			myPct <- round( mySize * 100 / totalClustSeqs, digits=2)
 			if ( myPct < min.pct.per.cluster) next
 			if (VERBOSE) cat( "\rMaking MSA for cluster:", k, "  Size:", mySize)
-			consensusAns <- makeOneClusterMSAconsensus( clustPtr=k, clustID=i, prefix=prefix)
-			consensusDNA <- consensusAns$seq
+			# part 1: calculate the MSA 
+			makeOneClusterMSA( clustPtr=k, clustID=i, prefix=prefix)
+			# then extract the consensus info
+			ans <- extractMSAconsensus( clustID=i)
+			consensusDNA <- ans$seq[1]
 			consensusAA <- DNAtoBestPeptide( consensusDNA)	
-			myDepth <- consensusAns$depth
+			myDepth <- ans$depth
 			desc <- paste( prefix, "_Cluster", i, "_Reads=", mySize, "_Depth=", myDepth, "_Pct=", myPct, sep="")
 			faDNA <- as.Fasta( desc, consensusDNA)
-			writeFasta( faDNA, file.path( PATH, paste( prefix, i, "Consensus.DNA.fasta", sep=".")), line=100)
+			writeFasta( faDNA, file.path( RESULTS.PATH, paste( prefix, "Cluster", i, "Consensus.DNA.fasta", sep=".")), line=100)
 			truncWarn <- if ( nchar(consensusAA) < nchar(consensusDNA)/5) "  Translation Warning:  AA sequence is excessively truncated" else ""
 			faAA <- as.Fasta( paste( desc, truncWarn, sep=" "), consensusAA)
-			writeFasta( faAA, file.path( PATH, paste( prefix, i, "Consensus.AA.fasta", sep=".")), line=100)
+			writeFasta( faAA, file.path( RESULTS.PATH, paste( prefix, "Cluster", i, "Consensus.AA.fasta", sep=".")), line=100)
+			diversity <- ans$diversity
+			write.csv( diversity, file.path( RESULTS.PATH, paste( prefix, "Cluster", i, "Diversity.csv", sep=".")), row.names=F)
 			nout <- nout + 1
 		}
 		return( nout)
 	}
 
 
-	makeOneClusterMSAconsensus <- function( clustPtr, clustID=clustPtr, prefix="Cluster") {
+	makeOneClusterMSA <- function( clustPtr, clustID=clustPtr, prefix) {
 
-		# do the MSA for one cluster, to extract the consensus DNA string
+		# do the MSA for one cluster
 		myPtrs <- ClustMembers[[ clustPtr]]
 		mySeqs <- Sequences[ myPtrs]
 		myIDs <- names(Sequences)[myPtrs]
+		# make the FASTA of every cluster element sequence
 		fa <- as.Fasta( myIDs, mySeqs)
-		faname <- file.path( PATH, paste( prefix, clustID, "fasta", sep="."))
+		faname <- file.path( RESULTS.PATH, paste( prefix, "Cluster", clustID, "fasta", sep="."))
 		writeFasta( fa, faname, line=100)
-		alnname <- file.path( PATH, paste( prefix, clustID, "aln", sep="."))
+		# do the MSA step
+		alnname <- file.path( RESULTS.PATH, paste( prefix, "Cluster", clustID, "aln", sep="."))
 		aln <- mafft( faname, alnname, mode="genaffine")
 		aln$alignment <- toupper( aln$alignment)
-		writeALN( aln, alnname, line=100)
-		return( consensusAlignment( aln$alignment))
+		writeALN( aln, alnname, line=100, max.id.width=45)
+		#stuff this MSA object into global storage
+		MSAs[[ clustID]] <<- aln
+		names(MSAs)[clustID] <<- basename( alnname)
+		return( length( mySeqs))
+	}
+
+
+	extractMSAconsensus <- function( clustID) {
+
+		# get the MSA for one cluster, to extract the consensus DNA string
+		aln <- MSAs[[ clustID]] 
+		ans <- consensusAlignment( aln$alignment)
+		#stuff a copy of this Consensus object into global storage
+		ConsensusCalls[[ clustID]] <<- ans
+		return( ans)
 	}
 
 
@@ -578,11 +652,18 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 			j <- ncol(m)
 			while( m[i,j] == "-") { m[i,j] <- ""; j <- j - 1}
 		}
-		# step 2: get the most common base call at each column
+		# step 2: get the most common base call at each column.  Let's expand this ask to get some info about
+		# variants seen at each location
+		baseCallList <- vector( mode="list")
+		baseCntList <- vector( mode="list")
+		basePtr <- 0
 		chBase <- apply( m, 2, function(x) {
 			x <- x[ x != ""]
 			if ( ! length(x)) x <- ""
 			xt <- sort( table( x), decreasing=T)
+			basePtr <<- basePtr + 1
+			baseCallList[[basePtr]] <<- names(xt)
+			baseCntList[[basePtr]] <<- as.integer(xt)
 			return( names(xt[1]))
 		})
 		chDepth <- apply( m, 2, function(x) {
@@ -596,21 +677,97 @@ consensusNanopore <- function( file, max.reads=1000, final.pct.match=97,
 		while (chBase[endAt] %in% c( "", " ", "-")) endAt <- endAt - 1
 		finalBase <- chBase[ startFrom : endAt]
 		finalDepth <- chDepth[ startFrom : endAt]
+		baseCallList <- baseCallList[ startFrom : endAt]
+		baseCntList <- baseCntList[ startFrom : endAt]
 		# lastly, remove any embedded gaps
 		drops <- which( finalBase == "-")
 		if ( length(drops)) {
 			finalBase <- finalBase[ -drops]
 			finalDepth <- finalDepth[ -drops]
+			baseCallList <- baseCallList[ -drops]
+			baseCntList <- baseCntList[ -drops]
 		}
 		outSeq <- paste( finalBase, collapse="")
 		outDepth <- round( mean( finalDepth, na.rm=T), digits=2)
-		return( list( "seq"=outSeq, "depth"=outDepth))
+		# turn the diversity data into something we can see/manipulate.
+		# put a floor on how much read depth is needed to trust a minor population
+		diversity <- vector()
+		for ( k in 1:length(baseCallList)) {
+			bset <- baseCallList[[k]]
+			bdepth <- baseCntList[[k]]
+			myDepth <- finalDepth[k]
+			# put a floor on how much read depth is needed to trust a minor population. 
+			useDepth <- rep( max(myDepth,100), length(bdepth))
+			useDepth[1] <- myDepth
+			bpct <- round( bdepth * 100 / useDepth)
+			keep <- which( bpct >= 2)
+			diversity[k] <- paste( bset[keep], bpct[keep], sep=":", collapse="; ")
+		}
+		diverseM <- data.frame( "Position"=1:nchar(outSeq), "Base"=finalBase, "Depth"= finalDepth, "Diversity"=diversity, stringsAsFactors=F)
+		return( list( "seq"=outSeq, "depth"=outDepth, "diversity"=diverseM))
 	}
 
 
+	MultiClusterMSA <- function() {
+	
+		# gather all the final AA sequences, and see which can/should be joined
+		fset <- dir( RESULTS.PATH, pattern="Cluster\\.[0-9]+\\.Consensus.AA.fasta", full=T)
+		if ( length(fset) < 1) {
+			cat( "\nToo few AA sequences to do Multi-Cluster MSA.")
+			return()
+		}
+		if ( length(fset) < 2 && is.null(EXPECT.AA.SEQ)) {
+			cat( "\nToo few AA sequences to do Multi-Cluster MSA.")
+			return()
+		}
+		faIN <- loadFasta( fset)
+		seqs <- faIN$seq
+		# simplify the descriptor line
+		names(seqs) <- faIN$desc <- sub( paste(PREFIX,"_Cluster[._]?",sep=""), "Clust", faIN$desc)
+		names(seqs) <- faIN$desc <- sub( "_Depth=[.0-9]+_", "", names(seqs))
+		# if we were given an expected AA sequence, then only keep those clusters that look like
+		# what we are looking for
+		if ( ! is.null(EXPECT.AA.SEQ)) {
+			# this may be a AA seq or a FASTA filename
+			if ( grepl( ".fasta$", EXPECT.AA.SEQ)) {
+				tmpFA <- loadFasta( EXPECT.AA.SEQ, verbose=F)
+				 EXPECT.AA.SEQ <<- tmpFA$seq[1]
+				 names(EXPECT.AA.SEQ) <<- tmpFA$desc[1]
+			} else {
+				names(EXPECT.AA.SEQ) <<- "Expected.Seq"
+			}
+			data(BLOSUM62)
+			pa <- pairwiseAlignment( seqs, EXPECT.AA.SEQ, type="local", scoreOnly=T, substitutionMatrix=BLOSUM62)
+			# perfect match is about 5 per AA, so keep anything the is at least half good?
+			keep <- which( (pa/nchar(EXPECT.AA.SEQ)) >= 2.5)
+			seqs <- seqs[ keep]
+			if ( length(seqs) < 1) {
+				cat( "\nNo clusters resemble the expected AA sequence.")
+				return()
+			}
+		}
+		# when given an expected, add it to the mix
+		if ( ! is.null(EXPECT.AA.SEQ)) {
+			seqs <- c( EXPECT.AA.SEQ, seqs)
+			names(seqs) <- c( names(EXPECT.AA.SEQ), names(seqs))
+		}
+		faOUT <- as.Fasta( names(seqs), seqs)
+		fastaFile <- file.path( RESULTS.PATH, paste( PREFIX, "All.Consensus.AA.fasta", sep="."))
+		writeFasta( faOUT, fastaFile, line=100)
+		if ( length(seqs) > 1) {
+			alnFile <- file.path( RESULTS.PATH, paste( PREFIX, "All.Consensus.AA.aln", sep="."))
+			aln <- mafft( fastaFile, alnFile, mode="genaffine")
+			writeALN( aln, alnFile, line=100, max.id.width=45)
+		} else {
+			file.delete( alnFile)
+		}
+		return( length(seqs))
+	}
+	
+
 	# all functions local to the closure are defined.
-	# now call the main() and return the environment
-	ans <- main( file=file, max.reads=max.reads, final.pct.match=final.pct.match) 
+	# now call the top level function to do the clustering and return the environment
+	ans <- do.all() 
 	
 	return( environment())
 }
