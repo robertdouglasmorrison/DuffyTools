@@ -9,7 +9,7 @@
 
 nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected.aa.seq=NULL, final.pct.match=97, 
 							trim=0.01, prefix=sub("\\.f[aq](stq)?(\\.gz)?$","",basename(file)), 
-							results.path=paste( prefix, "ConsensusNanopore.Results",sep="."),
+							results.path=paste( prefix, "NanoporeClusters",sep="."),
 							min.seq.per.cluster=5, min.pct.per.cluster=5, verbose=TRUE, plot=TRUE) {
 
 	require( Biostrings)
@@ -583,7 +583,7 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 		for ( i in 1:length(hasEnoughMembers)) {
 			k <- hasEnoughMembers[i]
 			mySize <- ClustSize[k]
-			myPct <- round( mySize * 100 / totalClustSeqs, digits=2)
+			myPct <- round( mySize * 100 / totalClustSeqs, digits=1)
 			if ( myPct < min.pct.per.cluster) next
 			if (VERBOSE) cat( "\rMaking MSA for cluster:", k, "  Size:", mySize)
 			# part 1: calculate the MSA 
@@ -621,7 +621,7 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 		alnname <- file.path( RESULTS.PATH, paste( prefix, "Cluster", clustID, "aln", sep="."))
 		aln <- mafft( faname, alnname, mode="genaffine")
 		aln$alignment <- toupper( aln$alignment)
-		writeALN( aln, alnname, line=100, max.id.width=45)
+		writeALN( aln, alnname, line=100)
 		#stuff this MSA object into global storage
 		MSAs[[ clustID]] <<- aln
 		names(MSAs)[clustID] <<- basename( alnname)
@@ -720,11 +720,11 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 			cat( "\nToo few AA sequences to do Multi-Cluster MSA.")
 			return()
 		}
-		faIN <- loadFasta( fset)
+		faIN <- loadFasta( fset, verbose=F)
 		seqs <- faIN$seq
 		# simplify the descriptor line
 		names(seqs) <- faIN$desc <- sub( paste(PREFIX,"_Cluster[._]?",sep=""), "Clust", faIN$desc)
-		names(seqs) <- faIN$desc <- sub( "_Depth=[.0-9]+_", "", names(seqs))
+		names(seqs) <- faIN$desc <- sub( "_Depth=[.0-9]+_", "_", names(seqs))
 		# if we were given an expected AA sequence, then only keep those clusters that look like
 		# what we are looking for
 		if ( ! is.null(EXPECT.AA.SEQ)) {
@@ -749,7 +749,7 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 		# when given an expected, add it to the mix
 		if ( ! is.null(EXPECT.AA.SEQ)) {
 			seqs <- c( EXPECT.AA.SEQ, seqs)
-			names(seqs) <- c( names(EXPECT.AA.SEQ), names(seqs))
+			names(seqs)[1] <- names(EXPECT.AA.SEQ)
 		}
 		faOUT <- as.Fasta( names(seqs), seqs)
 		fastaFile <- file.path( RESULTS.PATH, paste( PREFIX, "All.Consensus.AA.fasta", sep="."))
@@ -757,6 +757,7 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 		if ( length(seqs) > 1) {
 			alnFile <- file.path( RESULTS.PATH, paste( PREFIX, "All.Consensus.AA.aln", sep="."))
 			aln <- mafft( fastaFile, alnFile, mode="genaffine")
+			rownames(aln$alignment) <- names(seqs)  # put the fuller names back in place
 			writeALN( aln, alnFile, line=100, max.id.width=45)
 		} else {
 			file.delete( alnFile)
