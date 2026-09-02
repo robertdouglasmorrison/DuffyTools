@@ -12,10 +12,9 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 							results.path=paste( prefix, "NanoporeClusters",sep="."),
 							min.seq.per.cluster=5, min.pct.per.cluster=5, verbose=TRUE, plot=TRUE) {
 
-	require( Biostrings)
-	require( pwalign)
-	require( plotrix)
-	checkX11( width=9, height=8)
+	requireNamespace( Biostrings, quietly=T)
+	requireNamespace( pwalign, quietly=T)
+	requireNamespace( plotrix, quietly=T)
 	
 
 	# use the Biostrings DNA scoring matrix
@@ -60,6 +59,8 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 
 	# top level function to do everything
 	do.all <- function() {
+	
+		checkX11( width=9, height=8)
 	
 		# step 1: load the reads, down-select, and build initial clusters
 		setup()
