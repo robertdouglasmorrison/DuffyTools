@@ -526,7 +526,7 @@ readALN <- function( file, verbose=TRUE) {
 `plotALN.BitScore` <- function( aln, heightM=NULL, codonMap=getCodonMap(), ref.row=1, number.from=1, 
 				max.X=NULL, max.Y=NULL, letter.col=NULL, min.bit.score=0.01, main="Sequence Logo",
 				xLabel="Amino Acid Location (NF54)", yLabel="Bit Score", gap.x=0.08, gap.y=0.05, 
-				col.axis=1, col.lab=1, ...) {
+				col.axis=1, col.lab=1, cex.axis=1, cex.lab=1, ...) {
 
 	# we may be given the top level ALN object or just the aligment matrix
 	# or even just the filename
@@ -562,7 +562,7 @@ readALN <- function( file, verbose=TRUE) {
 			xlab=NA, ylab=yLabel, frame.plot=F, main=NA, xaxt="n", yaxt="n", col.lab=col.lab, ...)
 	if ( ! is.na( main)) title( main=main, line=1.25, col.main=col.lab)
 	title( xlab=xLabel, line=2.05, col.lab=col.lab)
-	axis( side=2, col=col.axis, col.ticks=col.axis, col.axis=col.axis, ...)
+	axis( side=2, col=col.axis, col.ticks=col.axis, col.axis=col.axis, cex.axis=cex.axis, cex.lab=cex.lab, ...)
 	
 	# for the axis numbers, try to account for gaps, and try to make the range fill the actual sequence
 	prettyXpts <- intersect( pretty(refNumbering), refNumbering)
@@ -575,7 +575,7 @@ readALN <- function( file, verbose=TRUE) {
 		prettyXpts <- c( prettyXpts, refNumbering[nch])
 	}
 	prettyXats <- match( prettyXpts, refNumbering) + refNumbering[1] - 1
-	axis( side=1, at=prettyXats, label=prettyXpts, col=col.axis, col.ticks=col.axis, col.axis=col.axis, ...)
+	axis( side=1, at=prettyXats, label=prettyXpts, col=col.axis, col.ticks=col.axis, col.axis=col.axis, cex.axis=cex.axis, cex.lab=cex.lab, ...)
 
 	# draw the alignment letters, with size proportional to abundance
 	# set up the gapping details
@@ -616,7 +616,7 @@ readALN <- function( file, verbose=TRUE) {
 `plotALN.BitScore.Panels` <- function( aln, n.per.panel=100, codonMap=getCodonMap(), ref.row=1, number.from=1, 
 					max.X=NULL, max.Y=NULL, letter.col=NULL, min.bit.score=0.01, main="Sequence Logo", 
 					xLabel="Amino Acid Location (NF54)", gap.x=0.12, gap.y=0.1, 
-					mai=c( 0.42,1,0.42,0.2), ...) {
+					mai=c( 0.42,1,0.42,0.2), cex.axis=1, cex.lab=1, ...) {
 
 	# version for longer ALN sequences, where we do N letters per panel
 	# we may be given the top level ALN object or just the aligment matrix
@@ -675,7 +675,7 @@ readALN <- function( file, verbose=TRUE) {
 		mainText <- if (nDone < 1) main else NA
 		plotALN.BitScore( smlALN, heightM=smlHT, codonMap=codonMap, number.from=nowNumberFrom, main=mainText,
 				max.X=max.X, max.Y=bigY, letter.col=letter.col, min.bit.score=min.bit.score, 
-				gap.x=gap.x, gap.y=gap.y, xLabel=xLabel, ...)
+				gap.x=gap.x, gap.y=gap.y, xLabel=xLabel, cex.axis=cex.axis, cex.lab=cex.lab, ...)
 						
 		# increment
 		nDone <- nDone + n.per.panel
