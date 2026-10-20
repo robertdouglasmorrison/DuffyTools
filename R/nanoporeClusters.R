@@ -12,9 +12,9 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 							results.path=paste( prefix, "NanoporeClusters",sep="."),
 							min.seq.per.cluster=5, min.pct.per.cluster=5, verbose=TRUE, plot=TRUE) {
 
-	requireNamespace( Biostrings, quietly=T)
-	requireNamespace( pwalign, quietly=T)
-	requireNamespace( plotrix, quietly=T)
+	library( "Biostrings", quietly=T)
+	library( "pwalign", quietly=T)
+	library( "plotrix", quietly=T)
 	
 
 	# use the Biostrings DNA scoring matrix
@@ -366,7 +366,7 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 			mySeqPtr <- myMembers[1]
 			mySeq <- Sequences[ mySeqPtr]
 			# see which clusters are a superstring of my seq
-			myHits <- grep( mySeq, allClustSeqs)
+			myHits <- grep( mySeq, allClustSeqs, fixed=T)
 			myClustHits <- useClust[ myHits]
 			# remove myself from the set of hits
 			myClustHit <- setdiff( myClustHits, mySeqPtr)
@@ -574,6 +574,10 @@ nanoporeClusters <- function( file, max.reads=1000, expected.size=NULL, expected
 
 		# make DNA Multiple Sequence alignments of every cluster, that has enough members
 		hasEnoughMembers <- which( ClustSize >= min.seq.per.cluster)
+		if ( ! length(hasEnoughMembers)) {
+			cat( "\nWarning:  no clusters have enough sequences..")
+			return(0)
+		}
 		# visit them by decreasing cluster size
 		cSize <- ClustSize[ hasEnoughMembers]
 		visitOrd <- order( cSize, decreasing=T)
