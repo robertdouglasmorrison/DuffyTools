@@ -51,9 +51,9 @@ duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRU
 		isLess <- which( cuts[show] < cutAns)
 		rotateAngle <- c( 0, -90)
 		posOffset <- c( 4, 1)
-		text( mspec[show[isMore]], msens[show[isMore]], formatC( cuts[show[isMore]], format="f", 
+		if ( length(isMore)) text( mspec[show[isMore]], msens[show[isMore]], formatC( cuts[show[isMore]], format="f", 
 				digits=ndigShow), pos=posOffset[1], srt=rotateAngle[1], offset=1.0, cex=label.cex)
-		text( mspec[show[isLess]], msens[show[isLess]], formatC( cuts[show[isLess]], format="f", 
+		if ( length(isLess)) text( mspec[show[isLess]], msens[show[isLess]], formatC( cuts[show[isLess]], format="f", 
 				digits=ndigShow), pos=posOffset[2], srt=rotateAngle[2], offset=1.5, cex=label.cex)
 
 		# Patrick had an ask, to know how many observations land at a single location on the ROC curve.
