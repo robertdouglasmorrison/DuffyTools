@@ -195,6 +195,8 @@ correlate.TRA.to.ELISA <- function( tra, eu, group=NULL, PLOT=TRUE,
 				axis( side=2, at=lmrAts, labels=traAts, cex.axis=cex.axis, cex.lab=cex.lab, ...)
 				lmr80 <- logMeanRatio( icThreshold)
 				lines( c(0,1000), rep.int(lmr80,2), col='grey60', lwd=1.25, lty=3)
+				# also draw the veritical line at the IC80 point
+				lines( sqrt(rep.int(icValue,2)), c(-1,logMeanRatio(icThreshold)), col='grey40', lty=2, lwd=1.25)
 			}
 			if (color.by == "group") {
 				points( jitter(sqrtEU[use],amount=0.025), jitter(lmr[use],amount=0.025), pch=pch[ig], col=col[ig], bg=bg[ig], cex=pt.cex)
