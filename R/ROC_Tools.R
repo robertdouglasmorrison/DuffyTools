@@ -2,7 +2,7 @@
 
 
 duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRUE, legend.cex=1, label.cex=1,
-			show.cut.value=FALSE, value.cex=0.8) {
+			show.cut.value=FALSE, value.cex=0.8, srt=NULL) {
 
 	# to test ROC, we need the known positives and negatives
 	require( ROC)
@@ -51,10 +51,16 @@ duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRU
 		isLess <- which( cuts[show] < cutAns)
 		rotateAngle <- c( 0, -90)
 		posOffset <- c( 4, 1)
-		if ( length(isMore)) text( mspec[show[isMore]], msens[show[isMore]], formatC( cuts[show[isMore]], format="f", 
-				digits=ndigShow), pos=posOffset[1], srt=rotateAngle[1], offset=1.0, cex=value.cex)
-		if ( length(isLess)) text( mspec[show[isLess]], msens[show[isLess]], formatC( cuts[show[isLess]], format="f", 
-				digits=ndigShow), pos=posOffset[2], srt=rotateAngle[2], offset=1.5, cex=value.cex)
+		extraYshift <- 0
+		if ( ! is.null( srt)) { 
+			rotateAngle <- c(srt,srt)
+			posOffset <- c(4,4)
+			extraYshift <- -0.03
+		}
+		if ( length(isMore)) text( mspec[show[isMore]], msens[show[isMore]]+extraYshift, formatC( cuts[show[isMore]], format="f", 
+				digits=ndigShow), pos=posOffset[1], srt=rotateAngle[1], offset=0.4, cex=value.cex)
+		if ( length(isLess)) text( mspec[show[isLess]], msens[show[isLess]]+extraYshift, formatC( cuts[show[isLess]], format="f", 
+				digits=ndigShow), pos=posOffset[2], srt=rotateAngle[2], offset=0.4, cex=value.cex)
 
 		# Patrick had an ask, to know how many observations land at a single location on the ROC curve.
 		# for now focus on the upper right corner where the smallest "bad" value is represented.
