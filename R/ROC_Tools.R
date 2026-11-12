@@ -40,7 +40,7 @@ duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRU
 
 	if (visualize) {
 		#par( mai=c(1,1,0.8,0.4))
-		plot( mspec, msens, main=label, xlim=c(0,1.1), ylim=c(0,1.04),
+		plot( mspec, msens, main=label, xlim=c(0,1.1), ylim=c(-0.02,1.04),
 			xlab="1 - Specificity", ylab="Sensitivity", type="p", font.axis=2, font.lab=2)
 
 		# try to show some values in a sensible way
@@ -55,7 +55,7 @@ duffy.ROC <- function( goodScores, badScores, label="ROC curve: ", visualize=TRU
 		if ( ! is.null( srt)) { 
 			rotateAngle <- c(srt,srt)
 			posOffset <- c(4,4)
-			extraYshift <- -0.03
+			extraYshift <- -0.02
 		}
 		if ( length(isMore)) text( mspec[show[isMore]], msens[show[isMore]]+extraYshift, formatC( cuts[show[isMore]], format="f", 
 				digits=ndigShow), pos=posOffset[1], srt=rotateAngle[1], offset=0.4, cex=value.cex)
